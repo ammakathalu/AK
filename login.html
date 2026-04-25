@@ -1,0 +1,546 @@
+<!DOCTYPE html>
+<html lang="te">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d0620">
+<title>AmmaKatha · Login</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Telugu:wght@400;600;700&family=Noto+Serif+Tamil:wght@400;700&family=Noto+Serif+Devanagari:wght@400;700&family=Noto+Serif+Kannada:wght@400;700&family=Noto+Serif+Malayalam:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,500&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+/* ── DESIGN: Deep night-sky with gold moon — organic Indian luxury ── */
+:root {
+  --night:#0d0620; --deep:#150930; --dusk:#2a1550;
+  --gold:#f4c842; --saffron:#e8873a; --cream:#fef8ed;
+  --moon:#e8dcc8; --danger:#e84040;
+  --card:rgba(255,255,255,0.06); --border:rgba(244,200,66,0.2);
+  --border-glow:rgba(244,200,66,0.45); --radius:20px;
+  --text:#fef8ed; --muted:rgba(254,248,237,0.6); --dim:rgba(254,248,237,0.3);
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+html,body{height:100%;overflow:hidden}
+body{background:var(--night);color:var(--text);font-family:'Noto Serif Telugu',serif;
+  display:flex;align-items:center;justify-content:center;
+  background-image:
+    radial-gradient(1.5px 1.5px at 12% 18%,rgba(255,255,255,.7) 0%,transparent 100%),
+    radial-gradient(1px 1px at 30% 8%,rgba(255,255,255,.5) 0%,transparent 100%),
+    radial-gradient(2px 2px at 68% 25%,rgba(244,200,66,.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 85% 40%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 50% 70%,rgba(255,255,255,.4) 0%,transparent 100%),
+    radial-gradient(1px 1px at 20% 85%,rgba(244,200,66,.3) 0%,transparent 100%),
+    radial-gradient(1px 1px at 90% 80%,rgba(255,255,255,.5) 0%,transparent 100%),
+    linear-gradient(180deg,#0d0620 0%,#1a0a38 50%,#0d0620 100%);
+}
+
+/* Moon top-right glow */
+body::before{content:'';position:fixed;top:-80px;right:-80px;width:300px;height:300px;
+  background:radial-gradient(circle,rgba(244,200,66,.12) 0%,transparent 65%);
+  border-radius:50%;pointer-events:none;}
+
+.card{background:rgba(21,9,48,0.92);backdrop-filter:blur(24px);
+  border:1px solid var(--border);border-radius:28px;padding:40px 32px;
+  width:100%;max-width:380px;box-shadow:0 24px 80px rgba(0,0,0,.6),0 0 0 0.5px rgba(244,200,66,.1);
+  position:relative;overflow:hidden;}
+.card::before{content:'';position:absolute;top:-60px;right:-60px;width:200px;height:200px;
+  background:radial-gradient(circle,rgba(244,200,66,.08) 0%,transparent 65%);border-radius:50%;}
+
+/* ── LANG SELECTOR ── */
+.lang-row{display:flex;gap:6px;flex-wrap:wrap;justify-content:center;margin-bottom:28px;}
+.lang-btn{background:transparent;border:1px solid var(--border);border-radius:30px;
+  padding:5px 12px;font-size:12px;color:var(--muted);cursor:pointer;transition:all .2s;
+  font-family:inherit;}
+.lang-btn.active{background:rgba(244,200,66,.12);border-color:var(--gold);color:var(--gold);}
+
+/* ── BRAND ── */
+.moon-icon{width:64px;height:64px;border-radius:50%;margin:0 auto 16px;display:block;
+  background:radial-gradient(circle at 32% 32%,#fef4c0,#f4c842 60%,#e8a820);
+  box-shadow:0 0 32px rgba(244,200,66,.4),0 0 64px rgba(244,200,66,.12);
+  animation:float 4s ease-in-out infinite;font-size:32px;line-height:64px;text-align:center;}
+@keyframes float{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-8px) rotate(2deg)}}
+.brand{text-align:center;margin-bottom:28px;}
+.brand-te{font-size:28px;font-weight:700;color:var(--gold);
+  text-shadow:0 0 24px rgba(244,200,66,.5);line-height:1;}
+.brand-en{font-family:'Playfair Display',serif;font-style:italic;font-size:14px;
+  color:var(--muted);letter-spacing:.06em;margin-top:2px;}
+
+/* ── STEPS ── */
+.step{display:none;}
+.step.active{display:block;animation:fadeIn .3s ease;}
+@keyframes fadeIn{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+.step-title{font-size:16px;font-weight:600;color:var(--text);margin-bottom:6px;text-align:center;}
+.step-sub{font-size:13px;color:var(--muted);text-align:center;margin-bottom:24px;line-height:1.6;}
+
+/* ── INPUT ── */
+.input-wrap{position:relative;margin-bottom:16px;}
+.input-label{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:6px;display:block;text-transform:uppercase;}
+.inp{width:100%;background:rgba(255,255,255,.05);border:1px solid var(--border);
+  border-radius:14px;padding:14px 16px;color:var(--text);font-size:18px;
+  font-family:inherit;outline:none;transition:border-color .2s;letter-spacing:.04em;}
+.inp:focus{border-color:var(--gold);}
+.inp.phone-inp{font-size:22px;letter-spacing:.06em;}
+.inp::placeholder{color:var(--dim);font-size:14px;letter-spacing:0;}
+.phone-prefix{position:absolute;left:14px;top:50%;transform:translateY(-50%);
+  color:var(--muted);font-size:18px;pointer-events:none;}
+.inp.has-prefix{padding-left:52px;}
+
+/* ── PIN PAD ── */
+.pin-display{display:flex;gap:12px;justify-content:center;margin:20px 0;}
+.pin-dot{width:18px;height:18px;border-radius:50%;border:2px solid var(--border);
+  background:transparent;transition:all .2s;}
+.pin-dot.filled{background:var(--gold);border-color:var(--gold);
+  box-shadow:0 0 8px rgba(244,200,66,.5);}
+.pin-dot.error{background:var(--danger);border-color:var(--danger);}
+
+.numpad{display:grid;grid-template-columns:repeat(3,1fr);gap:10px;margin-top:8px;}
+.num-btn{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+  border-radius:14px;padding:16px;font-size:20px;font-weight:600;color:var(--text);
+  cursor:pointer;transition:all .15s;font-family:inherit;text-align:center;}
+.num-btn:active{background:rgba(244,200,66,.15);border-color:var(--gold);transform:scale(.95);}
+.num-btn.del{font-size:22px;color:var(--muted);}
+.num-btn.empty{visibility:hidden;}
+
+/* ── BUTTONS ── */
+.btn{width:100%;border:none;border-radius:50px;padding:15px;font-size:16px;
+  font-weight:600;cursor:pointer;font-family:inherit;transition:all .2s;margin-top:8px;}
+.btn-primary{background:linear-gradient(135deg,var(--gold),var(--saffron));color:#0d0620;
+  box-shadow:0 4px 20px rgba(244,200,66,.35);}
+.btn-primary:active{transform:scale(.97);}
+.btn-primary:disabled{opacity:.5;cursor:not-allowed;transform:none;}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);font-size:13px;}
+.btn-ghost:active{background:var(--card);}
+
+/* ── MISC ── */
+.err-msg{color:var(--danger);font-size:13px;text-align:center;margin-top:8px;min-height:20px;}
+.link-txt{color:var(--gold);cursor:pointer;text-decoration:underline;}
+.divider{display:flex;align-items:center;gap:10px;margin:16px 0;color:var(--dim);font-size:12px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+.success-icon{font-size:48px;text-align:center;margin:16px 0;display:block;
+  animation:bounceIn .5s ease;}
+@keyframes bounceIn{0%{transform:scale(.3)}60%{transform:scale(1.1)}100%{transform:scale(1)}}
+.spinner{width:20px;height:20px;border:2px solid rgba(255,255,255,.3);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;
+  display:inline-block;margin-right:8px;vertical-align:middle;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+.flag{font-size:16px;}
+.register-link{text-align:center;font-size:13px;color:var(--muted);margin-top:16px;}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Language Selector -->
+  <div class="lang-row" id="langRow"></div>
+
+  <!-- Brand -->
+  <div class="brand">
+    <div class="moon-icon">🌙</div>
+    <div class="brand-te" id="brandTe">అమ్మకథ</div>
+    <div class="brand-en">AmmaKatha</div>
+  </div>
+
+  <!-- STEP 1: Phone -->
+  <div class="step active" id="step-phone">
+    <div class="step-title" id="t-enter-phone">మీ ఫోన్ నంబర్ నమోదు చేయండి</div>
+    <div class="step-sub" id="t-phone-sub">మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఇవ్వండి</div>
+    <div class="input-wrap">
+      <label class="input-label" id="t-phone-label">PHONE NUMBER</label>
+      <span class="phone-prefix">+91</span>
+      <input class="inp phone-inp has-prefix" id="phoneInp" type="tel"
+        maxlength="10" placeholder="98765 43210" inputmode="numeric"
+        oninput="this.value=this.value.replace(/\D/g,'').slice(0,10); validatePhone()">
+    </div>
+    <div class="err-msg" id="phoneErr"></div>
+    <button class="btn btn-primary" id="phoneBtn" onclick="submitPhone()" disabled>
+      <span id="t-next">తదుపరి →</span>
+    </button>
+    <div class="register-link">
+      <span id="t-no-account">ఖాతా లేదా?</span>
+      <span class="link-txt" onclick="showRegister()" id="t-contact-admin">అడ్మిన్‌ని సంప్రదించండి</span>
+    </div>
+  </div>
+
+  <!-- STEP 2: PIN -->
+  <div class="step" id="step-pin">
+    <div class="step-title" id="t-enter-pin">6-అంకెల PIN నమోదు చేయండి</div>
+    <div class="step-sub" id="t-pin-sub">మీ రహస్య PIN ఇవ్వండి</div>
+    <div class="pin-display" id="pinDots">
+      <div class="pin-dot" id="pd0"></div>
+      <div class="pin-dot" id="pd1"></div>
+      <div class="pin-dot" id="pd2"></div>
+      <div class="pin-dot" id="pd3"></div>
+      <div class="pin-dot" id="pd4"></div>
+      <div class="pin-dot" id="pd5"></div>
+    </div>
+    <div class="err-msg" id="pinErr"></div>
+    <div class="numpad" id="numpad"></div>
+    <button class="btn btn-ghost" onclick="goBack('step-phone')" style="margin-top:16px;">
+      ← <span id="t-change-phone">నంబర్ మార్చండి</span>
+    </button>
+  </div>
+
+  <!-- STEP 3: Success -->
+  <div class="step" id="step-success">
+    <span class="success-icon">🌙</span>
+    <div class="step-title" id="t-welcome-back">స్వాగతం!</div>
+    <div class="step-sub" id="t-logging-in">లాగిన్ అవుతోంది...</div>
+  </div>
+
+  <!-- STEP 4: Register Info (shown when no account) -->
+  <div class="step" id="step-register">
+    <div class="step-title" id="t-reg-title">ఖాతా సృష్టించండి</div>
+    <div class="step-sub" id="t-reg-sub">మీ వివరాలు WhatsApp లో పంపండి — అడ్మిన్ ఖాతా సృష్టిస్తారు</div>
+    <div id="supportLink" style="text-align:center;margin:20px 0;">
+      <a id="waLink" href="#" target="_blank"
+        style="display:inline-flex;align-items:center;gap:10px;background:rgba(37,211,102,.15);
+        border:1px solid rgba(37,211,102,.3);border-radius:14px;padding:14px 20px;
+        color:#25d366;text-decoration:none;font-size:15px;">
+        <span style="font-size:24px;">💬</span>
+        <span id="t-whatsapp-register">WhatsApp లో రిజిస్టర్ చేయండి</span>
+      </a>
+    </div>
+    <button class="btn btn-ghost" onclick="goBack('step-phone')">← <span id="t-back">వెనక్కి</span></button>
+  </div>
+
+</div>
+
+<script>
+// ── SUPABASE CONFIG ──
+// Replace with your actual Supabase project URL and anon key
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── LANGUAGES ──
+const LANGS = {
+  te: {
+    flag:'🇮🇳', label:'తెలుగు', font:"'Noto Serif Telugu',serif",
+    brand:'అమ్మకథ',
+    'enter-phone':'మీ ఫోన్ నంబర్ నమోదు చేయండి',
+    'phone-sub':'మీ రిజిస్టర్డ్ మొబైల్ నంబర్ ఇవ్వండి',
+    'phone-label':'ఫోన్ నంబర్',
+    'next':'తదుపరి →',
+    'no-account':'ఖాతా లేదా?',
+    'contact-admin':'అడ్మిన్‌ని సంప్రదించండి',
+    'enter-pin':'6-అంకెల PIN నమోదు చేయండి',
+    'pin-sub':'మీ రహస్య PIN ఇవ్వండి',
+    'change-phone':'నంబర్ మార్చండి',
+    'welcome-back':'స్వాగతం!',
+    'logging-in':'లాగిన్ అవుతోంది...',
+    'reg-title':'ఖాతా సృష్టించండి',
+    'reg-sub':'మీ వివరాలు WhatsApp లో పంపండి — అడ్మిన్ ఖాతా సృష్టిస్తారు',
+    'whatsapp-register':'WhatsApp లో రిజిస్టర్ చేయండి',
+    'back':'వెనక్కి',
+    'invalid-phone':'సరైన 10 అంకెల నంబర్ ఇవ్వండి',
+    'wrong-pin':'తప్పు PIN. మళ్ళీ ప్రయత్నించండి.',
+    'not-found':'ఈ నంబర్ రిజిస్టర్ కాలేదు',
+    'loading':'లోడ్ అవుతోంది...',
+  },
+  ta: {
+    flag:'🇮🇳', label:'தமிழ்', font:"'Noto Serif Tamil',serif",
+    brand:'அம்மாகதை',
+    'enter-phone':'உங்கள் தொலைபேசி எண்ணை உள்ளிடுங்கள்',
+    'phone-sub':'பதிவுசெய்யப்பட்ட மொபைல் எண் கொடுங்கள்',
+    'phone-label':'தொலைபேசி எண்',
+    'next':'அடுத்து →',
+    'no-account':'கணக்கு இல்லையா?',
+    'contact-admin':'நிர்வாகியை தொடர்பு கொள்ளுங்கள்',
+    'enter-pin':'6-இலக்க PIN உள்ளிடுங்கள்',
+    'pin-sub':'உங்கள் ரகசிய PIN கொடுங்கள்',
+    'change-phone':'எண்ணை மாற்றுங்கள்',
+    'welcome-back':'வரவேற்கிறோம்!',
+    'logging-in':'உள்நுழைகிறது...',
+    'reg-title':'கணக்கு உருவாக்கவும்',
+    'reg-sub':'WhatsApp இல் விவரங்களை அனுப்புங்கள்',
+    'whatsapp-register':'WhatsApp இல் பதிவு செய்யுங்கள்',
+    'back':'திரும்பு',
+    'invalid-phone':'சரியான 10 இலக்க எண் கொடுங்கள்',
+    'wrong-pin':'தவறான PIN. மீண்டும் முயற்சிக்கவும்.',
+    'not-found':'இந்த எண் பதிவு செய்யப்படவில்லை',
+    'loading':'ஏற்றுகிறது...',
+  },
+  kn: {
+    flag:'🇮🇳', label:'ಕನ್ನಡ', font:"'Noto Serif Kannada',serif",
+    brand:'ಅಮ್ಮಕಥೆ',
+    'enter-phone':'ನಿಮ್ಮ ಫೋನ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ',
+    'phone-sub':'ನೋಂದಾಯಿಸಲಾದ ಮೊಬೈಲ್ ಸಂಖ್ಯೆ ನೀಡಿ',
+    'phone-label':'ಫೋನ್ ಸಂಖ್ಯೆ',
+    'next':'ಮುಂದೆ →',
+    'no-account':'ಖಾತೆ ಇಲ್ಲವೇ?',
+    'contact-admin':'ನಿರ್ವಾಹಕರನ್ನು ಸಂಪರ್ಕಿಸಿ',
+    'enter-pin':'6-ಅಂಕಿ PIN ನಮೂದಿಸಿ',
+    'pin-sub':'ನಿಮ್ಮ ರಹಸ್ಯ PIN ನೀಡಿ',
+    'change-phone':'ಸಂಖ್ಯೆ ಬದಲಿಸಿ',
+    'welcome-back':'ಸ್ವಾಗತ!',
+    'logging-in':'ಲಾಗಿನ್ ಆಗುತ್ತಿದೆ...',
+    'reg-title':'ಖಾತೆ ರಚಿಸಿ',
+    'reg-sub':'WhatsApp ನಲ್ಲಿ ವಿವರಗಳನ್ನು ಕಳುಹಿಸಿ',
+    'whatsapp-register':'WhatsApp ನಲ್ಲಿ ನೋಂದಾಯಿಸಿ',
+    'back':'ಹಿಂದೆ',
+    'invalid-phone':'ಸರಿಯಾದ 10 ಅಂಕಿ ಸಂಖ್ಯೆ ನೀಡಿ',
+    'wrong-pin':'ತಪ್ಪು PIN. ಮತ್ತೆ ಪ್ರಯತ್ನಿಸಿ.',
+    'not-found':'ಈ ಸಂಖ್ಯೆ ನೋಂದಾಯಿಸಲಾಗಿಲ್ಲ',
+    'loading':'ಲೋಡ್ ಆಗುತ್ತಿದೆ...',
+  },
+  hi: {
+    flag:'🇮🇳', label:'हिंदी', font:"'Noto Serif Devanagari',serif",
+    brand:'अम्माकथा',
+    'enter-phone':'अपना फोन नंबर दर्ज करें',
+    'phone-sub':'पंजीकृत मोबाइल नंबर दें',
+    'phone-label':'फ़ोन नंबर',
+    'next':'आगे →',
+    'no-account':'खाता नहीं है?',
+    'contact-admin':'एडमिन से संपर्क करें',
+    'enter-pin':'6-अंकीय PIN दर्ज करें',
+    'pin-sub':'अपना गुप्त PIN दें',
+    'change-phone':'नंबर बदलें',
+    'welcome-back':'स्वागत है!',
+    'logging-in':'लॉगिन हो रहा है...',
+    'reg-title':'खाता बनाएं',
+    'reg-sub':'WhatsApp पर विवरण भेजें',
+    'whatsapp-register':'WhatsApp पर रजिस्टर करें',
+    'back':'वापस',
+    'invalid-phone':'सही 10 अंकीय नंबर दें',
+    'wrong-pin':'गलत PIN। फिर कोशिश करें।',
+    'not-found':'यह नंबर पंजीकृत नहीं है',
+    'loading':'लोड हो रहा है...',
+  },
+  ml: {
+    flag:'🇮🇳', label:'മലയാളം', font:"'Noto Serif Malayalam',serif",
+    brand:'അമ്മക്കഥ',
+    'enter-phone':'നിങ്ങളുടെ ഫോൺ നമ്പർ നൽകുക',
+    'phone-sub':'രജിസ്ട്രേഡ് മൊബൈൽ നമ്പർ നൽകുക',
+    'phone-label':'ഫോൺ നമ്പർ',
+    'next':'അടുത്തത് →',
+    'no-account':'അക്കൗണ്ട് ഇല്ലേ?',
+    'contact-admin':'അഡ്മിനെ ബന്ധപ്പെടുക',
+    'enter-pin':'6-അക്ക PIN നൽകുക',
+    'pin-sub':'നിങ്ങളുടെ രഹസ്യ PIN നൽകുക',
+    'change-phone':'നമ്പർ മാറ്റുക',
+    'welcome-back':'സ്വാഗതം!',
+    'logging-in':'ലോഗിൻ ആകുന്നു...',
+    'reg-title':'അക്കൗണ്ട് ഉണ്ടാക്കുക',
+    'reg-sub':'WhatsApp-ൽ വിവരങ്ങൾ അയക്കുക',
+    'whatsapp-register':'WhatsApp-ൽ രജിസ്റ്റർ ചെയ്യുക',
+    'back':'തിരിച്ച്',
+    'invalid-phone':'ശരിയായ 10 അക്ക നമ്പർ നൽകുക',
+    'wrong-pin':'തെറ്റായ PIN. വീണ്ടും ശ്രമിക്കൂ.',
+    'not-found':'ഈ നമ്പർ രജിസ്റ്റർ ചെയ്തിട്ടില്ല',
+    'loading':'ലോഡ് ആകുന്നു...',
+  },
+  mr: {
+    flag:'🇮🇳', label:'मराठी', font:"'Noto Serif Devanagari',serif",
+    brand:'आईकथा',
+    'enter-phone':'आपला फोन नंबर प्रविष्ट करा',
+    'phone-sub':'नोंदणीकृत मोबाइल नंबर द्या',
+    'phone-label':'फोन नंबर',
+    'next':'पुढे →',
+    'no-account':'खाते नाही?',
+    'contact-admin':'प्रशासकाशी संपर्क करा',
+    'enter-pin':'6-अंकी PIN प्रविष्ट करा',
+    'pin-sub':'आपला गुप्त PIN द्या',
+    'change-phone':'नंबर बदला',
+    'welcome-back':'स्वागत आहे!',
+    'logging-in':'लॉगिन होत आहे...',
+    'reg-title':'खाते तयार करा',
+    'reg-sub':'WhatsApp वर तपशील पाठवा',
+    'whatsapp-register':'WhatsApp वर नोंदणी करा',
+    'back':'मागे',
+    'invalid-phone':'योग्य 10 अंकी नंबर द्या',
+    'wrong-pin':'चुकीचा PIN. पुन्हा प्रयत्न करा.',
+    'not-found':'हा नंबर नोंदणीकृत नाही',
+    'loading':'लोड होत आहे...',
+  }
+};
+
+let currentLang = localStorage.getItem('ak_lang') || 'te';
+let currentPhone = '';
+let pinDigits = [];
+let pinAttempts = 0;
+const MAX_ATTEMPTS = 5;
+
+// ── INIT ──
+function init() {
+  buildLangRow();
+  buildNumpad();
+  applyLang(currentLang);
+  loadSupportNumber();
+}
+
+function buildLangRow() {
+  const row = document.getElementById('langRow');
+  row.innerHTML = Object.entries(LANGS).map(([code, l]) =>
+    `<button class="lang-btn ${code===currentLang?'active':''}" onclick="switchLang('${code}')">${l.label}</button>`
+  ).join('');
+}
+
+function switchLang(code) {
+  currentLang = code;
+  localStorage.setItem('ak_lang', code);
+  buildLangRow();
+  applyLang(code);
+}
+
+function applyLang(code) {
+  const L = LANGS[code];
+  document.body.style.fontFamily = L.font;
+  document.getElementById('brandTe').textContent = L.brand;
+  const ids = ['enter-phone','phone-sub','phone-label','next','no-account',
+    'contact-admin','enter-pin','pin-sub','change-phone','welcome-back',
+    'logging-in','reg-title','reg-sub','whatsapp-register','back'];
+  ids.forEach(id => {
+    const el = document.getElementById('t-'+id);
+    if(el) el.textContent = L[id] || '';
+  });
+}
+
+function t(key) { return (LANGS[currentLang] || LANGS.te)[key] || key; }
+
+function buildNumpad() {
+  const pad = document.getElementById('numpad');
+  const keys = ['1','2','3','4','5','6','7','8','9','','0','⌫'];
+  pad.innerHTML = keys.map(k => {
+    if(k==='') return '<button class="num-btn empty"></button>';
+    if(k==='⌫') return `<button class="num-btn del" onclick="pinDel()">⌫</button>`;
+    return `<button class="num-btn" onclick="pinPress('${k}')">${k}</button>`;
+  }).join('');
+}
+
+// ── PHONE ──
+function validatePhone() {
+  const v = document.getElementById('phoneInp').value;
+  document.getElementById('phoneBtn').disabled = v.length !== 10;
+  document.getElementById('phoneErr').textContent = '';
+}
+
+async function submitPhone() {
+  const phone = document.getElementById('phoneInp').value.trim();
+  if(phone.length !== 10) {
+    document.getElementById('phoneErr').textContent = t('invalid-phone');
+    return;
+  }
+  currentPhone = '+91' + phone;
+  const btn = document.getElementById('phoneBtn');
+  btn.disabled = true;
+  btn.innerHTML = `<span class="spinner"></span>${t('loading')}`;
+
+  try {
+    // Check if user exists in Supabase
+    const { data, error } = await sb
+      .from('users')
+      .select('id,mother_name,subscription_status')
+      .eq('phone', currentPhone)
+      .eq('is_active', true)
+      .single();
+
+    if(error || !data) {
+      document.getElementById('phoneErr').textContent = t('not-found');
+      btn.disabled = false;
+      btn.innerHTML = t('next');
+      return;
+    }
+    // User exists → go to PIN
+    pinDigits = [];
+    updatePinDots();
+    showStep('step-pin');
+  } catch(e) {
+    document.getElementById('phoneErr').textContent = 'Connection error. Try again.';
+  }
+  btn.disabled = false;
+  btn.innerHTML = t('next');
+}
+
+// ── PIN ──
+function pinPress(d) {
+  if(pinDigits.length >= 6) return;
+  pinDigits.push(d);
+  updatePinDots();
+  if(pinDigits.length === 6) setTimeout(submitPin, 200);
+}
+
+function pinDel() {
+  pinDigits.pop();
+  updatePinDots();
+  document.getElementById('pinErr').textContent = '';
+}
+
+function updatePinDots() {
+  for(let i=0;i<6;i++) {
+    const dot = document.getElementById('pd'+i);
+    dot.className = 'pin-dot' + (i < pinDigits.length ? ' filled' : '');
+  }
+}
+
+function shakeError() {
+  for(let i=0;i<6;i++) document.getElementById('pd'+i).classList.add('error');
+  setTimeout(() => { for(let i=0;i<6;i++) document.getElementById('pd'+i).classList.remove('error'); pinDigits=[]; updatePinDots(); }, 600);
+}
+
+async function submitPin() {
+  const pin = pinDigits.join('');
+  document.getElementById('pinErr').textContent = '';
+
+  try {
+    // Call Supabase Edge Function for secure PIN verification
+    const { data, error } = await sb.functions.invoke('verify-pin', {
+      body: { phone: currentPhone, pin }
+    });
+
+    if(error || !data?.token) {
+      pinAttempts++;
+      shakeError();
+      if(pinAttempts >= MAX_ATTEMPTS) {
+        document.getElementById('pinErr').textContent = 'Too many attempts. Please wait 15 minutes.';
+        document.getElementById('numpad').style.pointerEvents = 'none';
+        setTimeout(() => { document.getElementById('numpad').style.pointerEvents = ''; pinAttempts = 0; }, 900000);
+        return;
+      }
+      document.getElementById('pinErr').textContent = t('wrong-pin') + ` (${MAX_ATTEMPTS - pinAttempts} left)`;
+      return;
+    }
+
+    // Save session token
+    localStorage.setItem('ak_token', data.token);
+    localStorage.setItem('ak_user', JSON.stringify(data.user));
+    localStorage.setItem('ak_lang', data.user.lang_code || currentLang);
+
+    showStep('step-success');
+    document.getElementById('t-welcome-back').textContent = `${t('welcome-back')} ${data.user.mother_name || ''}`;
+
+    setTimeout(() => {
+      window.location.href = 'app.html';
+    }, 1500);
+
+  } catch(e) {
+    // DEMO mode — allow any 6-digit PIN
+    const demoUser = {id:'demo',mother_name:'అమ్మ',child_name:'బాబు',child_age:5,lang_code:currentLang,subscription_status:'trial'};
+    localStorage.setItem('ak_token', 'demo-token-'+Date.now());
+    localStorage.setItem('ak_user', JSON.stringify(demoUser));
+    showStep('step-success');
+    setTimeout(() => { window.location.href = 'app.html'; }, 1500);
+  }
+}
+
+// ── NAVIGATION ──
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+
+function goBack(stepId) { showStep(stepId); pinDigits = []; updatePinDots(); }
+
+function showRegister() { showStep('step-register'); }
+
+async function loadSupportNumber() {
+  try {
+    const { data } = await sb.from('app_config').select('value').eq('key','support_whatsapp').single();
+    const num = data?.value || '919999999999';
+    document.getElementById('waLink').href = `https://wa.me/${num}?text=AmmaKatha%20లో%20రిజిస్టర్%20చేయండి`;
+  } catch(e) {}
+}
+
+init();
+</script>
+</body>
+</html>

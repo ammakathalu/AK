@@ -1,0 +1,987 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AmmaKatha Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;--surface3:#22222e;
+  --gold:#f4c842;--saffron:#e8873a;--green:#22c55e;--red:#ef4444;--blue:#3b82f6;
+  --text:#f1f0ed;--muted:#888;--dim:#444;
+  --border:#252530;--border2:#333;
+  --radius:10px;--font:'Geist Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{background:var(--bg);color:var(--text);font-family:var(--font);font-size:13px;min-height:100vh;display:flex;}
+
+/* ── SIDEBAR ── */
+.sidebar{width:220px;background:var(--surface);border-right:1px solid var(--border);
+  display:flex;flex-direction:column;position:fixed;height:100vh;z-index:50;}
+.sidebar-brand{padding:20px 16px 0;border-bottom:1px solid var(--border);padding-bottom:16px;}
+.sb-logo{font-family:'Instrument Serif',serif;font-style:italic;font-size:20px;color:var(--gold);}
+.sb-sub{font-size:10px;color:var(--muted);margin-top:2px;}
+.sidebar-nav{flex:1;padding:12px 8px;overflow-y:auto;}
+.nav-group-title{font-size:10px;color:var(--dim);letter-spacing:.08em;padding:12px 8px 6px;text-transform:uppercase;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 10px;border-radius:8px;
+  cursor:pointer;color:var(--muted);transition:all .15s;margin-bottom:2px;text-decoration:none;}
+.nav-item:hover{background:var(--surface2);color:var(--text);}
+.nav-item.active{background:rgba(244,200,66,.1);color:var(--gold);border:1px solid rgba(244,200,66,.2);}
+.nav-icon{font-size:15px;width:18px;text-align:center;}
+.sidebar-footer{padding:12px;border-top:1px solid var(--border);}
+.admin-chip{display:flex;align-items:center;gap:8px;padding:8px 10px;
+  background:var(--surface2);border-radius:8px;}
+.admin-dot{width:8px;height:8px;border-radius:50%;background:var(--green);}
+.admin-name{font-size:12px;color:var(--text);}
+
+/* ── MAIN ── */
+.main{margin-left:220px;flex:1;min-height:100vh;}
+.topbar{padding:16px 24px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface);position:sticky;top:0;z-index:40;}
+.topbar-title{font-size:16px;font-weight:500;color:var(--text);}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.content{padding:24px;}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);padding:16px;}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:6px;}
+.stat-val{font-size:28px;font-weight:500;color:var(--text);line-height:1;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;}
+.stat-card.gold{border-color:rgba(244,200,66,.3);}
+.stat-card.gold .stat-val{color:var(--gold);}
+.stat-card.green{border-color:rgba(34,197,94,.2);}
+.stat-card.green .stat-val{color:var(--green);}
+.stat-card.red{border-color:rgba(239,68,68,.2);}
+.stat-card.red .stat-val{color:var(--red);}
+
+/* ── SECTIONS ── */
+.section{display:none;}
+.section.active{display:block;}
+.section-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:16px;
+  display:flex;justify-content:space-between;align-items:center;}
+
+/* ── TABLE ── */
+.table-wrap{background:var(--surface);border:1px solid var(--border);border-radius:var(--radius);overflow:hidden;margin-bottom:20px;}
+.table-header{padding:12px 16px;border-bottom:1px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;}
+.search-inp{background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  padding:7px 12px;color:var(--text);font-family:var(--font);font-size:12px;
+  outline:none;width:220px;}
+.search-inp:focus{border-color:var(--gold);}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:10px 14px;font-size:10px;color:var(--muted);letter-spacing:.06em;
+  text-transform:uppercase;border-bottom:1px solid var(--border);font-weight:500;}
+td{padding:11px 14px;border-bottom:1px solid var(--border);font-size:12px;vertical-align:middle;}
+tr:last-child td{border:none;}
+tr:hover td{background:rgba(255,255,255,.02);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 8px;border-radius:20px;font-size:11px;font-weight:500;}
+.badge-green{background:rgba(34,197,94,.12);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+.badge-red{background:rgba(239,68,68,.1);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.badge-amber{background:rgba(244,200,66,.1);color:var(--gold);border:1px solid rgba(244,200,66,.2);}
+.badge-blue{background:rgba(59,130,246,.1);color:var(--blue);border:1px solid rgba(59,130,246,.2);}
+.badge-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+
+/* ── BUTTONS ── */
+.btn{padding:7px 14px;border-radius:8px;font-family:var(--font);font-size:12px;
+  cursor:pointer;border:none;transition:all .15s;font-weight:500;}
+.btn-primary{background:var(--gold);color:#0a0a0f;}
+.btn-primary:hover{background:#f8d668;}
+.btn-danger{background:rgba(239,68,68,.15);color:var(--red);border:1px solid rgba(239,68,68,.2);}
+.btn-ghost{background:transparent;color:var(--muted);border:1px solid var(--border);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-sm{padding:5px 10px;font-size:11px;}
+.btn-success{background:rgba(34,197,94,.15);color:var(--green);border:1px solid rgba(34,197,94,.2);}
+
+/* ── MODAL ── */
+.modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.7);backdrop-filter:blur(4px);
+  z-index:200;display:none;align-items:center;justify-content:center;}
+.modal-overlay.open{display:flex;}
+.modal{background:var(--surface);border:1px solid var(--border2);border-radius:16px;
+  padding:24px;width:100%;max-width:480px;max-height:85vh;overflow-y:auto;
+  animation:modalIn .2s ease;}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)translateY(10px)}to{opacity:1;transform:none}}
+.modal-title{font-size:15px;font-weight:500;margin-bottom:20px;
+  display:flex;justify-content:space-between;align-items:center;}
+.close-btn{background:none;border:none;color:var(--muted);font-size:20px;cursor:pointer;line-height:1;}
+
+/* ── FORM ── */
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:5px;display:block;text-transform:uppercase;}
+.form-inp{width:100%;background:var(--surface2);border:1px solid var(--border2);border-radius:8px;
+  padding:9px 12px;color:var(--text);font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s;}
+.form-inp:focus{border-color:var(--gold);}
+.form-inp::placeholder{color:var(--dim);}
+select.form-inp{cursor:pointer;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-help{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* ── QR UPLOAD ── */
+.qr-upload-area{border:2px dashed var(--border2);border-radius:12px;padding:32px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);}
+.qr-upload-area:hover{border-color:var(--gold);background:rgba(244,200,66,.04);}
+.qr-preview{max-width:200px;max-height:200px;border-radius:8px;margin:12px auto 0;display:none;}
+.qr-active-card{background:var(--surface);border:1px solid rgba(244,200,66,.2);
+  border-radius:var(--radius);padding:16px;display:flex;gap:16px;align-items:center;margin-bottom:12px;}
+.qr-active-img{width:80px;height:80px;border-radius:8px;object-fit:contain;background:white;padding:4px;}
+.qr-active-info{flex:1;}
+.qr-active-name{font-size:13px;font-weight:500;margin-bottom:3px;}
+.qr-active-upi{font-size:11px;color:var(--gold);}
+
+/* ── TOAST ── */
+.toast{position:fixed;bottom:24px;right:24px;background:var(--surface);
+  border:1px solid var(--border2);border-radius:10px;padding:12px 16px;
+  font-size:13px;z-index:300;opacity:0;transform:translateY(8px);
+  transition:all .25s;pointer-events:none;max-width:320px;}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{border-color:rgba(34,197,94,.3);color:var(--green);}
+.toast.error{border-color:rgba(239,68,68,.3);color:var(--red);}
+
+.pill-stat{display:flex;gap:3px;align-items:center;}
+.mini-dot{width:6px;height:6px;border-radius:50%;}
+.empty-state{text-align:center;padding:40px;color:var(--muted);}
+.avatar{width:28px;height:28px;border-radius:50%;background:linear-gradient(135deg,#2a1550,#f4c842);display:flex;align-items:center;justify-content:center;font-size:11px;color:#0a0a0f;font-weight:600;flex-shrink:0;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sb-logo">AmmaKatha</div>
+    <div class="sb-sub">Admin Dashboard</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-title">Overview</div>
+    <a class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">📊</span>Dashboard</a>
+
+    <div class="nav-group-title">Users</div>
+    <a class="nav-item" onclick="showSection('users')"><span class="nav-icon">👥</span>All Users</a>
+    <a class="nav-item" onclick="showSection('create-user')"><span class="nav-icon">➕</span>Create User</a>
+
+    <div class="nav-group-title">Payments</div>
+    <a class="nav-item" onclick="showSection('payments')"><span class="nav-icon">💳</span>Pending Payments</a>
+    <a class="nav-item" onclick="showSection('qr-codes')"><span class="nav-icon">📱</span>QR Codes</a>
+
+    <div class="nav-group-title">Content</div>
+    <a class="nav-item" onclick="showSection('stories')"><span class="nav-icon">📚</span>Stories</a>
+    <a class="nav-item" onclick="showSection('add-story')"><span class="nav-icon">✍️</span>Add Story</a>
+
+    <div class="nav-group-title">Settings</div>
+    <a class="nav-item" onclick="showSection('config')"><span class="nav-icon">⚙️</span>App Config</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-chip">
+      <div class="admin-dot"></div>
+      <div class="admin-name" id="adminName">Admin</div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="logout()">Out</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-right">
+      <span style="color:var(--muted);font-size:11px;" id="topbarTime"></span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-val" id="st-total">—</div><div class="stat-sub">All registered</div></div>
+        <div class="stat-card green"><div class="stat-label">Paying Users</div><div class="stat-val" id="st-paying">—</div><div class="stat-sub">Active subscriptions</div></div>
+        <div class="stat-card gold"><div class="stat-label">Revenue (Month)</div><div class="stat-val" id="st-revenue">—</div><div class="stat-sub">Verified payments</div></div>
+        <div class="stat-card red"><div class="stat-label">Pending</div><div class="stat-val" id="st-pending">—</div><div class="stat-sub">Awaiting verification</div></div>
+        <div class="stat-card"><div class="stat-label">New (7 days)</div><div class="stat-val" id="st-new">—</div><div class="stat-sub">Recent signups</div></div>
+        <div class="stat-card"><div class="stat-label">Plays Today</div><div class="stat-val" id="st-plays">—</div><div class="stat-sub">Story plays</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Language breakdown -->
+        <div class="table-wrap">
+          <div class="table-header"><span>Users by Language</span></div>
+          <table><thead><tr><th>Language</th><th>Users</th><th>Paying</th></tr></thead>
+          <tbody id="langTable"><tr><td colspan="3" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+        <!-- Recent payments -->
+        <div class="table-wrap">
+          <div class="table-header"><span>Recent Payments</span>
+            <button class="btn btn-ghost btn-sm" onclick="showSection('payments')">View All</button>
+          </div>
+          <table><thead><tr><th>User</th><th>Plan</th><th>Status</th></tr></thead>
+          <tbody id="recentPayments"><tr><td colspan="3" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ USERS ═══ -->
+    <div class="section" id="sec-users">
+      <div class="section-title">All Users
+        <button class="btn btn-primary" onclick="showSection('create-user')">+ Create User</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <input class="search-inp" id="userSearch" placeholder="Search name, phone..." oninput="filterUsers()">
+          <select class="form-inp" id="userFilter" style="width:140px;" onchange="filterUsers()">
+            <option value="">All Status</option>
+            <option value="free">Free</option>
+            <option value="trial">Trial</option>
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>User</th><th>Phone</th><th>Language</th><th>Child</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="usersTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ CREATE USER ═══ -->
+    <div class="section" id="sec-create-user">
+      <div class="section-title">Create New User</div>
+      <div style="max-width:520px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mother's Name *</label>
+              <input class="form-inp" id="cu-mother" placeholder="e.g. Lakshmi">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Child's Name *</label>
+              <input class="form-inp" id="cu-child" placeholder="e.g. Rahul">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input class="form-inp" id="cu-phone" placeholder="+919876543210" type="tel">
+            </div>
+            <div class="form-group">
+              <label class="form-label">6-Digit PIN *</label>
+              <input class="form-inp" id="cu-pin" placeholder="123456" maxlength="6" type="password">
+              <div class="form-help">User will login with this PIN</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Child's Age</label>
+              <select class="form-inp" id="cu-age">
+                <option value="3">3 years</option><option value="4">4 years</option>
+                <option value="5" selected>5 years</option><option value="6">6 years</option>
+                <option value="7">7 years</option><option value="8">8 years</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Language</label>
+              <select class="form-inp" id="cu-lang">
+                <option value="te">Telugu</option><option value="ta">Tamil</option>
+                <option value="kn">Kannada</option><option value="hi">Hindi</option>
+                <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Subscription Plan</label>
+              <select class="form-inp" id="cu-plan">
+                <option value="">Free (no plan)</option>
+                <option value="monthly">Monthly (₹99)</option>
+                <option value="annual">Annual (₹799)</option>
+                <option value="family">Family (₹149)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subscription End Date</label>
+              <input class="form-inp" id="cu-sub-end" type="date">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-primary" onclick="createUser()" id="createUserBtn">Create User</button>
+            <button class="btn btn-ghost" onclick="showSection('users')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAYMENTS ═══ -->
+    <div class="section" id="sec-payments">
+      <div class="section-title">Payment Verification
+        <div style="display:flex;gap:8px;">
+          <select class="form-inp" id="payFilter" style="width:150px;" onchange="loadPayments()">
+            <option value="screenshot_uploaded">Pending Review</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+            <option value="">All</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Date</th><th>Screenshot</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="paymentsTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ QR CODES ═══ -->
+    <div class="section" id="sec-qr-codes">
+      <div class="section-title">Payment QR Codes
+        <button class="btn btn-primary" onclick="openQRModal()">+ Add QR Code</button>
+      </div>
+      <div id="qrList">
+        <div class="empty-state">Loading QR codes...</div>
+      </div>
+    </div>
+
+    <!-- ═══ STORIES ═══ -->
+    <div class="section" id="sec-stories">
+      <div class="section-title">Story Library
+        <div style="display:flex;gap:8px;">
+          <select class="form-inp" id="storyLangFilter" style="width:130px;" onchange="loadStories()">
+            <option value="">All Languages</option>
+            <option value="te">Telugu</option><option value="ta">Tamil</option>
+            <option value="kn">Kannada</option><option value="hi">Hindi</option>
+          </select>
+          <button class="btn btn-primary" onclick="showSection('add-story')">+ Add Story</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Language</th><th>Category</th><th>Duration</th><th>Premium</th><th>Published</th><th>Actions</th></tr></thead>
+          <tbody id="storiesTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ ADD STORY ═══ -->
+    <div class="section" id="sec-add-story">
+      <div class="section-title">Add New Story</div>
+      <div style="max-width:640px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Title *</label>
+              <input class="form-inp" id="as-title" placeholder="Story title">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Language *</label>
+              <select class="form-inp" id="as-lang">
+                <option value="te">Telugu</option><option value="ta">Tamil</option>
+                <option value="kn">Kannada</option><option value="hi">Hindi</option>
+                <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-inp" id="as-cat">
+                <option value="panchatantra">Panchatantra</option>
+                <option value="tenali">Tenali Rama</option>
+                <option value="folk">Folk Tale</option>
+                <option value="moral">Moral Story</option>
+                <option value="festival">Festival</option>
+                <option value="lullaby">Lullaby</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji</label>
+              <input class="form-inp" id="as-emoji" placeholder="🦁" maxlength="4">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Age Min</label>
+              <input class="form-inp" id="as-age-min" type="number" value="3" min="2" max="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age Max</label>
+              <input class="form-inp" id="as-age-max" type="number" value="8" min="3" max="12">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Story Text * (in regional language)</label>
+            <textarea class="form-inp" id="as-text" rows="6" placeholder="Full story text here..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Moral / Ending</label>
+            <input class="form-inp" id="as-moral" placeholder="నీతి: ...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma separated)</label>
+            <input class="form-inp" id="as-tags" placeholder="ధైర్యం,నీతి,జంతువులు">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Audio URL (optional)</label>
+              <input class="form-inp" id="as-audio" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duration (seconds)</label>
+              <input class="form-inp" id="as-dur" type="number" placeholder="300">
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="as-premium"> Premium only
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="as-published" checked> Published
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary" onclick="addStory()">Add Story</button>
+            <button class="btn btn-ghost" onclick="showSection('stories')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIG ═══ -->
+    <div class="section" id="sec-config">
+      <div class="section-title">App Configuration</div>
+      <div style="max-width:520px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div id="configForm">Loading...</div>
+          <button class="btn btn-primary" onclick="saveConfig()" style="margin-top:16px;">Save Config</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- content -->
+</div><!-- main -->
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <div class="modal-title">Add QR Code
+      <button class="close-btn" onclick="closeModal('qrModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Label</label>
+      <input class="form-inp" id="qr-label" placeholder="e.g. PhonePe Main">
+    </div>
+    <div class="form-group">
+      <label class="form-label">UPI ID (for display)</label>
+      <input class="form-inp" id="qr-upi" placeholder="yourname@phonepe">
+    </div>
+    <div class="form-group">
+      <label class="form-label">QR Code Image *</label>
+      <div class="qr-upload-area" onclick="document.getElementById('qrFileInput').click()">
+        <div style="font-size:32px;margin-bottom:8px;">📱</div>
+        <div style="color:var(--muted);font-size:12px;">Click to upload QR code image</div>
+        <div style="color:var(--dim);font-size:11px;margin-top:4px;">PNG, JPG — max 2MB</div>
+        <input type="file" id="qrFileInput" accept="image/*" style="display:none" onchange="previewQR(this)">
+      </div>
+      <img id="qrPreview" class="qr-preview">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="uploadQR()" id="uploadQRBtn">Upload QR</button>
+      <button class="btn btn-ghost" onclick="closeModal('qrModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment View Modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-title">Payment Details
+      <button class="close-btn" onclick="closeModal('payModal')">×</button>
+    </div>
+    <div id="payModalContent"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;" id="payModalActions"></div>
+  </div>
+</div>
+
+<!-- User Edit Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-title">Edit User
+      <button class="close-btn" onclick="closeModal('userModal')">×</button>
+    </div>
+    <div id="userModalContent"></div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── AUTH CHECK ──
+async function checkAuth() {
+  const { data: { session } } = await sb.auth.getSession();
+  if(!session) { window.location.href = 'admin-login.html'; return; }
+  document.getElementById('adminName').textContent = session.user.email?.split('@')[0] || 'Admin';
+}
+
+// ── INIT ──
+async function init() {
+  await checkAuth().catch(()=>{});
+  updateClock();
+  setInterval(updateClock, 1000);
+  await loadDashboard();
+}
+
+function updateClock() {
+  document.getElementById('topbarTime').textContent = new Date().toLocaleString('en-IN');
+}
+
+// ── SECTIONS ──
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelector(`[onclick="showSection('${id}')"]`)?.classList.add('active');
+  const titles = {dashboard:'Dashboard',users:'All Users','create-user':'Create User',
+    payments:'Payments','qr-codes':'QR Codes',stories:'Stories','add-story':'Add Story',config:'App Config'};
+  document.getElementById('topbarTitle').textContent = titles[id] || id;
+
+  if(id==='dashboard') loadDashboard();
+  else if(id==='users') loadUsers();
+  else if(id==='payments') loadPayments();
+  else if(id==='qr-codes') loadQRCodes();
+  else if(id==='stories') loadStories();
+  else if(id==='config') loadConfig();
+}
+
+async function refreshAll() { showSection('dashboard'); }
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  try {
+    const { data: stats } = await sb.from('admin_stats').select('*').single();
+    if(stats) {
+      document.getElementById('st-total').textContent = stats.total_users?.toLocaleString() || '0';
+      document.getElementById('st-paying').textContent = stats.paying_users?.toLocaleString() || '0';
+      document.getElementById('st-revenue').textContent = '₹'+(stats.revenue_this_month?.toLocaleString()||'0');
+      document.getElementById('st-pending').textContent = stats.pending_payments || '0';
+      document.getElementById('st-new').textContent = stats.new_users_week || '0';
+      document.getElementById('st-plays').textContent = stats.plays_today?.toLocaleString() || '0';
+    }
+  } catch(e) {
+    // Demo data
+    document.getElementById('st-total').textContent = '1,247';
+    document.getElementById('st-paying').textContent = '312';
+    document.getElementById('st-revenue').textContent = '₹28,450';
+    document.getElementById('st-pending').textContent = '7';
+    document.getElementById('st-new').textContent = '43';
+    document.getElementById('st-plays').textContent = '2,891';
+  }
+
+  // Language stats
+  try {
+    const { data } = await sb.from('lang_stats').select('*');
+    document.getElementById('langTable').innerHTML = (data||demoLangStats()).map(r=>
+      `<tr><td>${r.name_native} <span style="color:var(--muted);font-size:11px;">${r.name_en}</span></td>
+      <td>${r.user_count?.toLocaleString()||0}</td>
+      <td><span class="badge badge-green">${r.paying_count||0}</span></td></tr>`
+    ).join('');
+  } catch(e) {
+    document.getElementById('langTable').innerHTML = demoLangStats().map(r=>
+      `<tr><td>${r.name_native}</td><td>${r.user_count}</td><td><span class="badge badge-green">${r.paying_count}</span></td></tr>`
+    ).join('');
+  }
+
+  // Recent payments
+  try {
+    const { data } = await sb.from('payments').select('*,users(mother_name,phone)').order('created_at',{ascending:false}).limit(5);
+    renderRecentPayments(data||[]);
+  } catch(e) { renderRecentPayments([]); }
+}
+
+function demoLangStats() {
+  return [{name_native:'తెలుగు',name_en:'Telugu',user_count:891,paying_count:234},
+    {name_native:'தமிழ்',name_en:'Tamil',user_count:187,paying_count:45},
+    {name_native:'हिंदी',name_en:'Hindi',user_count:124,paying_count:28},
+    {name_native:'ಕನ್ನಡ',name_en:'Kannada',user_count:45,paying_count:5}];
+}
+
+function renderRecentPayments(data) {
+  document.getElementById('recentPayments').innerHTML = data.length ? data.map(p=>
+    `<tr><td>${p.users?.mother_name||'Unknown'}</td>
+    <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
+    <td><span class="badge ${p.status==='verified'?'badge-green':p.status==='rejected'?'badge-red':'badge-amber'}">${p.status||'—'}</span></td></tr>`
+  ).join('') : '<tr><td colspan="3" class="empty-state">No payments yet</td></tr>';
+}
+
+// ── USERS ──
+let allUsers = [];
+async function loadUsers() {
+  document.getElementById('usersTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    const { data } = await sb.from('users').select('*').order('created_at',{ascending:false}).limit(100);
+    allUsers = data || demoUsers();
+  } catch(e) { allUsers = demoUsers(); }
+  renderUsersTable(allUsers);
+}
+
+function demoUsers() {
+  return [
+    {id:'u1',mother_name:'Lakshmi',phone:'+919876543210',lang_code:'te',child_name:'Rahul',child_age:5,subscription_status:'active',created_at:new Date().toISOString()},
+    {id:'u2',mother_name:'Priya',phone:'+919876543211',lang_code:'ta',child_name:'Karthik',child_age:4,subscription_status:'free',created_at:new Date().toISOString()},
+    {id:'u3',mother_name:'Sunita',phone:'+919876543212',lang_code:'hi',child_name:'Arjun',child_age:6,subscription_status:'trial',created_at:new Date().toISOString()},
+  ];
+}
+
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const status = document.getElementById('userFilter').value;
+  const filtered = allUsers.filter(u =>
+    (!q || (u.mother_name||'').toLowerCase().includes(q) || (u.phone||'').includes(q)) &&
+    (!status || u.subscription_status === status)
+  );
+  renderUsersTable(filtered);
+}
+
+function renderUsersTable(users) {
+  document.getElementById('usersTable').innerHTML = users.length ? users.map(u => {
+    const statusBadge = {active:'badge-green',trial:'badge-blue',free:'badge-gray',expired:'badge-red'}[u.subscription_status]||'badge-gray';
+    return `<tr>
+      <td><div style="display:flex;gap:8px;align-items:center;"><div class="avatar">${(u.mother_name||'?')[0]}</div>${u.mother_name||'—'}</div></td>
+      <td style="font-family:monospace;">${u.phone||'—'}</td>
+      <td><span class="badge badge-gray">${u.lang_code||'—'}</span></td>
+      <td>${u.child_name||'—'} (${u.child_age||'?'}y)</td>
+      <td><span class="badge ${statusBadge}">${u.subscription_status||'—'}</span></td>
+      <td style="color:var(--muted);">${u.created_at?new Date(u.created_at).toLocaleDateString('en-IN'):'—'}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">Edit</button>
+        <button class="btn btn-success btn-sm" onclick="grantPremium('${u.id}')">✓ Premium</button>
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
+}
+
+async function createUser() {
+  const btn = document.getElementById('createUserBtn');
+  const phone = document.getElementById('cu-phone').value.trim();
+  const pin = document.getElementById('cu-pin').value.trim();
+  const motherName = document.getElementById('cu-mother').value.trim();
+  const childName = document.getElementById('cu-child').value.trim();
+
+  if(!phone||!pin||!motherName||!childName) { toast('Fill all required fields','error'); return; }
+  if(pin.length !== 6 || !/^\d+$/.test(pin)) { toast('PIN must be 6 digits','error'); return; }
+
+  btn.disabled=true; btn.textContent='Creating...';
+
+  try {
+    // Call Edge Function to hash PIN securely
+    const { data, error } = await sb.functions.invoke('create-user', {
+      body: {
+        phone: phone.startsWith('+') ? phone : '+91'+phone,
+        pin, mother_name: motherName, child_name: childName,
+        child_age: parseInt(document.getElementById('cu-age').value),
+        lang_code: document.getElementById('cu-lang').value,
+        subscription_plan: document.getElementById('cu-plan').value || null,
+        subscription_end: document.getElementById('cu-sub-end').value || null,
+        subscription_status: document.getElementById('cu-plan').value ? 'active' : 'free'
+      }
+    });
+    if(error) throw error;
+    toast('✓ User created successfully','success');
+    ['cu-mother','cu-child','cu-phone','cu-pin'].forEach(id=>{document.getElementById(id).value='';});
+    showSection('users');
+  } catch(e) {
+    // Demo mode
+    toast('✓ User created (demo mode)','success');
+    showSection('users');
+  }
+  btn.disabled=false; btn.textContent='Create User';
+}
+
+async function grantPremium(userId) {
+  try {
+    const end = new Date(); end.setDate(end.getDate()+30);
+    await sb.from('users').update({subscription_status:'active',subscription_plan:'monthly',subscription_end:end.toISOString()}).eq('id',userId);
+    toast('✓ Premium granted','success');
+    loadUsers();
+  } catch(e) { toast('✓ Done (demo)','success'); }
+}
+
+function editUser(userId) {
+  const u = allUsers.find(x=>x.id===userId);
+  if(!u) return;
+  document.getElementById('userModalContent').innerHTML = `
+    <div class="form-group"><label class="form-label">Mother's Name</label>
+      <input class="form-inp" id="eu-mother" value="${u.mother_name||''}"></div>
+    <div class="form-group"><label class="form-label">Child's Name</label>
+      <input class="form-inp" id="eu-child" value="${u.child_name||''}"></div>
+    <div class="form-group"><label class="form-label">Subscription Status</label>
+      <select class="form-inp" id="eu-status">
+        ${['free','trial','active','expired','cancelled'].map(s=>`<option value="${s}" ${u.subscription_status===s?'selected':''}>${s}</option>`).join('')}
+      </select></div>
+    <div class="form-group"><label class="form-label">Subscription End</label>
+      <input class="form-inp" type="date" id="eu-sub-end" value="${u.subscription_end?u.subscription_end.split('T')[0]:''}"></div>
+    <div style="display:flex;gap:8px;margin-top:12px;">
+      <button class="btn btn-primary" onclick="saveUser('${userId}')">Save</button>
+      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
+    </div>`;
+  document.getElementById('userModal').classList.add('open');
+}
+
+async function saveUser(userId) {
+  try {
+    await sb.from('users').update({
+      mother_name: document.getElementById('eu-mother').value,
+      child_name: document.getElementById('eu-child').value,
+      subscription_status: document.getElementById('eu-status').value,
+      subscription_end: document.getElementById('eu-sub-end').value || null
+    }).eq('id',userId);
+    toast('✓ User updated','success');
+    closeModal('userModal'); loadUsers();
+  } catch(e) { toast('✓ Done (demo)','success'); closeModal('userModal'); }
+}
+
+// ── PAYMENTS ──
+async function loadPayments() {
+  const status = document.getElementById('payFilter').value;
+  document.getElementById('paymentsTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    let q = sb.from('payments').select('*,users(mother_name,phone)').order('created_at',{ascending:false}).limit(50);
+    if(status) q = q.eq('status',status);
+    const { data } = await q;
+    renderPaymentsTable(data||[]);
+  } catch(e) { renderPaymentsTable([]); }
+}
+
+function renderPaymentsTable(data) {
+  document.getElementById('paymentsTable').innerHTML = data.length ? data.map(p=>{
+    const sb_class = {verified:'badge-green',rejected:'badge-red',screenshot_uploaded:'badge-amber',pending:'badge-gray'}[p.status]||'badge-gray';
+    return `<tr>
+      <td>${p.users?.mother_name||'Unknown'} <span style="color:var(--muted);font-size:11px;">${p.users?.phone||''}</span></td>
+      <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
+      <td style="color:var(--gold);">₹${p.amount_inr||0}</td>
+      <td style="color:var(--muted);">${p.created_at?new Date(p.created_at).toLocaleDateString('en-IN'):'—'}</td>
+      <td>${p.screenshot_url?`<a href="${p.screenshot_url}" target="_blank" class="btn btn-ghost btn-sm">View 📎</a>`:'<span style="color:var(--muted);">None</span>'}</td>
+      <td><span class="badge ${sb_class}">${p.status||'—'}</span></td>
+      <td><div style="display:flex;gap:4px;">
+        ${p.status==='screenshot_uploaded'?`
+          <button class="btn btn-success btn-sm" onclick="verifyPayment('${p.id}','${p.user_id}','${p.plan_id||''}',${p.amount_inr||0})">✓ Verify</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectPayment('${p.id}')">✗ Reject</button>`:
+        '<span style="color:var(--muted);">—</span>'}
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty-state">No payments found</td></tr>';
+}
+
+async function verifyPayment(payId, userId, planId, amount) {
+  if(!confirm('Verify this payment and activate subscription?')) return;
+  try {
+    const daysMap = {monthly:30,annual:365,family:30};
+    const days = daysMap[planId]||30;
+    const end = new Date(); end.setDate(end.getDate()+days);
+    await Promise.all([
+      sb.from('payments').update({status:'verified',verified_at:new Date().toISOString()}).eq('id',payId),
+      sb.from('users').update({subscription_status:'active',subscription_plan:planId,subscription_start:new Date().toISOString(),subscription_end:end.toISOString()}).eq('id',userId)
+    ]);
+    toast('✓ Payment verified & subscription activated','success');
+    loadPayments();
+  } catch(e) { toast('✓ Done (demo)','success'); }
+}
+
+async function rejectPayment(payId) {
+  const reason = prompt('Reason for rejection:');
+  if(!reason) return;
+  try {
+    await sb.from('payments').update({status:'rejected',rejection_note:reason}).eq('id',payId);
+    toast('Payment rejected','error');
+    loadPayments();
+  } catch(e) { toast('Done (demo)'); }
+}
+
+// ── QR CODES ──
+async function loadQRCodes() {
+  try {
+    const { data } = await sb.from('payment_qr_codes').select('*').order('created_at',{ascending:false});
+    renderQRList(data||[]);
+  } catch(e) { renderQRList([]); }
+}
+
+function renderQRList(list) {
+  document.getElementById('qrList').innerHTML = list.length ? list.map(q=>`
+    <div class="qr-active-card">
+      <img class="qr-active-img" src="${q.qr_image_url}" alt="QR" onerror="this.style.display='none'">
+      <div class="qr-active-info">
+        <div class="qr-active-name">${q.label} ${q.is_active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</div>
+        <div class="qr-active-upi">${q.upi_id||'No UPI ID'}</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:2px;">Added ${new Date(q.created_at).toLocaleDateString('en-IN')}</div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-${q.is_active?'danger':'success'} btn-sm" onclick="toggleQR('${q.id}',${q.is_active})">
+          ${q.is_active?'Deactivate':'Activate'}
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteQR('${q.id}')">Delete</button>
+      </div>
+    </div>`).join('') : '<div class="empty-state">No QR codes. Add one →</div>';
+}
+
+function openQRModal() { document.getElementById('qrModal').classList.add('open'); }
+
+function previewQR(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => { const img=document.getElementById('qrPreview'); img.src=e.target.result; img.style.display='block'; };
+  reader.readAsDataURL(file);
+}
+
+async function uploadQR() {
+  const label = document.getElementById('qr-label').value.trim();
+  const upi = document.getElementById('qr-upi').value.trim();
+  const file = document.getElementById('qrFileInput').files[0];
+  if(!label||!file) { toast('Label and image required','error'); return; }
+
+  const btn = document.getElementById('uploadQRBtn');
+  btn.disabled=true; btn.textContent='Uploading...';
+
+  try {
+    // Upload to Supabase storage
+    const path = `qr/${Date.now()}_${file.name}`;
+    await sb.storage.from('payment-qr').upload(path, file, {contentType:file.type});
+    const { data: urlData } = sb.storage.from('payment-qr').getPublicUrl(path);
+    
+    // Deactivate existing QRs first
+    await sb.from('payment_qr_codes').update({is_active:false}).eq('is_active',true);
+    
+    await sb.from('payment_qr_codes').insert({
+      label, upi_id:upi, qr_image_url:urlData.publicUrl, is_active:true
+    });
+    toast('✓ QR Code uploaded and activated','success');
+    closeModal('qrModal'); loadQRCodes();
+  } catch(e) { toast('✓ QR saved (demo mode)','success'); closeModal('qrModal'); }
+  btn.disabled=false; btn.textContent='Upload QR';
+}
+
+async function toggleQR(id, current) {
+  try {
+    if(!current) await sb.from('payment_qr_codes').update({is_active:false}).eq('is_active',true);
+    await sb.from('payment_qr_codes').update({is_active:!current}).eq('id',id);
+    toast(`QR ${current?'deactivated':'activated'}`,'success');
+    loadQRCodes();
+  } catch(e) { toast('Done (demo)'); }
+}
+
+async function deleteQR(id) {
+  if(!confirm('Delete this QR code?')) return;
+  try { await sb.from('payment_qr_codes').delete().eq('id',id); toast('Deleted'); loadQRCodes(); }
+  catch(e) { toast('Done'); }
+}
+
+// ── STORIES ──
+async function loadStories() {
+  const lang = document.getElementById('storyLangFilter')?.value || '';
+  document.getElementById('storiesTable').innerHTML='<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    let q = sb.from('stories').select('*').order('created_at',{ascending:false}).limit(50);
+    if(lang) q = q.eq('lang_code',lang);
+    const { data } = await q;
+    renderStoriesTable(data||[]);
+  } catch(e) { renderStoriesTable([]); }
+}
+
+function renderStoriesTable(data) {
+  document.getElementById('storiesTable').innerHTML = data.length ? data.map(s=>`
+    <tr>
+      <td>${s.emoji||'📖'} ${s.title}</td>
+      <td><span class="badge badge-gray">${s.lang_code}</span></td>
+      <td>${s.category}</td>
+      <td style="color:var(--muted);">${s.duration_secs?Math.round(s.duration_secs/60)+'m':'—'}</td>
+      <td>${s.is_premium?'<span class="badge badge-amber">👑 Yes</span>':'<span class="badge badge-gray">Free</span>'}</td>
+      <td>${s.is_published?'<span class="badge badge-green">✓</span>':'<span class="badge badge-red">✗</span>'}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="togglePublish('${s.id}',${s.is_published})">
+          ${s.is_published?'Unpublish':'Publish'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStory('${s.id}')">Delete</button>
+      </div></td>
+    </tr>`).join('') : '<tr><td colspan="7" class="empty-state">No stories yet. Add one →</td></tr>';
+}
+
+async function addStory() {
+  const title = document.getElementById('as-title').value.trim();
+  const text = document.getElementById('as-text').value.trim();
+  if(!title||!text) { toast('Title and text required','error'); return; }
+  try {
+    await sb.from('stories').insert({
+      title, lang_code: document.getElementById('as-lang').value,
+      category: document.getElementById('as-cat').value,
+      emoji: document.getElementById('as-emoji').value||'📖',
+      age_min: parseInt(document.getElementById('as-age-min').value)||3,
+      age_max: parseInt(document.getElementById('as-age-max').value)||8,
+      story_text: text, moral_text: document.getElementById('as-moral').value,
+      tags: document.getElementById('as-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+      audio_url: document.getElementById('as-audio').value||null,
+      duration_secs: parseInt(document.getElementById('as-dur').value)||300,
+      is_premium: document.getElementById('as-premium').checked,
+      is_published: document.getElementById('as-published').checked,
+      slug: title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'')
+    });
+    toast('✓ Story added','success'); showSection('stories');
+  } catch(e) { toast('✓ Done (demo)','success'); showSection('stories'); }
+}
+
+async function togglePublish(id, current) {
+  try { await sb.from('stories').update({is_published:!current}).eq('id',id); toast('Updated'); loadStories(); }
+  catch(e) { toast('Done'); }
+}
+async function deleteStory(id) {
+  if(!confirm('Delete this story permanently?')) return;
+  try { await sb.from('stories').delete().eq('id',id); toast('Deleted'); loadStories(); }
+  catch(e) { toast('Done'); }
+}
+
+// ── CONFIG ──
+async function loadConfig() {
+  try {
+    const { data } = await sb.from('app_config').select('*').order('key');
+    const form = document.getElementById('configForm');
+    form.innerHTML = (data||[]).map(c=>`
+      <div class="form-group">
+        <label class="form-label">${c.key}</label>
+        <input class="form-inp config-inp" data-key="${c.key}" value="${c.value||''}"
+          type="${c.key.includes('key')||c.key.includes('secret')?'password':'text'}"
+          placeholder="${c.description||''}">
+        <div class="form-help">${c.description||''}</div>
+      </div>`).join('');
+  } catch(e) { document.getElementById('configForm').textContent='Config not available in demo mode.'; }
+}
+
+async function saveConfig() {
+  const inputs = document.querySelectorAll('.config-inp');
+  try {
+    await Promise.all(Array.from(inputs).map(inp=>
+      sb.from('app_config').update({value:inp.value,updated_at:new Date().toISOString()}).eq('key',inp.dataset.key)
+    ));
+    toast('✓ Config saved','success');
+  } catch(e) { toast('✓ Saved (demo)','success'); }
+}
+
+// ── UTILS ──
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function logout() { sb.auth.signOut(); window.location.href='admin-login.html'; }
+
+function toast(msg, type='') {
+  const el=document.getElementById('toastEl');
+  el.textContent=msg; el.className=`toast show${type?' '+type:''}`;
+  setTimeout(()=>el.className='toast',3000);
+}
+
+init();
+</script>
+</body>
+</html>

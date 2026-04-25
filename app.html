@@ -1,0 +1,1069 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0d0620">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<title>AmmaKatha</title>
+<link href="https://fonts.googleapis.com/css2?family=Noto+Serif+Telugu:wght@400;600;700&family=Noto+Serif+Tamil:wght@400;700&family=Noto+Serif+Devanagari:wght@400;700&family=Noto+Serif+Kannada:wght@400;700&family=Noto+Serif+Malayalam:wght@400;700&family=Playfair+Display:ital,wght@0,700;1,400&display=swap" rel="stylesheet">
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<style>
+:root{
+  --night:#0d0620;--deep:#150930;--dusk:#2a1550;
+  --gold:#f4c842;--saffron:#e8873a;--cream:#fef8ed;
+  --moon:#e8dcc8;--danger:#e84040;--success:#25d366;
+  --card:rgba(255,255,255,.06);--card2:rgba(255,255,255,.1);
+  --border:rgba(244,200,66,.2);--border-glow:rgba(244,200,66,.45);
+  --radius:20px;--radius-sm:12px;
+  --text:#fef8ed;--muted:rgba(254,248,237,.6);--dim:rgba(254,248,237,.3);
+  --font:'Noto Serif Telugu',serif;
+}
+*{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
+body{background:var(--night);color:var(--text);font-family:var(--font);
+  min-height:100dvh;overflow-x:hidden;
+  background-image:
+    radial-gradient(1.5px 1.5px at 10% 12%,rgba(255,255,255,.6) 0%,transparent 100%),
+    radial-gradient(2px 2px at 72% 18%,rgba(244,200,66,.5) 0%,transparent 100%),
+    radial-gradient(1px 1px at 88% 55%,rgba(255,255,255,.5) 0%,transparent 100%),
+    radial-gradient(1.5px 1.5px at 35% 80%,rgba(255,255,255,.3) 0%,transparent 100%),
+    linear-gradient(180deg,#0d0620 0%,#180935 50%,#0d0620 100%);}
+
+/* ── SCREENS ── */
+.screen{display:none;flex-direction:column;min-height:100dvh;}
+.screen.active{display:flex;}
+
+/* ── NAV ── */
+.nav{position:fixed;bottom:0;left:0;right:0;z-index:100;
+  background:rgba(13,6,32,.96);backdrop-filter:blur(20px);
+  border-top:1px solid var(--border);display:flex;padding:6px 0 10px;}
+.nav-item{flex:1;display:flex;flex-direction:column;align-items:center;gap:2px;
+  cursor:pointer;padding:6px 0;}
+.nav-icon{font-size:22px;transition:transform .2s;}
+.nav-label{font-size:10px;color:var(--dim);transition:color .2s;}
+.nav-item.active .nav-icon{filter:drop-shadow(0 0 6px rgba(244,200,66,.8));transform:scale(1.1);}
+.nav-item.active .nav-label{color:var(--gold);}
+.pb{padding-bottom:80px;}
+
+/* ── SHARED COMPONENTS ── */
+.section-hd{font-size:15px;font-weight:600;color:var(--text);padding:0 20px 10px;}
+.btn-p{width:100%;border:none;border-radius:50px;padding:15px;font-size:16px;font-weight:600;
+  cursor:pointer;font-family:var(--font);
+  background:linear-gradient(135deg,var(--gold),var(--saffron));
+  color:#0d0620;box-shadow:0 4px 20px rgba(244,200,66,.35);transition:all .2s;}
+.btn-p:active{transform:scale(.97);}
+.btn-p:disabled{opacity:.5;pointer-events:none;}
+.btn-g{width:100%;border:1px solid var(--border);border-radius:50px;padding:13px;
+  font-size:14px;font-family:var(--font);color:var(--muted);
+  background:transparent;cursor:pointer;transition:all .2s;}
+.btn-g:active{background:var(--card);}
+.card{background:var(--card);border:1px solid var(--border);border-radius:var(--radius);padding:16px 18px;}
+.tag{display:inline-block;font-size:10px;padding:2px 8px;border-radius:10px;
+  background:rgba(244,200,66,.1);border:1px solid var(--border);color:var(--gold);}
+.badge-voice{display:inline-flex;align-items:center;gap:4px;
+  background:rgba(232,135,58,.15);border:1px solid rgba(232,135,58,.3);
+  border-radius:10px;padding:2px 8px;font-size:11px;color:var(--saffron);}
+.spinner-sm{width:16px;height:16px;border:2px solid rgba(255,255,255,.2);
+  border-top-color:var(--gold);border-radius:50%;animation:spin .7s linear infinite;
+  display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+.toast-box{position:fixed;bottom:90px;left:50%;transform:translateX(-50%) translateY(20px);
+  background:rgba(45,22,84,.95);backdrop-filter:blur(10px);
+  border:1px solid var(--border-glow);border-radius:14px;
+  padding:10px 20px;font-size:14px;z-index:200;
+  opacity:0;transition:all .3s;pointer-events:none;white-space:nowrap;}
+.toast-box.show{opacity:1;transform:translateX(-50%) translateY(0);}
+@keyframes fadeSlide{from{opacity:0;transform:translateY(10px)}to{opacity:1;transform:translateY(0)}}
+
+/* ─── HOME ─── */
+#home{overflow-y:auto;}
+.home-hdr{padding:20px 20px 0;background:linear-gradient(180deg,rgba(42,21,80,.9) 0%,transparent 100%);}
+.home-greet{font-size:12px;color:var(--muted);}
+.home-name{font-size:22px;font-weight:700;margin-bottom:6px;}
+.streak-pill{display:inline-flex;align-items:center;gap:5px;
+  background:rgba(244,200,66,.1);border:1px solid var(--border);
+  border-radius:20px;padding:4px 12px;font-size:12px;color:var(--gold);}
+
+.now-card{margin:16px 20px;border-radius:var(--radius);
+  background:linear-gradient(135deg,var(--dusk),rgba(42,21,80,.85));
+  border:1px solid var(--border-glow);padding:18px;
+  box-shadow:0 8px 32px rgba(0,0,0,.4);cursor:pointer;}
+.nc-label{font-size:11px;color:var(--gold);letter-spacing:.1em;margin-bottom:10px;opacity:.8;}
+.nc-title{font-size:17px;font-weight:600;margin-bottom:6px;line-height:1.3;}
+.nc-controls{display:flex;align-items:center;gap:14px;margin-top:14px;}
+.nc-play{width:48px;height:48px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--saffron));
+  border:none;cursor:pointer;font-size:18px;color:#0d0620;
+  box-shadow:0 4px 16px rgba(244,200,66,.4);flex-shrink:0;transition:transform .15s;}
+.nc-play:active{transform:scale(.95);}
+.prog-wrap{flex:1;}
+.prog-bar{height:4px;background:rgba(255,255,255,.12);border-radius:2px;overflow:hidden;margin-bottom:4px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--saffron));border-radius:2px;transition:width .5s linear;width:0%;}
+.prog-time{display:flex;justify-content:space-between;font-family:monospace;font-size:11px;color:var(--dim);}
+
+.story-list{padding:0 20px;display:flex;flex-direction:column;gap:10px;margin-bottom:16px;}
+.story-card{display:flex;gap:12px;align-items:center;cursor:pointer;
+  transition:all .2s;position:relative;}
+.story-card:active{transform:scale(.99);}
+.story-card.locked{opacity:.55;}
+.s-thumb{width:52px;height:52px;border-radius:12px;flex-shrink:0;
+  display:flex;align-items:center;justify-content:center;font-size:26px;
+  background:linear-gradient(135deg,var(--dusk),rgba(42,21,80,.6));
+  border:1px solid var(--border);}
+.s-info{flex:1;min-width:0;}
+.s-title{font-size:14px;font-weight:600;margin-bottom:2px;}
+.s-meta{font-size:11px;color:var(--muted);margin-bottom:5px;}
+.s-tags{display:flex;gap:5px;flex-wrap:wrap;}
+.s-arr{color:var(--gold);font-size:16px;flex-shrink:0;}
+
+/* ─── PLAYER ─── */
+#player{background:linear-gradient(180deg,#200a3c 0%,var(--night) 40%);}
+.player-hdr{padding:20px 20px 0;display:flex;justify-content:space-between;align-items:center;}
+.player-art{width:180px;height:180px;border-radius:50%;margin:28px auto 0;
+  display:flex;align-items:center;justify-content:center;font-size:72px;
+  background:radial-gradient(circle at 32% 32%,#fef4c0,#f4c842 60%,#e8a820);
+  box-shadow:0 0 50px rgba(244,200,66,.3),0 0 100px rgba(244,200,66,.1);
+  animation:moonFloat 4s ease-in-out infinite;}
+.player-art.playing{animation:moonFloat 4s ease-in-out infinite,spinSlow 20s linear infinite;}
+@keyframes moonFloat{0%,100%{transform:translateY(0) rotate(-2deg)}50%{transform:translateY(-10px) rotate(2deg)}}
+@keyframes spinSlow{to{transform:rotate(360deg)}}
+.player-title{font-size:22px;font-weight:700;text-align:center;padding:22px 24px 4px;line-height:1.3;}
+.player-meta{text-align:center;padding:0 24px 20px;font-size:13px;color:var(--muted);}
+.player-prog{padding:0 28px;margin-bottom:14px;}
+.player-prog-bar{height:6px;background:rgba(255,255,255,.1);border-radius:3px;overflow:hidden;cursor:pointer;}
+.player-prog-fill{height:100%;background:linear-gradient(90deg,var(--gold),var(--saffron));border-radius:3px;transition:width .5s linear;}
+.player-time{display:flex;justify-content:space-between;font-family:monospace;font-size:12px;color:var(--dim);margin-top:5px;}
+.player-ctrls{display:flex;align-items:center;justify-content:center;gap:24px;padding:0 28px 20px;}
+.ctrl{background:none;border:none;color:var(--muted);font-size:24px;cursor:pointer;padding:8px;transition:all .15s;}
+.ctrl:active{transform:scale(.9);}
+.ctrl-main{width:68px;height:68px;border-radius:50%;
+  background:linear-gradient(135deg,var(--gold),var(--saffron));
+  border:none;cursor:pointer;font-size:26px;color:#0d0620;
+  box-shadow:0 8px 24px rgba(244,200,66,.5);transition:transform .15s;}
+.ctrl-main:active{transform:scale(.95);}
+.story-text-box{margin:0 20px 80px;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;max-height:160px;overflow-y:auto;}
+.story-text-box p{font-size:14px;line-height:1.85;color:var(--muted);}
+
+/* ─── VOICE RECORD ─── */
+#voice-rec{overflow-y:auto;align-items:center;padding:24px;}
+.voice-title{font-size:22px;font-weight:700;color:var(--gold);text-align:center;margin-bottom:6px;}
+.voice-sub{font-size:13px;color:var(--muted);text-align:center;line-height:1.6;margin-bottom:28px;}
+.prompt-box{background:rgba(244,200,66,.07);border:1px solid var(--border);
+  border-radius:var(--radius);padding:18px;width:100%;margin-bottom:28px;}
+.prompt-lbl{font-size:11px;color:var(--gold);letter-spacing:.1em;margin-bottom:8px;display:block;text-transform:uppercase;}
+.prompt-txt{font-size:15px;line-height:1.75;}
+.rec-timer{font-family:monospace;font-size:28px;color:var(--gold);text-align:center;margin-bottom:6px;}
+.wave{display:flex;gap:5px;align-items:center;height:40px;margin-bottom:20px;justify-content:center;}
+.wave-bar{width:4px;border-radius:2px;background:var(--gold);opacity:.3;height:8px;transition:height .1s;}
+.wave.rec .wave-bar{opacity:.85;animation:waveAnim .8s ease infinite;}
+.wave-bar:nth-child(1){animation-delay:0s}.wave-bar:nth-child(2){animation-delay:.1s}
+.wave-bar:nth-child(3){animation-delay:.2s}.wave-bar:nth-child(4){animation-delay:.3s}
+.wave-bar:nth-child(5){animation-delay:.2s}.wave-bar:nth-child(6){animation-delay:.1s}
+.wave-bar:nth-child(7){animation-delay:0s}
+@keyframes waveAnim{0%,100%{height:8px}50%{height:32px}}
+.mic-btn{width:90px;height:90px;border-radius:50%;cursor:pointer;
+  display:flex;align-items:center;justify-content:center;font-size:36px;
+  background:linear-gradient(135deg,var(--dusk),var(--deep));
+  border:2px solid var(--border);transition:all .2s;margin-bottom:16px;}
+.mic-btn.recording{border-color:#e84040;
+  box-shadow:0 0 0 14px rgba(232,64,64,.12),0 0 0 28px rgba(232,64,64,.06);
+  animation:pulseRed 1.2s ease infinite;}
+@keyframes pulseRed{0%,100%{box-shadow:0 0 0 14px rgba(232,64,64,.12),0 0 0 28px rgba(232,64,64,.06)}
+  50%{box-shadow:0 0 0 18px rgba(232,64,64,.18),0 0 0 36px rgba(232,64,64,.04)}}
+.mic-btn.done{border-color:var(--gold);background:rgba(244,200,66,.12);}
+.rec-status{font-size:13px;color:var(--muted);text-align:center;margin-bottom:20px;}
+.voice-status-chip{display:inline-flex;align-items:center;gap:6px;padding:6px 14px;
+  border-radius:20px;font-size:12px;border:1px solid var(--border);}
+.voice-status-chip.not-recorded{color:var(--muted);}
+.voice-status-chip.recorded{background:rgba(37,211,102,.1);border-color:rgba(37,211,102,.3);color:var(--success);}
+
+/* ─── GENERATE ─── */
+#generate{overflow-y:auto;padding:24px;}
+.gen-hdr h1{font-size:22px;font-weight:700;color:var(--gold);margin-bottom:4px;}
+.gen-hdr p{font-size:13px;color:var(--muted);line-height:1.6;margin-bottom:24px;}
+.opt-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-bottom:16px;}
+.opt{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius-sm);
+  padding:12px;cursor:pointer;text-align:center;transition:all .2s;font-family:var(--font);
+  font-size:12px;color:var(--muted);}
+.opt.sel{border-color:var(--gold);background:rgba(244,200,66,.08);color:var(--gold);}
+.opt .oe{font-size:22px;display:block;margin-bottom:4px;}
+.form-lbl{font-size:11px;color:var(--muted);letter-spacing:.06em;margin-bottom:8px;
+  display:block;text-transform:uppercase;}
+.form-inp{width:100%;background:var(--card);border:1px solid var(--border);
+  border-radius:var(--radius-sm);padding:12px 14px;color:var(--text);
+  font-family:var(--font);font-size:15px;outline:none;transition:border-color .2s;margin-bottom:16px;}
+.form-inp:focus{border-color:var(--gold);}
+.gen-loading{display:none;flex-direction:column;align-items:center;gap:12px;padding:32px 0;text-align:center;}
+.gen-loading.show{display:flex;}
+.moon-spin{width:56px;height:56px;border-radius:50%;
+  background:radial-gradient(circle at 32% 32%,#fef4c0,#f4c842);
+  box-shadow:0 0 20px rgba(244,200,66,.4);animation:spinSlow 3s linear infinite;}
+.result-box{display:none;background:var(--card);border:1px solid var(--border-glow);
+  border-radius:var(--radius);padding:18px;margin-top:16px;}
+.result-box.show{display:block;animation:fadeSlide .4s ease;}
+.result-title{font-size:17px;font-weight:700;color:var(--gold);margin-bottom:10px;}
+.result-text{font-size:14px;color:var(--text);line-height:1.85;}
+.result-moral{margin-top:14px;padding:10px 14px;background:rgba(244,200,66,.08);
+  border-radius:10px;border-left:3px solid var(--gold);font-size:13px;color:var(--gold);}
+
+/* ─── SUBSCRIBE ─── */
+#subscribe{overflow-y:auto;padding:24px;}
+.sub-hdr{text-align:center;margin-bottom:28px;}
+.price-big{font-family:'Playfair Display',serif;font-size:48px;font-weight:700;color:var(--gold);}
+.price-per{font-size:15px;color:var(--muted);}
+.sub-title{font-size:20px;font-weight:700;margin:8px 0 4px;}
+.sub-sub{font-size:13px;color:var(--muted);line-height:1.6;}
+.plan-cards{display:flex;flex-direction:column;gap:10px;margin-bottom:24px;}
+.plan{background:var(--card);border:1.5px solid var(--border);border-radius:var(--radius);
+  padding:16px;cursor:pointer;display:flex;align-items:center;gap:14px;transition:all .2s;}
+.plan.featured{border-color:var(--gold);background:rgba(244,200,66,.06);}
+.plan.sel-plan{border-color:var(--gold);}
+.plan-radio{width:20px;height:20px;border-radius:50%;border:2px solid var(--border);
+  flex-shrink:0;transition:all .2s;}
+.plan.sel-plan .plan-radio,.plan.featured.sel-plan .plan-radio{
+  background:var(--gold);border-color:var(--gold);box-shadow:0 0 8px rgba(244,200,66,.5);}
+.plan-info{flex:1;}
+.plan-name{font-size:14px;font-weight:600;margin-bottom:2px;}
+.plan-desc{font-size:12px;color:var(--muted);}
+.plan-price{font-family:'Playfair Display',serif;font-size:20px;font-weight:700;color:var(--gold);}
+.save-chip{background:var(--gold);color:#0d0620;font-size:10px;font-weight:700;
+  padding:2px 8px;border-radius:10px;margin-left:4px;vertical-align:middle;}
+.feat-list{margin-bottom:24px;}
+.feat-item{display:flex;gap:10px;padding:8px 0;border-bottom:1px solid var(--border);font-size:13px;color:var(--muted);}
+.feat-item:last-child{border:none;}
+.feat-check{color:var(--gold);flex-shrink:0;}
+
+/* QR Payment */
+.qr-section{background:var(--card);border:1px solid var(--border-glow);
+  border-radius:var(--radius);padding:20px;text-align:center;margin-bottom:16px;}
+.qr-title{font-size:14px;color:var(--text);margin-bottom:4px;font-weight:600;}
+.qr-sub{font-size:12px;color:var(--muted);margin-bottom:16px;line-height:1.5;}
+.qr-img-wrap{background:white;border-radius:14px;padding:16px;display:inline-block;margin-bottom:14px;}
+.qr-img-wrap img{width:180px;height:180px;display:block;}
+.qr-placeholder{width:180px;height:180px;background:#f0f0f0;border-radius:10px;
+  display:flex;align-items:center;justify-content:center;font-size:40px;margin:0 auto;}
+.upi-id{font-family:monospace;font-size:13px;color:var(--gold);
+  background:rgba(244,200,66,.1);padding:6px 14px;border-radius:8px;display:inline-block;margin-bottom:14px;}
+
+.upload-proof{margin-top:12px;}
+.upload-label{display:flex;align-items:center;justify-content:center;gap:8px;
+  border:1.5px dashed var(--border-glow);border-radius:14px;padding:16px;
+  cursor:pointer;transition:all .2s;font-size:13px;color:var(--muted);}
+.upload-label:hover{border-color:var(--gold);color:var(--gold);}
+.upload-label input{display:none;}
+.upload-preview{width:100%;border-radius:12px;margin-top:10px;display:none;}
+
+/* ─── PROFILE / SETTINGS ─── */
+#profile{overflow-y:auto;padding:24px;}
+.prof-hdr{text-align:center;margin-bottom:24px;}
+.prof-avatar{width:72px;height:72px;border-radius:50%;margin:0 auto 12px;
+  background:radial-gradient(circle at 32% 32%,#fef4c0,#f4c842 60%,#e8a820);
+  box-shadow:0 0 24px rgba(244,200,66,.35);
+  display:flex;align-items:center;justify-content:center;font-size:32px;}
+.prof-name{font-size:20px;font-weight:700;margin-bottom:4px;}
+.prof-status{font-size:12px;color:var(--muted);}
+.sub-badge{display:inline-flex;align-items:center;gap:6px;margin-top:6px;
+  background:rgba(244,200,66,.12);border:1px solid var(--border);
+  border-radius:20px;padding:4px 14px;font-size:12px;color:var(--gold);}
+.prof-section{margin-bottom:16px;}
+.prof-section-title{font-size:11px;color:var(--muted);letter-spacing:.08em;text-transform:uppercase;
+  margin-bottom:8px;padding-bottom:4px;border-bottom:1px solid var(--border);}
+.pref-row{display:flex;justify-content:space-between;align-items:center;
+  padding:12px 0;border-bottom:1px solid rgba(255,255,255,.05);cursor:pointer;}
+.pref-row:last-child{border:none;}
+.pref-label{font-size:14px;color:var(--text);}
+.pref-val{font-size:13px;color:var(--muted);}
+.lang-grid-sm{display:grid;grid-template-columns:repeat(3,1fr);gap:6px;margin-top:8px;}
+.lang-opt{background:var(--card);border:1px solid var(--border);border-radius:10px;
+  padding:8px;text-align:center;cursor:pointer;transition:all .15s;}
+.lang-opt.active{border-color:var(--gold);background:rgba(244,200,66,.08);}
+.lang-opt .ls{font-size:16px;display:block;margin-bottom:2px;}
+.lang-opt .ln{font-size:11px;color:var(--muted);}
+.lang-opt.active .ln{color:var(--gold);}
+.logout-btn{width:100%;background:rgba(232,64,64,.1);border:1px solid rgba(232,64,64,.2);
+  color:var(--danger);border-radius:14px;padding:13px;font-size:14px;font-family:var(--font);
+  cursor:pointer;margin-top:20px;}
+</style>
+</head>
+<body>
+
+<!-- ═══ HOME ═══ -->
+<div class="screen active pb" id="home">
+  <div class="home-hdr">
+    <div class="home-greet" id="homeGreet">శుభ సంధ్య,</div>
+    <div class="home-name" id="homeName">లోడ్ అవుతోంది...</div>
+    <div class="streak-pill">🔥 <span id="streakNum">0</span> <span id="t-days">రోజుల వరుస</span></div>
+  </div>
+
+  <!-- Now Playing -->
+  <div class="now-card" id="nowCard" onclick="openPlayer(null,'featured')">
+    <div class="nc-label" id="t-tonight">⭐ ఈ రాత్రి కథ</div>
+    <div class="nc-title" id="ncTitle">లోడ్ అవుతోంది...</div>
+    <div style="margin-bottom:8px;"><span class="badge-voice" id="ncVoice">🎙️ అమ్మ గొంతు</span></div>
+    <div class="nc-controls">
+      <button class="nc-play" id="ncPlayBtn" onclick="event.stopPropagation();toggleHomePlay()">▶</button>
+      <div class="prog-wrap">
+        <div class="prog-bar"><div class="prog-fill" id="ncProg"></div></div>
+        <div class="prog-time"><span id="ncCur">0:00</span><span id="ncDur">—</span></div>
+      </div>
+    </div>
+  </div>
+
+  <div class="section-hd" id="t-library">📚 కథల సంగ్రహం</div>
+  <div class="story-list" id="storyList"></div>
+
+  <div class="section-hd" id="t-ai-section">✨ AI కొత్త కథ</div>
+  <div style="padding:0 20px 24px;">
+    <button class="btn-g" style="border-color:var(--border-glow);color:var(--gold);"
+      onclick="showScreen('generate')">🤖 <span id="aiStoryBtn">ప్రత్యేక కథ రాయించండి</span> →</button>
+  </div>
+</div>
+
+<!-- ═══ PLAYER ═══ -->
+<div class="screen" id="player">
+  <div class="player-hdr">
+    <button class="ctrl" onclick="showScreen('home')">← <span id="t-back2">వెనక్కి</span></button>
+    <button class="btn-g" style="padding:7px 16px;font-size:12px;width:auto;" onclick="showScreen('subscribe')">👑 Premium</button>
+  </div>
+  <div class="player-art" id="playerArt">🌙</div>
+  <div class="player-title" id="playerTitle">—</div>
+  <div class="player-meta" id="playerMeta"></div>
+  <div class="player-prog">
+    <div class="player-prog-bar" onclick="seekPlayer(event)">
+      <div class="player-prog-fill" id="playerProg"></div>
+    </div>
+    <div class="player-time"><span id="playerCur">0:00</span><span id="playerTot">—</span></div>
+  </div>
+  <div class="player-ctrls">
+    <button class="ctrl" onclick="skip(-15)">⏪</button>
+    <button class="ctrl" onclick="prevStory()">⏮</button>
+    <button class="ctrl-main" id="mainPlayBtn" onclick="togglePlay()">▶</button>
+    <button class="ctrl" onclick="nextStory()">⏭</button>
+    <button class="ctrl" onclick="skip(15)">⏩</button>
+  </div>
+  <div class="story-text-box pb">
+    <p id="playerText"></p>
+  </div>
+</div>
+
+<!-- ═══ VOICE RECORD ═══ -->
+<div class="screen pb" id="voice-rec">
+  <div style="padding:20px;">
+    <button class="ctrl" onclick="showScreen('home')">←</button>
+    <div style="margin-top:16px;text-align:center;">
+      <div class="voice-title" id="t-rec-title">మీ గొంతు నమోదు చేయండి</div>
+      <div class="voice-sub" id="t-rec-sub">30 సెకండ్లు దిగువ వాక్యాలు చదవండి</div>
+    </div>
+    <div class="prompt-box">
+      <span class="prompt-lbl" id="t-read-now">ఇప్పుడు చదవండి</span>
+      <p class="prompt-txt" id="voicePrompt">నా బంగారు బాబూ, నీకు ఒక మంచి కథ చెప్తాను. చాలా కాలం క్రితం, ఒక అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్క ఎప్పుడూ తన తెలివితేటలతో అందరికీ సహాయం చేసేది.</p>
+    </div>
+    <div class="rec-timer" id="recTimer">0:00</div>
+    <div class="wave" id="waveEl">
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
+      <div class="wave-bar"></div>
+    </div>
+    <div style="display:flex;justify-content:center;">
+      <button class="mic-btn" id="micBtn" onclick="toggleRecord()">🎙️</button>
+    </div>
+    <div class="rec-status" id="recStatus"></div>
+    <div style="margin-top:20px;">
+      <div id="voiceStatusChip" class="voice-status-chip not-recorded">
+        ⚪ <span id="t-not-recorded">గొంతు నమోదు కాలేదు</span>
+      </div>
+    </div>
+    <div style="margin-top:20px;display:flex;flex-direction:column;gap:10px;">
+      <button class="btn-p" id="uploadVoiceBtn" onclick="uploadVoice()" style="display:none;" id="t-upload-btn">
+        ☁️ <span id="t-save-voice">గొంతు సేవ్ చేయండి</span>
+      </button>
+      <button class="btn-g" onclick="showScreen('home')" id="t-skip-voice">ఇప్పుడు వద్దు</button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ GENERATE ═══ -->
+<div class="screen pb" id="generate">
+  <div class="gen-hdr">
+    <button class="ctrl" onclick="showScreen('home')" style="margin-bottom:12px;">←</button>
+    <h1 id="t-gen-title">కొత్త కథ తయారు చేయండి</h1>
+    <p id="t-gen-sub">AI మీ పిల్లవాడికి ప్రత్యేక కథ రాస్తుంది</p>
+  </div>
+
+  <div>
+    <label class="form-lbl" id="t-story-type">కథ రకం</label>
+    <div class="opt-grid" id="typeGrid"></div>
+  </div>
+  <div>
+    <label class="form-lbl" id="t-moral-val">నేర్పాల్సిన విలువ</label>
+    <div class="opt-grid" id="moralGrid"></div>
+  </div>
+  <div>
+    <label class="form-lbl" id="t-setting">నేపథ్యం</label>
+    <div class="opt-grid" id="settingGrid"></div>
+  </div>
+
+  <button class="btn-p" id="genBtn" onclick="generateStory()" style="margin-top:8px;">
+    ✨ <span id="genBtnTxt">కథ రాయండి</span>
+  </button>
+
+  <div class="gen-loading" id="genLoading">
+    <div class="moon-spin"></div>
+    <div id="genLoadTxt" style="font-size:14px;color:var(--muted);">కథ రాస్తున్నాను...</div>
+  </div>
+
+  <div class="result-box" id="resultBox">
+    <div class="result-title" id="resTitle"></div>
+    <div class="result-text" id="resText"></div>
+    <div class="result-moral" id="resMoral"></div>
+    <div style="display:flex;gap:8px;margin-top:14px;">
+      <button class="btn-p" style="flex:1;" onclick="playGenerated()">▶ <span id="t-listen">వినండి</span></button>
+      <button class="btn-g" style="flex:1;" onclick="saveGenerated()">💾 <span id="t-save">సేవ్</span></button>
+    </div>
+  </div>
+</div>
+
+<!-- ═══ SUBSCRIBE ═══ -->
+<div class="screen pb" id="subscribe">
+  <div style="padding:20px 20px 0;"><button class="ctrl" onclick="showScreen('home')">←</button></div>
+  <div class="sub-hdr">
+    <div class="price-big" id="subPrice">₹99</div>
+    <div class="price-per" id="t-per-month">/ నెలకు</div>
+    <div class="sub-title" id="t-premium">అమ్మకథ Premium</div>
+    <div class="sub-sub" id="t-premium-sub">అమ్మ గొంతులో అన్ని కథలు — రోజూ రాత్రి</div>
+  </div>
+  <div class="plan-cards" id="planCards"></div>
+
+  <!-- QR Payment -->
+  <div class="qr-section" id="qrSection">
+    <div class="qr-title" id="t-scan-pay">స్కాన్ చేసి చెల్లించండి</div>
+    <div class="qr-sub" id="t-scan-sub">PhonePe / GPay / Paytm తో స్కాన్ చేయండి<br>తర్వాత screenshot upload చేయండి</div>
+    <div class="qr-img-wrap">
+      <div id="qrImgContainer">
+        <div class="qr-placeholder">📱</div>
+      </div>
+    </div>
+    <div class="upi-id" id="upiIdDisplay">loading...</div>
+    <div class="upload-proof">
+      <div style="font-size:12px;color:var(--muted);margin-bottom:8px;" id="t-upload-proof">చెల్లింపు screenshot upload చేయండి</div>
+      <label class="upload-label">
+        📎 <span id="t-choose-file">Screenshot ఎంచుకోండి</span>
+        <input type="file" accept="image/*" onchange="handleProofUpload(this)">
+      </label>
+      <img class="upload-preview" id="proofPreview">
+      <button class="btn-p" id="submitPayBtn" onclick="submitPayment()" style="display:none;margin-top:12px;">
+        ✓ <span id="t-submit-payment">చెల్లింపు సమర్పించండి</span>
+      </button>
+    </div>
+  </div>
+
+  <div class="feat-list" id="featList"></div>
+</div>
+
+<!-- ═══ PROFILE ═══ -->
+<div class="screen pb" id="profile">
+  <div style="padding:24px;">
+    <div class="prof-hdr">
+      <div class="prof-avatar">🌙</div>
+      <div class="prof-name" id="profName">—</div>
+      <div class="prof-status"><span id="t-child">పిల్లవాడు</span>: <span id="profChild">—</span></div>
+      <div><span class="sub-badge" id="subBadge">🆓 Free</span></div>
+    </div>
+
+    <div class="prof-section">
+      <div class="prof-section-title" id="t-language">భాష మార్చండి</div>
+      <div class="lang-grid-sm" id="langGrid"></div>
+    </div>
+
+    <div class="prof-section">
+      <div class="prof-section-title" id="t-settings">సెట్టింగ్స్</div>
+      <div class="pref-row" onclick="showScreen('voice-rec')">
+        <span class="pref-label" id="t-record-voice">గొంతు నమోదు చేయండి</span>
+        <span class="pref-val" id="voiceStatus">🔴 నమోదు కాలేదు</span>
+      </div>
+      <div class="pref-row" onclick="showScreen('subscribe')">
+        <span class="pref-label" id="t-subscription">Subscription</span>
+        <span class="pref-val" id="subStatus">Free →</span>
+      </div>
+      <div class="pref-row">
+        <span class="pref-label" id="t-bedtime">రాత్రి 10 గంటల Reminder</span>
+        <span class="pref-val">🔔</span>
+      </div>
+    </div>
+
+    <button class="logout-btn" onclick="logout()" id="t-logout">🚪 లాగ్ అవుట్</button>
+  </div>
+</div>
+
+<!-- NAV -->
+<nav class="nav" id="mainNav">
+  <div class="nav-item active" id="nav-home" onclick="showScreen('home')">
+    <div class="nav-icon">🏠</div><div class="nav-label" id="nl-home">హోమ్</div>
+  </div>
+  <div class="nav-item" id="nav-voice-rec" onclick="showScreen('voice-rec')">
+    <div class="nav-icon">🎙️</div><div class="nav-label" id="nl-voice">గొంతు</div>
+  </div>
+  <div class="nav-item" id="nav-generate" onclick="showScreen('generate')">
+    <div class="nav-icon">✨</div><div class="nav-label" id="nl-gen">కొత్త కథ</div>
+  </div>
+  <div class="nav-item" id="nav-subscribe" onclick="showScreen('subscribe')">
+    <div class="nav-icon">👑</div><div class="nav-label" id="nl-sub">Premium</div>
+  </div>
+  <div class="nav-item" id="nav-profile" onclick="showScreen('profile')">
+    <div class="nav-icon">👤</div><div class="nav-label" id="nl-prof">ప్రొఫైల్</div>
+  </div>
+</nav>
+
+<div class="toast-box" id="toastBox"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const CLAUDE_API_KEY = '';// Set via admin config or env
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── MULTILINGUAL CONTENT ──
+const I18N = {
+  te:{
+    days:'రోజుల వరుస',tonight:'⭐ ఈ రాత్రి కథ',library:'📚 కథల సంగ్రహం',
+    'ai-section':'✨ AI కొత్త కథ','ai-btn':'ప్రత్యేక కథ రాయించండి',
+    back:'వెనక్కి','rec-title':'మీ గొంతు నమోదు చేయండి',
+    'rec-sub':'30 సెకండ్లు దిగువ వాక్యాలు చదవండి','read-now':'ఇప్పుడు చదవండి',
+    'not-recorded':'గొంతు నమోదు కాలేదు','save-voice':'గొంతు సేవ్ చేయండి',
+    'skip-voice':'ఇప్పుడు వద్దు','gen-title':'కొత్త కథ తయారు చేయండి',
+    'gen-sub':'AI మీ పిల్లవాడికి ప్రత్యేక కథ రాస్తుంది',
+    'story-type':'కథ రకం','moral-val':'నేర్పాల్సిన విలువ','setting':'నేపథ్యం',
+    listen:'వినండి',save:'సేవ్',premium:'అమ్మకథ Premium',
+    'per-month':'/ నెలకు','premium-sub':'అమ్మ గొంతులో అన్ని కథలు — రోజూ రాత్రి',
+    'scan-pay':'స్కాన్ చేసి చెల్లించండి',
+    'scan-sub':'PhonePe / GPay / Paytm తో స్కాన్ చేయండి\nతర్వాత screenshot upload చేయండి',
+    'upload-proof':'చెల్లింపు screenshot upload చేయండి','choose-file':'Screenshot ఎంచుకోండి',
+    'submit-payment':'చెల్లింపు సమర్పించండి',language:'భాష మార్చండి',settings:'సెట్టింగ్స్',
+    'record-voice':'గొంతు నమోదు చేయండి',subscription:'Subscription',bedtime:'రాత్రి 10 గంటల Reminder',
+    logout:'🚪 లాగ్ అవుట్',child:'పిల్లవాడు',
+    'nl-home':'హోమ్','nl-voice':'గొంతు','nl-gen':'కొత్త కథ','nl-sub':'Premium','nl-prof':'ప్రొఫైల్',
+    'rec-prompt':'నా బంగారు బాబూ, నీకు ఒక మంచి కథ చెప్తాను. చాలా కాలం క్రితం, ఒక అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్క ఎప్పుడూ తన తెలివితేటలతో అందరికీ సహాయం చేసేది.',
+    types:[{k:'animal',e:'🦁',l:'జంతు కథ'},{k:'folk',e:'👸',l:'జానపదం'},{k:'tenali',e:'🦊',l:'తెనాలి రామ'},{k:'moral',e:'⭐',l:'నీతి కథ'}],
+    morals:[{k:'honest',e:'💛',l:'నిజాయితీ'},{k:'brave',e:'🦁',l:'ధైర్యం'},{k:'kind',e:'🌸',l:'దయాగుణం'},{k:'smart',e:'💡',l:'తెలివితేటలు'}],
+    settings_list:[{k:'village',e:'🏡',l:'పల్లెటూరు'},{k:'forest',e:'🌳',l:'అడవి'},{k:'river',e:'🌊',l:'నది ఒడ్డు'},{k:'kingdom',e:'🏰',l:'రాజ్యం'}],
+    plans:[{id:'monthly',name:'నెలవారీ',desc:'ఎప్పుడైనా రద్దు',price:'₹99',days:30},{id:'annual',name:'వార్షిక',desc:'రోజుకు ₹2.17',price:'₹799',days:365,save:'33% తక్కువ',featured:true},{id:'family',name:'కుటుంబ ప్లాన్',desc:'5 మంది పిల్లలు',price:'₹149',days:30}],
+    features:['అమ్మ సొంత గొంతులో 500+ కథలు','పిల్లవాడి పేరు కథలో వినపడుతుంది','Internet లేకుండా download','రాత్రి 10 గంటలకు reminder','AI కొత్త కథలు','తెలుగు, తమిళ, కన్నడ, హిందీ'],
+    greetings:{morning:'శుభోదయం,',afternoon:'శుభ మధ్యాహ్నం,',evening:'శుభ సంధ్య,',night:'శుభ రాత్రి,'},
+    'gen-loading':['కథ రాస్తున్నాను...','పాత్రలు తయారు చేస్తున్నాను...','నీతి అల్లుతున్నాను...','చివరి మెరుగులు...'],
+    'story-prompt':(child,age,type,moral,setting)=>`Write a Telugu bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n200-250 simple Telugu words. Include child's name. Start with "బంగారు ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"నీతి: ..."}`
+  },
+  ta:{
+    days:'நாள் தொடர்',tonight:'⭐ இன்றிரவு கதை',library:'📚 கதை நூலகம்',
+    'ai-section':'✨ AI புதிய கதை','ai-btn':'சிறப்பு கதை எழுதுங்கள்',
+    back:'திரும்பு','rec-title':'உங்கள் குரலை பதிவு செய்யுங்கள்',
+    'rec-sub':'30 வினாடிகள் கீழேயுள்ள வாக்கியங்களை படியுங்கள்','read-now':'இப்போது படியுங்கள்',
+    'not-recorded':'குரல் பதிவாகவில்லை','save-voice':'குரலை சேமியுங்கள்',
+    'skip-voice':'இப்போது வேண்டாம்','gen-title':'புதிய கதை உருவாக்குங்கள்',
+    'gen-sub':'AI உங்கள் குழந்தைக்கு சிறப்பு கதை எழுதும்',
+    'story-type':'கதை வகை','moral-val':'கற்றுக்கொள்ள வேண்டிய மதிப்பு','setting':'பின்னணி',
+    listen:'கேளுங்கள்',save:'சேமி',premium:'AmmaKatha Premium',
+    'per-month':'/ மாதம்','premium-sub':'அம்மா குரலில் அனைத்து கதைகளும்',
+    'scan-pay':'ஸ்கேன் செய்து பணம் செலுத்துங்கள்',
+    'scan-sub':'PhonePe / GPay / Paytm மூலம் ஸ்கேன் செய்யுங்கள்',
+    'upload-proof':'கட்டண ஸ்கீன்ஷாட் பதிவேற்றுங்கள்','choose-file':'ஸ்கீன்ஷாட் தேர்ந்தெடுங்கள்',
+    'submit-payment':'கட்டணத்தை சமர்ப்பியுங்கள்',language:'மொழி மாற்றுங்கள்',settings:'அமைப்புகள்',
+    'record-voice':'குரல் பதிவு செய்யுங்கள்',subscription:'சந்தா',bedtime:'இரவு 10 மணி நினைவூட்டல்',
+    logout:'🚪 வெளியேறு',child:'குழந்தை',
+    'nl-home':'முகப்பு','nl-voice':'குரல்','nl-gen':'புதிய கதை','nl-sub':'Premium','nl-prof':'சுயவிவரம்',
+    'rec-prompt':'என் தங்க குழந்தையே, உனக்கு ஒரு நல்ல கதை சொல்கிறேன். நீண்ட காலத்திற்கு முன்பு, ஒரு காட்டில் ஒரு புத்திசாலி நரி வாழ்ந்தது.',
+    types:[{k:'animal',e:'🦁',l:'விலங்கு கதை'},{k:'folk',e:'👸',l:'நாட்டுப்புற'},{k:'moral',e:'⭐',l:'நீதி கதை'},{k:'tenali',e:'🦊',l:'தெனாலி'}],
+    morals:[{k:'honest',e:'💛',l:'நேர்மை'},{k:'brave',e:'🦁',l:'தைரியம்'},{k:'kind',e:'🌸',l:'கருணை'},{k:'smart',e:'💡',l:'புத்திசாலித்தனம்'}],
+    settings_list:[{k:'village',e:'🏡',l:'கிராமம்'},{k:'forest',e:'🌳',l:'காடு'},{k:'river',e:'🌊',l:'ஆற்றங்கரை'},{k:'kingdom',e:'🏰',l:'அரசாட்சி'}],
+    plans:[{id:'monthly',name:'மாதாந்திர',desc:'எப்போதும் ரத்து செய்யலாம்',price:'₹99',days:30},{id:'annual',name:'ஆண்டு',desc:'நாளொன்றுக்கு ₹2.17',price:'₹799',days:365,save:'33% தள்ளுபடி',featured:true},{id:'family',name:'குடும்ப திட்டம்',desc:'5 குழந்தைகள்',price:'₹149',days:30}],
+    features:['அம்மா குரலில் 500+ கதைகள்','குழந்தையின் பெயர் கதையில்','இணையம் இல்லாமல் பதிவிறக்கம்','இரவு 10 மணி நினைவூட்டல்','AI புதிய கதைகள்','தமிழ், தெலுங்கு, கன்னடம், இந்தி'],
+    greetings:{morning:'காலை வணக்கம்,',afternoon:'மதிய வணக்கம்,',evening:'மாலை வணக்கம்,',night:'இரவு வணக்கம்,'},
+    'gen-loading':['கதை எழுதுகிறேன்...','கதாபாத்திரங்கள் தயாரிக்கிறேன்...','நீதி அல்லுகிறேன்...','இறுதி தொடுகைகள்...'],
+    'story-prompt':(child,age,type,moral,setting)=>`Write a Tamil bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n200-250 simple Tamil words. Include child's name. Start with "தங்க ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"நீதி: ..."}`
+  },
+  hi:{
+    days:'दिन की लकीर',tonight:'⭐ आज रात की कहानी',library:'📚 कहानी संग्रह',
+    'ai-section':'✨ AI नई कहानी','ai-btn':'खास कहानी लिखवाएं',
+    back:'वापस','rec-title':'अपनी आवाज़ रिकॉर्ड करें',
+    'rec-sub':'30 सेकंड नीचे के वाक्य पढ़ें','read-now':'अभी पढ़ें',
+    'not-recorded':'आवाज़ रिकॉर्ड नहीं हुई','save-voice':'आवाज़ सेव करें',
+    'skip-voice':'अभी नहीं','gen-title':'नई कहानी बनाएं',
+    'gen-sub':'AI आपके बच्चे के लिए खास कहानी लिखेगा',
+    'story-type':'कहानी का प्रकार','moral-val':'सिखाने वाला मूल्य','setting':'पृष्ठभूमि',
+    listen:'सुनें',save:'सेव',premium:'अम्माकथा Premium',
+    'per-month':'/ महीना','premium-sub':'माँ की आवाज़ में सभी कहानियाँ',
+    'scan-pay':'स्कैन करके भुगतान करें',
+    'scan-sub':'PhonePe / GPay / Paytm से स्कैन करें',
+    'upload-proof':'भुगतान screenshot अपलोड करें','choose-file':'Screenshot चुनें',
+    'submit-payment':'भुगतान जमा करें',language:'भाषा बदलें',settings:'सेटिंग्स',
+    'record-voice':'आवाज़ रिकॉर्ड करें',subscription:'सदस्यता',bedtime:'रात 10 बजे reminder',
+    logout:'🚪 लॉग आउट',child:'बच्चा',
+    'nl-home':'होम','nl-voice':'आवाज़','nl-gen':'नई कहानी','nl-sub':'Premium','nl-prof':'प्रोफ़ाइल',
+    'rec-prompt':'मेरे सोने के बच्चे, मैं तुम्हें एक अच्छी कहानी सुनाती हूँ। बहुत समय पहले, एक जंगल में एक चालाक लोमड़ी रहती थी।',
+    types:[{k:'animal',e:'🦁',l:'जानवर कहानी'},{k:'folk',e:'👸',l:'लोककथा'},{k:'moral',e:'⭐',l:'नैतिक कथा'},{k:'panchatantra',e:'🦊',l:'पंचतंत्र'}],
+    morals:[{k:'honest',e:'💛',l:'ईमानदारी'},{k:'brave',e:'🦁',l:'साहस'},{k:'kind',e:'🌸',l:'दयालुता'},{k:'smart',e:'💡',l:'बुद्धिमानी'}],
+    settings_list:[{k:'village',e:'🏡',l:'गाँव'},{k:'forest',e:'🌳',l:'जंगल'},{k:'river',e:'🌊',l:'नदी किनारा'},{k:'kingdom',e:'🏰',l:'राज्य'}],
+    plans:[{id:'monthly',name:'मासिक',desc:'कभी भी रद्द करें',price:'₹99',days:30},{id:'annual',name:'वार्षिक',desc:'प्रतिदिन ₹2.17',price:'₹799',days:365,save:'33% छूट',featured:true},{id:'family',name:'पारिवारिक',desc:'5 बच्चे',price:'₹149',days:30}],
+    features:['माँ की आवाज़ में 500+ कहानियाँ','कहानी में बच्चे का नाम','बिना इंटरनेट डाउनलोड','रात 10 बजे reminder','AI नई कहानियाँ','हिंदी, तेलुगु, तमिल, कन्नड़'],
+    greetings:{morning:'सुप्रभात,',afternoon:'नमस्ते,',evening:'शुभ संध्या,',night:'शुभ रात्रि,'},
+    'gen-loading':['कहानी लिख रही हूँ...','पात्र तैयार कर रही हूँ...','नैतिकता बुन रही हूँ...','अंतिम स्पर्श...'],
+    'story-prompt':(child,age,type,moral,setting)=>`Write a Hindi bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n200-250 simple Hindi words. Include child's name. Start with "मेरे सोने के ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"नैतिक शिक्षा: ..."}`
+  }
+};
+// Default Telugu for other languages not fully translated
+['kn','ml','mr'].forEach(c => { I18N[c] = {...I18N.te}; });
+
+// ── STATE ──
+let USER = null, TOKEN = null, LANG = 'te';
+let currentStory = null, isPlaying = false, playSeconds = 0, playInterval = null;
+let recSeconds = 0, recInterval = null, isRecording = false, mediaRecorder = null;
+let storyOpts = {type:'animal',moral:'honest',setting:'village'};
+let selectedPlan = 'annual', generatedStory = null, proofFile = null;
+let STORIES_DATA = [], ACTIVE_QR = null;
+const FONT_MAP = {te:"'Noto Serif Telugu',serif",ta:"'Noto Serif Tamil',serif",kn:"'Noto Serif Kannada',serif",hi:"'Noto Serif Devanagari',serif",ml:"'Noto Serif Malayalam',serif",mr:"'Noto Serif Devanagari',serif"};
+
+// ── INIT ──
+async function init() {
+  TOKEN = localStorage.getItem('ak_token');
+  try { USER = JSON.parse(localStorage.getItem('ak_user')); } catch(e){}
+  if(!TOKEN || !USER) { window.location.href = 'login.html'; return; }
+  LANG = USER.lang_code || localStorage.getItem('ak_lang') || 'te';
+  applyLang(LANG);
+  updateHome();
+  await Promise.all([loadStories(), loadQR()]);
+  renderStories();
+  renderPlans();
+  renderProfile();
+  renderGenOptions();
+}
+
+// ── LANGUAGE ──
+function applyLang(code) {
+  LANG = code;
+  localStorage.setItem('ak_lang','te'); // track
+  document.body.style.fontFamily = FONT_MAP[code] || FONT_MAP.te;
+  const L = I18N[code] || I18N.te;
+  const map = {
+    't-days':'days','t-tonight':'tonight','t-library':'library',
+    't-ai-section':'ai-section','aiStoryBtn':'ai-btn','t-back2':'back',
+    't-rec-title':'rec-title','t-rec-sub':'rec-sub','t-read-now':'read-now',
+    't-not-recorded':'not-recorded','t-save-voice':'save-voice','t-skip-voice':'skip-voice',
+    't-gen-title':'gen-title','t-gen-sub':'gen-sub','t-story-type':'story-type',
+    't-moral-val':'moral-val','t-setting':'setting','t-listen':'listen','t-save':'save',
+    't-premium':'premium','t-per-month':'per-month','t-premium-sub':'premium-sub',
+    't-scan-pay':'scan-pay','t-scan-sub':'scan-sub','t-upload-proof':'upload-proof',
+    't-choose-file':'choose-file','t-submit-payment':'submit-payment',
+    't-language':'language','t-settings':'settings','t-record-voice':'record-voice',
+    't-subscription':'subscription','t-bedtime':'bedtime','t-logout':'logout',
+    't-child':'child','nl-home':'nl-home','nl-voice':'nl-voice','nl-gen':'nl-gen',
+    'nl-sub':'nl-sub','nl-prof':'nl-prof'
+  };
+  Object.entries(map).forEach(([id,key]) => {
+    const el = document.getElementById(id);
+    if(el) el.textContent = L[key] || L[key.replace('-','_')] || '';
+  });
+  if(document.getElementById('voicePrompt')) document.getElementById('voicePrompt').textContent = L['rec-prompt'] || '';
+  renderGenOptions(); renderPlans(); renderLangGrid();
+}
+
+// ── HOME ──
+function updateHome() {
+  const L = I18N[LANG] || I18N.te;
+  const h = new Date().getHours();
+  const greet = h<12?L.greetings.morning:h<17?L.greetings.afternoon:h<20?L.greetings.evening:L.greetings.night;
+  document.getElementById('homeGreet').textContent = greet;
+  document.getElementById('homeName').textContent = (USER?.mother_name || '') + ' 🙏';
+  document.getElementById('streakNum').textContent = USER?.streak_days || 0;
+  document.getElementById('aiStoryBtn').textContent = L['ai-btn'];
+  // Update profile
+  document.getElementById('profName').textContent = USER?.mother_name || '—';
+  document.getElementById('profChild').textContent = USER?.child_name || '—';
+  document.getElementById('subBadge').textContent = USER?.subscription_status==='active' ? '👑 Premium' : '🆓 Free';
+  document.getElementById('voiceStatus').textContent = USER?.elevenlabs_voice_id ? '🟢 נмоਦੂ' : '🔴 ' + (I18N[LANG]['not-recorded']||'');
+  document.getElementById('subStatus').textContent = USER?.subscription_status==='active' ? 'Active ✓' : 'Free →';
+}
+
+// ── STORIES ──
+async function loadStories() {
+  try {
+    const { data } = await sb.from('stories')
+      .select('*')
+      .eq('lang_code', LANG)
+      .eq('is_published', true)
+      .order('is_premium', {ascending:true})
+      .limit(20);
+    if(data) STORIES_DATA = data;
+  } catch(e) {
+    // fallback demo stories
+    STORIES_DATA = [
+      {id:'s1',emoji:'🦊',title:'తెనాలి రామ — మూడు కుండలు',category:'tenali',duration_secs:512,tags:['తెలివి','హాస్యం'],is_premium:false,story_text:'చాలా కాలం క్రితం, విజయనగర సామ్రాజ్యంలో తెనాలి రామకృష్ణ అనే గొప్ప కవి జీవించేవాడు...\n\n**నీతి: తెలివితేటలతో పెద్ద సమస్యలను కూడా పరిష్కరించవచ్చు.**'},
+      {id:'s2',emoji:'🦁',title:'నక్క మరియు సింహం',category:'panchatantra',duration_secs:360,tags:['ధైర్యం','స్నేహం'],is_premium:false,story_text:'అడవిలో ఒక బలమైన సింహం మరియు తెలివైన నక్క స్నేహితులుగా ఉండేవారు...\n\n**నీతి: నిజమైన స్నేహం కష్టకాలంలో మరింత ప్రకాశిస్తుంది.**'},
+      {id:'s3',emoji:'👸',title:'తెలివైన రాకుమారి',category:'folk',duration_secs:600,tags:['ధైర్యం','నీతి'],is_premium:true,story_text:'ఒక చిన్న రాజ్యంలో ఒక తెలివైన రాకుమారి ఉండేది...\n\n**నీతి: తెలివి మరియు ధైర్యం కలిస్తే ఏ సమస్యనైనా జయించవచ్చు.**'},
+      {id:'s4',emoji:'🐇',title:'తెలివైన కుందేలు',category:'panchatantra',duration_secs:420,tags:['తెలివి'],is_premium:true,story_text:'అడవిలో ఒక తెలివైన కుందేలు ఉండేది...\n\n**నీతి: శారీరక బలం కంటే మేధాశక్తి మరింత శక్తివంతమైనది.**'}
+    ];
+  }
+  if(STORIES_DATA.length > 0) {
+    const ft = STORIES_DATA[0];
+    document.getElementById('ncTitle').textContent = ft.title;
+    document.getElementById('ncDur').textContent = formatTime(ft.duration_secs||300);
+    currentStory = ft;
+  }
+}
+
+function renderStories() {
+  const L = I18N[LANG] || I18N.te;
+  const isPremium = USER?.subscription_status === 'active';
+  document.getElementById('storyList').innerHTML = STORIES_DATA.map(s => {
+    const locked = s.is_premium && !isPremium;
+    return `<div class="card story-card ${locked?'locked':''}" onclick="${locked?`showScreen('subscribe')`:`openPlayer('${s.id}')`}">
+      <div class="s-thumb">${s.emoji||'📖'}</div>
+      <div class="s-info">
+        <div class="s-title">${s.title}</div>
+        <div class="s-meta">${s.category||''} • ${formatTime(s.duration_secs||300)}</div>
+        <div class="s-tags">${(s.tags||[]).slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}
+          ${!s.is_premium?'<span class="badge-voice">🎙️ Free</span>':''}</div>
+      </div>
+      <span class="s-arr">${locked?'🔒':'▶'}</span>
+    </div>`;
+  }).join('');
+}
+
+// ── PLAYER ──
+function openPlayer(storyId, mode) {
+  const s = mode==='featured' ? STORIES_DATA[0] : STORIES_DATA.find(x=>x.id===storyId);
+  if(!s) return;
+  if(s.is_premium && USER?.subscription_status !== 'active') { showScreen('subscribe'); return; }
+  currentStory = s;
+  isPlaying = false; playSeconds = 0;
+  document.getElementById('playerArt').textContent = s.emoji||'🌙';
+  document.getElementById('playerTitle').textContent = s.title;
+  document.getElementById('playerMeta').innerHTML = `<span class="badge-voice">🎙️ ${USER?.elevenlabs_voice_id?'అమ్మ గొంతు':'కథకుడు'}</span> &nbsp;• ${formatTime(s.duration_secs||300)}`;
+  document.getElementById('playerText').innerHTML = (s.story_text||'').replace(/\n\n/g,'<br><br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
+  document.getElementById('playerTot').textContent = formatTime(s.duration_secs||300);
+  document.getElementById('playerProg').style.width = '0%';
+  document.getElementById('mainPlayBtn').textContent = '▶';
+  document.getElementById('playerArt').className = 'player-art';
+  showScreen('player');
+  logPlay(s.id);
+}
+
+function togglePlay() {
+  isPlaying = !isPlaying;
+  const btn = document.getElementById('mainPlayBtn');
+  const art = document.getElementById('playerArt');
+  btn.textContent = isPlaying ? '⏸' : '▶';
+  art.className = `player-art ${isPlaying?'playing':''}`;
+  if(isPlaying) {
+    clearInterval(playInterval);
+    const total = currentStory?.duration_secs || 300;
+    playInterval = setInterval(() => {
+      playSeconds++;
+      const pct = Math.min((playSeconds/total)*100, 100);
+      document.getElementById('playerProg').style.width = pct+'%';
+      document.getElementById('playerCur').textContent = formatTime(playSeconds);
+      if(playSeconds >= total) { clearInterval(playInterval); isPlaying=false; btn.textContent='▶'; art.className='player-art'; }
+    },1000);
+  } else clearInterval(playInterval);
+}
+
+function toggleHomePlay() { openPlayer(null,'featured'); }
+function skip(s) { playSeconds = Math.max(0, Math.min(playSeconds+s, currentStory?.duration_secs||300)); }
+function prevStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i>0) openPlayer(STORIES_DATA[i-1].id); }
+function nextStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i<STORIES_DATA.length-1) openPlayer(STORIES_DATA[i+1].id); }
+function seekPlayer(e) { const r=e.currentTarget.getBoundingClientRect(); const pct=(e.clientX-r.left)/r.width; playSeconds=Math.floor(pct*(currentStory?.duration_secs||300)); document.getElementById('playerProg').style.width=(pct*100)+'%'; }
+
+async function logPlay(storyId) {
+  try { await sb.from('play_history').insert({user_id:USER.id,story_id:storyId,lang_code:LANG}); } catch(e){}
+}
+
+// ── VOICE RECORD ──
+function toggleRecord() {
+  if(!isRecording) startRecord(); else stopRecord();
+}
+
+function startRecord() {
+  isRecording = true; recSeconds = 0;
+  const btn = document.getElementById('micBtn');
+  btn.classList.add('recording'); btn.textContent='⏹';
+  document.getElementById('waveEl').classList.add('rec');
+  document.getElementById('recStatus').textContent = (I18N[LANG]||I18N.te)['rec-sub']||'';
+  recInterval = setInterval(()=>{
+    recSeconds++;
+    const m=Math.floor(recSeconds/60),s=recSeconds%60;
+    document.getElementById('recTimer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
+    if(recSeconds>=30) stopRecord();
+  },1000);
+  if(navigator.mediaDevices?.getUserMedia) {
+    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
+      mediaRecorder = new MediaRecorder(stream);
+      mediaRecorder.start();
+    }).catch(()=>{});
+  }
+}
+
+function stopRecord() {
+  isRecording = false; clearInterval(recInterval);
+  const btn = document.getElementById('micBtn');
+  btn.classList.remove('recording'); btn.classList.add('done'); btn.textContent='✓';
+  document.getElementById('waveEl').classList.remove('rec');
+  document.getElementById('recStatus').textContent = `✓ ${recSeconds}s recorded`;
+  document.getElementById('uploadVoiceBtn').style.display='block';
+  const chip = document.getElementById('voiceStatusChip');
+  chip.className='voice-status-chip recorded';
+  chip.innerHTML='🟢 ' + (I18N[LANG]||I18N.te)['not-recorded']?.replace('నమోదు కాలేదు','నమోదు అయింది')||'Recorded';
+  if(mediaRecorder) mediaRecorder.stop();
+}
+
+async function uploadVoice() {
+  const btn = document.getElementById('uploadVoiceBtn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner-sm"></span>Uploading...';
+  try {
+    // In production: upload audio blob to Supabase storage, then call ElevenLabs clone API
+    // Simulated here:
+    await new Promise(r=>setTimeout(r,2000));
+    USER.elevenlabs_voice_id = 'demo-voice-'+Date.now();
+    localStorage.setItem('ak_user', JSON.stringify(USER));
+    toast('🎙️ Voice saved successfully!');
+    showScreen('home');
+  } catch(e) { toast('Upload failed. Try again.'); }
+  btn.disabled = false;
+  btn.innerHTML = (I18N[LANG]||I18N.te)['save-voice']||'Save Voice';
+}
+
+// ── GENERATE ──
+function renderGenOptions() {
+  const L = I18N[LANG] || I18N.te;
+  ['typeGrid','moralGrid','settingGrid'].forEach((gridId, i) => {
+    const items = [L.types, L.morals, L.settings_list][i];
+    const optKey = ['type','moral','setting'][i];
+    const defVal = ['animal','honest','village'][i];
+    if(!items) return;
+    document.getElementById(gridId).innerHTML = items.map(item =>
+      `<div class="opt ${storyOpts[optKey]===item.k||(!storyOpts[optKey]&&item.k===defVal)?'sel':''}"
+        onclick="selectOpt('${optKey}','${item.k}',this,'${gridId}')">
+        <span class="oe">${item.e}</span>${item.l}</div>`
+    ).join('');
+  });
+  const child = USER?.child_name || 'బాబు';
+  document.getElementById('genBtnTxt').textContent = `${child} ${(L['gen-title']||'').split(' ').pop()} →`;
+}
+
+function selectOpt(key, val, el, gridId) {
+  document.getElementById(gridId).querySelectorAll('.opt').forEach(o=>o.classList.remove('sel'));
+  el.classList.add('sel');
+  storyOpts[key] = val;
+}
+
+async function generateStory() {
+  const L = I18N[LANG] || I18N.te;
+  const child = USER?.child_name || 'బాబు';
+  const age = USER?.child_age || 5;
+  const btn = document.getElementById('genBtn');
+  const loading = document.getElementById('genLoading');
+  const result = document.getElementById('resultBox');
+  btn.style.display='none'; loading.classList.add('show'); result.classList.remove('show');
+  const loadTexts = L['gen-loading'] || ['Loading...'];
+  let li=0;
+  const ltInt = setInterval(()=>{ document.getElementById('genLoadTxt').textContent=loadTexts[li++%loadTexts.length]; },1500);
+
+  const prompt = L['story-prompt']
+    ? L['story-prompt'](child, age, storyOpts.type, storyOpts.moral, storyOpts.setting)
+    : `Write a bedtime story for ${age}-year-old ${child}. Return JSON: {"title":"...","story":"...","moral":"..."}`;
+
+  try {
+    const resp = await fetch('https://api.anthropic.com/v1/messages', {
+      method:'POST',
+      headers:{'Content-Type':'application/json','x-api-key': await getConfig('claude_api_key') || CLAUDE_API_KEY},
+      body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:1000,messages:[{role:'user',content:prompt}]})
+    });
+    clearInterval(ltInt);
+    const data = await resp.json();
+    const text = data.content?.[0]?.text || '';
+    let parsed;
+    try { parsed = JSON.parse(text.replace(/```json|```/g,'').trim()); }
+    catch { parsed = {title:child+'కి కొత్త కథ',story:text,moral:'నీతి: మంచి పనులు చేయండి.'}; }
+    generatedStory = parsed;
+    document.getElementById('resTitle').textContent = parsed.title;
+    document.getElementById('resText').textContent = parsed.story;
+    document.getElementById('resMoral').textContent = parsed.moral;
+    result.classList.add('show');
+    // Save to DB
+    await saveUserStory(parsed);
+    toast('✨ కథ సిద్ధం!');
+  } catch(e) {
+    clearInterval(ltInt);
+    // Fallback
+    const fallback = {title:`${child} మరియు మాయా మేఘం`,story:`బంగారు ${child},\n\nఒకప్పుడు ఒక అందమైన పల్లెలో ${child} అనే పిల్లవాడు ఉండేవాడు. ఒకరోజు ఒక మాయా మేఘం కనిపించింది. "నీకు ఏమైనా కావాలో అడుగు" అని చెప్పింది.\n\n${child} ఆలోచించాడు. "నా పల్లెలో అందరికీ వర్షం కావాలి" అని కోరాడు.\n\nమేఘం చాలా సంతోషపడింది. వర్షం కురిసింది. అందరూ సంతోషపడ్డారు.`,moral:`నీతి: ఇతరుల సంతోషమే నిజమైన సంతోషం.`};
+    generatedStory = fallback;
+    document.getElementById('resTitle').textContent = fallback.title;
+    document.getElementById('resText').textContent = fallback.story;
+    document.getElementById('resMoral').textContent = fallback.moral;
+    result.classList.add('show');
+    toast('✨ కథ సిద్ధం!');
+  }
+  loading.classList.remove('show');
+  btn.style.display='block';
+}
+
+async function saveUserStory(story) {
+  try {
+    await sb.from('user_stories').insert({user_id:USER.id,lang_code:LANG,title:story.title,story_text:story.story,moral_text:story.moral,category:storyOpts.type,moral_value:storyOpts.moral,setting:storyOpts.setting});
+  } catch(e){}
+}
+
+function playGenerated() {
+  if(!generatedStory) return;
+  const fake = {id:'gen-'+Date.now(),emoji:'✨',title:generatedStory.title,duration_secs:300,tags:[],is_premium:false,story_text:generatedStory.story+'\n\n'+generatedStory.moral};
+  STORIES_DATA.unshift(fake);
+  openPlayer(fake.id);
+}
+function saveGenerated() { toast('💾 Saved!'); }
+
+// ── SUBSCRIBE / QR ──
+async function loadQR() {
+  try {
+    const { data } = await sb.from('payment_qr_codes').select('*').eq('is_active',true).single();
+    if(data) ACTIVE_QR = data;
+  } catch(e){}
+  renderQR();
+}
+
+function renderQR() {
+  const container = document.getElementById('qrImgContainer');
+  const upiEl = document.getElementById('upiIdDisplay');
+  if(ACTIVE_QR?.qr_image_url) {
+    container.innerHTML = `<img src="${ACTIVE_QR.qr_image_url}" style="width:180px;height:180px;border-radius:10px;" alt="QR Code">`;
+    upiEl.textContent = ACTIVE_QR.upi_id || 'ammakatha@upi';
+  } else {
+    container.innerHTML = `<div class="qr-placeholder">📱</div>`;
+    upiEl.textContent = 'Loading...';
+  }
+}
+
+function renderPlans() {
+  const L = I18N[LANG] || I18N.te;
+  const plans = L.plans || [];
+  document.getElementById('planCards').innerHTML = plans.map(p => `
+    <div class="plan ${p.featured?'featured':''} ${p.id===selectedPlan?'sel-plan':''}"
+      onclick="selectPlan('${p.id}',this)">
+      <div class="plan-radio"></div>
+      <div class="plan-info">
+        <div class="plan-name">${p.name}${p.save?`<span class="save-chip">${p.save}</span>`:''}</div>
+        <div class="plan-desc">${p.desc}</div>
+      </div>
+      <div class="plan-price">${p.price}</div>
+    </div>`).join('');
+  document.getElementById('featList').innerHTML = (L.features||[]).map(f=>
+    `<div class="feat-item"><span class="feat-check">✦</span><span>${f}</span></div>`).join('');
+}
+
+function selectPlan(id, el) {
+  selectedPlan = id;
+  document.querySelectorAll('.plan').forEach(p=>p.classList.remove('sel-plan'));
+  el.classList.add('sel-plan');
+  const L = I18N[LANG]||I18N.te;
+  const plan = (L.plans||[]).find(p=>p.id===id);
+  if(plan) document.getElementById('subPrice').textContent = plan.price;
+}
+
+function handleProofUpload(input) {
+  const file = input.files[0];
+  if(!file) return;
+  proofFile = file;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('proofPreview');
+    img.src = e.target.result; img.style.display='block';
+    document.getElementById('submitPayBtn').style.display='block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function submitPayment() {
+  if(!proofFile) return;
+  const btn = document.getElementById('submitPayBtn');
+  btn.disabled=true; btn.innerHTML='<span class="spinner-sm"></span>Uploading...';
+  try {
+    // Upload screenshot to Supabase storage
+    const path = `screenshots/${USER.id}/${Date.now()}.jpg`;
+    const { data: upData } = await sb.storage.from('payment-screenshots').upload(path, proofFile);
+    const { data: urlData } = sb.storage.from('payment-screenshots').getPublicUrl(path);
+
+    // Save payment record
+    const L = I18N[LANG]||I18N.te;
+    const plan = (L.plans||[]).find(p=>p.id===selectedPlan);
+    await sb.from('payments').insert({
+      user_id: USER.id, plan_id: selectedPlan,
+      amount_inr: parseInt((plan?.price||'99').replace('₹','')),
+      status: 'screenshot_uploaded',
+      screenshot_url: urlData?.publicUrl,
+      qr_code_id: ACTIVE_QR?.id
+    });
+    toast('✅ Payment submitted! Admin will verify within 2 hours.');
+    btn.innerHTML='✓ Submitted';
+  } catch(e) {
+    toast('Upload failed. Try again.'); btn.disabled=false;
+    btn.innerHTML = (I18N[LANG]||I18N.te)['submit-payment']||'Submit';
+  }
+}
+
+// ── PROFILE ──
+function renderProfile() {
+  renderLangGrid();
+}
+
+function renderLangGrid() {
+  const langs = [{code:'te',label:'తెలుగు',script:'తె'},{code:'ta',label:'தமிழ்',script:'த'},{code:'kn',label:'ಕನ್ನಡ',script:'ಕ'},{code:'hi',label:'हिंदी',script:'हि'},{code:'ml',label:'മലയാളം',script:'മ'},{code:'mr',label:'मराठी',script:'म'}];
+  document.getElementById('langGrid').innerHTML = langs.map(l =>
+    `<div class="lang-opt ${l.code===LANG?'active':''}" onclick="changeLang('${l.code}',this)">
+      <span class="ls">${l.script}</span><span class="ln">${l.label}</span>
+    </div>`).join('');
+}
+
+async function changeLang(code, el) {
+  document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  USER.lang_code = code;
+  localStorage.setItem('ak_user', JSON.stringify(USER));
+  try { await sb.from('users').update({lang_code:code}).eq('id',USER.id); } catch(e){}
+  applyLang(code);
+  await loadStories();
+  renderStories();
+  toast('Language changed!');
+}
+
+// ── SCREENS ──
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  const navEl = document.getElementById('nav-'+id);
+  if(navEl) navEl.classList.add('active');
+  window.scrollTo(0,0);
+}
+
+// ── UTILS ──
+function formatTime(s) { const m=Math.floor(s/60),sec=s%60; return `${m}:${sec.toString().padStart(2,'0')}`; }
+
+function toast(msg,dur=2800) {
+  const el=document.getElementById('toastBox');
+  el.textContent=msg; el.classList.add('show');
+  setTimeout(()=>el.classList.remove('show'),dur);
+}
+
+async function getConfig(key) {
+  try { const {data}=await sb.from('app_config').select('value').eq('key',key).single(); return data?.value; } catch(e){ return null; }
+}
+
+function logout() {
+  localStorage.removeItem('ak_token'); localStorage.removeItem('ak_user');
+  window.location.href='login.html';
+}
+
+init();
+</script>
+</body>
+</html>
