@@ -519,11 +519,44 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
-const CLAUDE_API_KEY = '';// Set via admin config or env
+// ══════════════════════════════════════════════
+// REPLACE THESE WITH YOUR SUPABASE VALUES
+// Supabase Dashboard → Settings → API
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+// ══════════════════════════════════════════════
+const CLAUDE_API_KEY = ''; // Set via Admin → App Config
+const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
+
 const { createClient } = supabase;
-const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+// Wrap in try-catch so bad URL never crashes the entire app
+let sb;
+try {
+  sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+} catch(e) {
+  console.warn('Supabase init failed — running in demo mode:', e.message);
+  // Fake sb object so all sb.rpc() / sb.from() calls fail gracefully
+  sb = {
+    rpc: async () => ({ data: null, error: { message: 'Demo mode' } }),
+    from: () => ({
+      select: () => ({ eq: () => ({ single: async () => ({ data: null, error: null }), limit: () => ({order: () => ({ data: [], error: null }) }), maybeSingle: async () => ({ data: null, error: null }) }), order: () => ({ limit: () => ({ data: [], error: null }) }), data: [], error: null }),
+      insert: async () => ({ data: null, error: null }),
+      update: () => ({ eq: async () => ({ data: null, error: null }) }),
+      delete: () => ({ eq: async () => ({ data: null, error: null }) }),
+      upsert: async () => ({ data: null, error: null }),
+    }),
+    storage: {
+      from: () => ({
+        upload: async () => ({ error: { message: 'Demo mode — no storage' } }),
+        getPublicUrl: () => ({ data: { publicUrl: '' } }),
+      }),
+    },
+    auth: {
+      getSession: async () => ({ data: { session: null } }),
+      signOut: async () => {},
+    },
+  };
+}
 
 // ── MULTILINGUAL CONTENT ──
 const I18N = {
@@ -628,7 +661,19 @@ const FONT_MAP = {te:"'Noto Serif Telugu',serif",ta:"'Noto Serif Tamil',serif",k
 async function init() {
   TOKEN = localStorage.getItem('ak_token');
   try { USER = JSON.parse(localStorage.getItem('ak_user')); } catch(e){}
-  if(!TOKEN || !USER) { window.location.href = 'login.html'; return; }
+  if(!TOKEN || !USER) {
+    if(IS_DEMO) {
+      USER = {id:'demo',mother_name:'అమ్మ',child_name:'బాబు',child_age:5,
+               lang_code:'te',subscription_status:'trial',
+               elevenlabs_voice_id:null,streak_days:3};
+      TOKEN = 'demo-token';
+      localStorage.setItem('ak_user', JSON.stringify(USER));
+      localStorage.setItem('ak_token', TOKEN);
+    } else {
+      window.location.href = 'index.html';
+      return;
+    }
+  }
   LANG = USER.lang_code || localStorage.getItem('ak_lang') || 'te';
   applyLang(LANG);
   updateHome();
