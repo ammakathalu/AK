@@ -522,8 +522,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -732,6 +732,19 @@ function updateHome() {
 }
 
 // ── STORIES ──
+// ── BCP-47 LANGUAGE CODES FOR ELEVENLABS ────────────────────
+// Explicit language codes force correct native pronunciation
+// Without these, ElevenLabs guesses from text and often picks English
+const LANG_TO_BCP47 = {
+  te: 'te',    // Telugu
+  ta: 'ta',    // Tamil
+  kn: 'kn',    // Kannada
+  hi: 'hi',    // Hindi
+  ml: 'ml',    // Malayalam
+  mr: 'mr',    // Marathi
+  en: 'en',    // English
+};
+
 // ── DEFAULT FEMALE NARRATOR VOICES ──────────────────────────
 // All are ElevenLabs built-in voices, female, warm storytelling tone.
 // eleven_multilingual_v2 model speaks all Indian languages with any voice.
@@ -956,8 +969,16 @@ async function generateTTS(story) {
       },
       body: JSON.stringify({
         text,
-        model_id:       'eleven_multilingual_v2',
-        voice_settings: { stability: 0.5, similarity_boost: 0.85, style: 0.2, use_speaker_boost: true }
+        model_id: 'eleven_multilingual_v2',
+        // Explicit language code forces correct pronunciation for Indian languages
+        // Without this, ElevenLabs may default to English phonetics on Telugu/Tamil text
+        language_code: LANG_TO_BCP47[LANG] || 'te',
+        voice_settings: {
+          stability:        0.65,  // higher = more consistent Indian accent
+          similarity_boost: 0.90,  // high = stays close to recorded voice
+          style:            0.30,  // slight expressiveness for storytelling
+          use_speaker_boost: true  // enhances voice clarity
+        }
       })
     });
 

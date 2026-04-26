@@ -585,8 +585,8 @@ select.form-inp{cursor:pointer;}
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -764,6 +764,7 @@ function renderUsersTable(users) {
       <td><div style="display:flex;gap:4px;">
         <button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">Edit</button>
         <button class="btn btn-success btn-sm" onclick="grantPremium('${u.id}')">✓ Premium</button>
+        <button class="btn btn-danger btn-sm" onclick="quickResetPin('${u.id}','${u.mother_name||''}')">🔑</button>
       </div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
@@ -782,26 +783,51 @@ async function createUser() {
   btn.disabled=true; btn.textContent='Creating...';
 
   try {
-    // Call Edge Function to hash PIN securely
-    const { data, error } = await sb.functions.invoke('create-user', {
-      body: {
-        phone: phone.startsWith('+') ? phone : '+91'+phone,
-        pin, mother_name: motherName, child_name: childName,
-        child_age: parseInt(document.getElementById('cu-age').value),
-        lang_code: document.getElementById('cu-lang').value,
-        subscription_plan: document.getElementById('cu-plan').value || null,
-        subscription_end: document.getElementById('cu-sub-end').value || null,
-        subscription_status: document.getElementById('cu-plan').value ? 'active' : 'free'
-      }
+    const normalizedPhone = phone.startsWith('+') ? phone : '+91'+phone;
+    const plan  = document.getElementById('cu-plan').value || null;
+    const subEnd = document.getElementById('cu-sub-end').value || null;
+
+    // Step 1: Create user with PIN via RPC
+    const { data, error } = await sb.rpc('register_user', {
+      p_phone:       normalizedPhone,
+      p_pin:         pin,
+      p_mother_name: motherName,
+      p_child_name:  childName,
+      p_child_age:   parseInt(document.getElementById('cu-age').value) || 5,
+      p_lang_code:   document.getElementById('cu-lang').value || 'te'
     });
-    if(error) throw error;
+
+    if(error) throw new Error(error.message);
+    if(data?.error) throw new Error(data.error);
+
+    const userId = data?.id;
+
+    // Step 2: If plan selected, grant premium
+    if(plan && userId) {
+      const daysMap = {monthly:30, annual:365, family:30};
+      await sb.rpc('admin_grant_premium', {
+        p_user_id: userId,
+        p_plan:    plan,
+        p_days:    daysMap[plan] || 30
+      });
+      // Override sub_end if admin specified a date
+      if(subEnd) {
+        await sb.rpc('admin_update_user', {
+          p_user_id: userId,
+          p_mother:  motherName,
+          p_child:   childName,
+          p_status:  'active',
+          p_sub_end: subEnd
+        });
+      }
+    }
+
     toast('✓ User created successfully','success');
     ['cu-mother','cu-child','cu-phone','cu-pin'].forEach(id=>{document.getElementById(id).value='';});
     showSection('users');
   } catch(e) {
-    // Demo mode
-    toast('✓ User created (demo mode)','success');
-    showSection('users');
+    console.error('createUser error:', e);
+    toast('Error: ' + e.message, 'error');
   }
   btn.disabled=false; btn.textContent='Create User';
 }
@@ -821,36 +847,134 @@ function editUser(userId) {
   const u = allUsers.find(x=>x.id===userId);
   if(!u) return;
   document.getElementById('userModalContent').innerHTML = `
-    <div class="form-group"><label class="form-label">Mother's Name</label>
-      <input class="form-inp" id="eu-mother" value="${u.mother_name||''}"></div>
-    <div class="form-group"><label class="form-label">Child's Name</label>
-      <input class="form-inp" id="eu-child" value="${u.child_name||''}"></div>
-    <div class="form-group"><label class="form-label">Subscription Status</label>
-      <select class="form-inp" id="eu-status">
-        ${['free','trial','active','expired','cancelled'].map(s=>`<option value="${s}" ${u.subscription_status===s?'selected':''}>${s}</option>`).join('')}
-      </select></div>
-    <div class="form-group"><label class="form-label">Subscription End</label>
-      <input class="form-inp" type="date" id="eu-sub-end" value="${u.subscription_end?u.subscription_end.split('T')[0]:''}"></div>
-    <div style="display:flex;gap:8px;margin-top:12px;">
-      <button class="btn btn-primary" onclick="saveUser('${userId}')">Save</button>
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:var(--muted);">
+      📱 ${u.phone||'—'} &nbsp;•&nbsp; Joined ${u.created_at?new Date(u.created_at).toLocaleDateString('en-IN'):'—'}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Mother's Name</label>
+        <input class="form-inp" id="eu-mother" value="${u.mother_name||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Child's Name</label>
+        <input class="form-inp" id="eu-child" value="${u.child_name||''}">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Child's Age</label>
+        <select class="form-inp" id="eu-age">
+          ${[3,4,5,6,7,8,9,10].map(a=>`<option value="${a}" ${u.child_age==a?'selected':''}>${a} years</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Language</label>
+        <select class="form-inp" id="eu-lang">
+          ${[['te','Telugu'],['ta','Tamil'],['kn','Kannada'],['hi','Hindi'],['ml','Malayalam'],['mr','Marathi']].map(([code,name])=>`<option value="${code}" ${u.lang_code===code?'selected':''}>${name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Subscription Status</label>
+        <select class="form-inp" id="eu-status">
+          ${['free','trial','active','expired','cancelled'].map(s=>`<option value="${s}" ${u.subscription_status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subscription Plan</label>
+        <select class="form-inp" id="eu-plan">
+          <option value="">None</option>
+          ${['monthly','annual','family'].map(p=>`<option value="${p}" ${u.subscription_plan===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Subscription End Date</label>
+      <input class="form-inp" type="date" id="eu-sub-end" value="${u.subscription_end?u.subscription_end.split('T')[0]:''}">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" style="flex:2;" onclick="saveUser('${userId}')">Save Changes</button>
       <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">Reset PIN</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="form-group" style="margin:0;flex:1;">
+          <label class="form-label">New 6-Digit PIN</label>
+          <input class="form-inp" id="eu-new-pin" type="password" maxlength="6"
+            placeholder="Enter new PIN" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
+        </div>
+        <button class="btn btn-success" onclick="resetUserPin('${userId}')" style="white-space:nowrap;">
+          🔑 Reset PIN
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+        User will login with this new PIN. Old PIN stops working immediately.
+      </div>
     </div>`;
+
   document.getElementById('userModal').classList.add('open');
 }
 
 async function saveUser(userId) {
   try {
-    const { error } = await sb.rpc('admin_update_user', {
-      p_user_id: userId,
-      p_mother:  document.getElementById('eu-mother').value,
-      p_child:   document.getElementById('eu-child').value,
-      p_status:  document.getElementById('eu-status').value,
-      p_sub_end: document.getElementById('eu-sub-end').value || null
+    const { error } = await sb.rpc('admin_update_user_full', {
+      p_user_id:  userId,
+      p_mother:   document.getElementById('eu-mother').value.trim(),
+      p_child:    document.getElementById('eu-child').value.trim(),
+      p_age:      parseInt(document.getElementById('eu-age').value) || 5,
+      p_lang:     document.getElementById('eu-lang').value,
+      p_status:   document.getElementById('eu-status').value,
+      p_plan:     document.getElementById('eu-plan').value || null,
+      p_sub_end:  document.getElementById('eu-sub-end').value || null
     });
     if(error) throw error;
     toast('✓ User updated','success');
     closeModal('userModal'); loadUsers();
   } catch(e) { console.error('saveUser error:', e); toast('Error: '+e.message,'error'); }
+}
+
+async function resetUserPin(userId) {
+  const newPin = document.getElementById('eu-new-pin').value.trim();
+  if(newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+    toast('PIN must be exactly 6 digits','error'); return;
+  }
+  if(!confirm('Reset PIN for this user? They will need to use the new PIN to login.')) return;
+  try {
+    const { data, error } = await sb.rpc('admin_reset_pin', {
+      p_user_id: userId,
+      p_new_pin: newPin
+    });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    document.getElementById('eu-new-pin').value = '';
+    toast('✓ PIN reset successfully','success');
+  } catch(e) { console.error('resetPin error:', e); toast('Error: '+e.message,'error'); }
+}
+
+// Quick PIN reset from user table row (no modal)
+async function quickResetPin(userId, name) {
+  const newPin = prompt(`Reset PIN for ${name}
+Enter new 6-digit PIN:`);
+  if(!newPin) return;
+  if(newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+    toast('PIN must be exactly 6 digits','error'); return;
+  }
+  try {
+    const { data, error } = await sb.rpc('admin_reset_pin', {
+      p_user_id: userId, p_new_pin: newPin
+    });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    toast(`✓ PIN reset for ${name}`,'success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
 }
 
 // ── PAYMENTS ──
@@ -1293,7 +1417,13 @@ async function generateAndSaveAudio(story, elKey) {
       body: JSON.stringify({
         text,
         model_id: 'eleven_multilingual_v2',
-        voice_settings: { stability: 0.55, similarity_boost: 0.75 }
+        language_code: {'te':'te','ta':'ta','kn':'kn','hi':'hi','ml':'ml','mr':'mr','en':'en'}[story.lang_code] || 'te',
+        voice_settings: {
+          stability:        0.65,
+          similarity_boost: 0.90,
+          style:            0.30,
+          use_speaker_boost: true
+        }
       })
     });
 
