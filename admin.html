@@ -838,80 +838,159 @@ async function rejectPayment(payId) {
 
 // ── QR CODES ──
 async function loadQRCodes() {
+  document.getElementById('qrList').innerHTML = '<div class="empty-state">Loading...</div>';
   try {
-    const { data } = await sb.from('payment_qr_codes').select('*').order('created_at',{ascending:false});
-    renderQRList(data||[]);
-  } catch(e) { renderQRList([]); }
+    const { data, error } = await sb.rpc('get_all_qr_codes');
+    if(error) throw error;
+    renderQRList(data || []);
+  } catch(e) {
+    console.error('loadQRCodes error:', e);
+    document.getElementById('qrList').innerHTML =
+      `<div class="empty-state" style="color:var(--red);">
+        Error loading QR codes: ${e.message}<br>
+        <small>Run fix_qr_rls.sql in Supabase SQL Editor</small>
+      </div>`;
+  }
 }
 
 function renderQRList(list) {
   document.getElementById('qrList').innerHTML = list.length ? list.map(q=>`
     <div class="qr-active-card">
-      <img class="qr-active-img" src="${q.qr_image_url}" alt="QR" onerror="this.style.display='none'">
+      <img class="qr-active-img" src="${q.qr_image_url}"
+        alt="QR" onerror="this.src='';this.style.background='#333';this.style.display='flex';">
       <div class="qr-active-info">
-        <div class="qr-active-name">${q.label} ${q.is_active?'<span class="badge badge-green">Active</span>':'<span class="badge badge-gray">Inactive</span>'}</div>
-        <div class="qr-active-upi">${q.upi_id||'No UPI ID'}</div>
-        <div style="color:var(--muted);font-size:11px;margin-top:2px;">Added ${new Date(q.created_at).toLocaleDateString('en-IN')}</div>
+        <div class="qr-active-name">${q.label}
+          ${q.is_active
+            ? '<span class="badge badge-green" style="margin-left:6px;">Active</span>'
+            : '<span class="badge badge-gray"  style="margin-left:6px;">Inactive</span>'}
+        </div>
+        <div class="qr-active-upi">${q.upi_id||'No UPI ID set'}</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:4px;">
+          Added ${new Date(q.created_at).toLocaleDateString('en-IN')}
+        </div>
       </div>
       <div style="display:flex;flex-direction:column;gap:6px;">
-        <button class="btn btn-${q.is_active?'danger':'success'} btn-sm" onclick="toggleQR('${q.id}',${q.is_active})">
+        <button class="btn btn-${q.is_active?'danger':'success'} btn-sm"
+          onclick="toggleQR('${q.id}',${q.is_active})">
           ${q.is_active?'Deactivate':'Activate'}
         </button>
         <button class="btn btn-ghost btn-sm" onclick="deleteQR('${q.id}')">Delete</button>
       </div>
-    </div>`).join('') : '<div class="empty-state">No QR codes. Add one →</div>';
+    </div>`).join('')
+  : '<div class="empty-state">No QR codes yet. Click "+ Add QR Code" to upload one.</div>';
 }
 
-function openQRModal() { document.getElementById('qrModal').classList.add('open'); }
+function openQRModal() {
+  // Reset modal fields
+  document.getElementById('qr-label').value = '';
+  document.getElementById('qr-upi').value = '';
+  document.getElementById('qrFileInput').value = '';
+  document.getElementById('qrPreview').style.display = 'none';
+  document.getElementById('uploadQRBtn').disabled = false;
+  document.getElementById('uploadQRBtn').textContent = 'Upload QR';
+  document.getElementById('qrModal').classList.add('open');
+}
 
 function previewQR(input) {
   const file = input.files[0];
   if(!file) return;
   const reader = new FileReader();
-  reader.onload = e => { const img=document.getElementById('qrPreview'); img.src=e.target.result; img.style.display='block'; };
+  reader.onload = e => {
+    const img = document.getElementById('qrPreview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
   reader.readAsDataURL(file);
 }
 
 async function uploadQR() {
   const label = document.getElementById('qr-label').value.trim();
-  const upi = document.getElementById('qr-upi').value.trim();
-  const file = document.getElementById('qrFileInput').files[0];
-  if(!label||!file) { toast('Label and image required','error'); return; }
+  const upi   = document.getElementById('qr-upi').value.trim();
+  const file  = document.getElementById('qrFileInput').files[0];
+
+  if(!label) { toast('Label is required','error'); return; }
+  if(!file)  { toast('Please select a QR image','error'); return; }
 
   const btn = document.getElementById('uploadQRBtn');
-  btn.disabled=true; btn.textContent='Uploading...';
+  btn.disabled = true;
+  btn.textContent = 'Uploading image...';
 
   try {
-    // Upload to Supabase storage
-    const path = `qr/${Date.now()}_${file.name}`;
-    await sb.storage.from('payment-qr').upload(path, file, {contentType:file.type});
+    // Step 1: Upload image to storage
+    const ext  = file.name.split('.').pop();
+    const path = `qr/${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage
+      .from('payment-qr')
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if(uploadError) {
+      toast('Storage error: ' + uploadError.message, 'error');
+      console.error('Storage upload error:', uploadError);
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    // Step 2: Get public URL
     const { data: urlData } = sb.storage.from('payment-qr').getPublicUrl(path);
-    
-    // Deactivate existing QRs first
-    await sb.from('payment_qr_codes').update({is_active:false}).eq('is_active',true);
-    
-    await sb.from('payment_qr_codes').insert({
-      label, upi_id:upi, qr_image_url:urlData.publicUrl, is_active:true
+    const publicUrl = urlData?.publicUrl;
+    if(!publicUrl) {
+      toast('Could not get image URL. Check bucket is set to Public.', 'error');
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    btn.textContent = 'Saving to database...';
+
+    // Step 3: Save to payment_qr_codes table via RPC
+    const { data: rpcData, error: rpcError } = await sb.rpc('insert_qr_code', {
+      p_label:        label,
+      p_upi_id:       upi,
+      p_qr_image_url: publicUrl
     });
-    toast('✓ QR Code uploaded and activated','success');
-    closeModal('qrModal'); loadQRCodes();
-  } catch(e) { toast('✓ QR saved (demo mode)','success'); closeModal('qrModal'); }
-  btn.disabled=false; btn.textContent='Upload QR';
+
+    if(rpcError) {
+      toast('DB error: ' + rpcError.message, 'error');
+      console.error('insert_qr_code RPC error:', rpcError);
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    toast('✓ QR Code uploaded and activated', 'success');
+    closeModal('qrModal');
+    loadQRCodes();
+
+  } catch(e) {
+    console.error('uploadQR unexpected error:', e);
+    toast('Unexpected error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Upload QR';
 }
 
 async function toggleQR(id, current) {
   try {
-    if(!current) await sb.from('payment_qr_codes').update({is_active:false}).eq('is_active',true);
-    await sb.from('payment_qr_codes').update({is_active:!current}).eq('id',id);
-    toast(`QR ${current?'deactivated':'activated'}`,'success');
+    const { error } = await sb.rpc('toggle_qr_code', {
+      p_id: id, p_active: !current
+    });
+    if(error) throw error;
+    toast(`QR ${current ? 'deactivated' : 'activated'}`, 'success');
     loadQRCodes();
-  } catch(e) { toast('Done (demo)'); }
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
 }
 
 async function deleteQR(id) {
-  if(!confirm('Delete this QR code?')) return;
-  try { await sb.from('payment_qr_codes').delete().eq('id',id); toast('Deleted'); loadQRCodes(); }
-  catch(e) { toast('Done'); }
+  if(!confirm('Delete this QR code permanently?')) return;
+  try {
+    const { error } = await sb.rpc('delete_qr_code', { p_id: id });
+    if(error) throw error;
+    toast('QR deleted', 'success');
+    loadQRCodes();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
 }
 
 // ── STORIES ──

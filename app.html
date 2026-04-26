@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -925,21 +925,25 @@ function saveGenerated() { toast('💾 Saved!'); }
 // ── SUBSCRIBE / QR ──
 async function loadQR() {
   try {
-    const { data } = await sb.from('payment_qr_codes').select('*').eq('is_active',true).single();
-    if(data) ACTIVE_QR = data;
-  } catch(e){}
+    // Use RPC — direct table read blocked by RLS
+    const { data, error } = await sb.rpc('get_active_qr');
+    if(!error && data) ACTIVE_QR = data;
+  } catch(e){ console.error('loadQR error:', e); }
   renderQR();
 }
 
 function renderQR() {
   const container = document.getElementById('qrImgContainer');
-  const upiEl = document.getElementById('upiIdDisplay');
+  const upiEl    = document.getElementById('upiIdDisplay');
   if(ACTIVE_QR?.qr_image_url) {
-    container.innerHTML = `<img src="${ACTIVE_QR.qr_image_url}" style="width:180px;height:180px;border-radius:10px;" alt="QR Code">`;
+    container.innerHTML = `<img src="${ACTIVE_QR.qr_image_url}"
+      style="width:180px;height:180px;border-radius:10px;object-fit:contain;"
+      alt="Payment QR Code"
+      onerror="this.parentElement.innerHTML='<div class=\'qr-placeholder\'>📱</div>'">`;
     upiEl.textContent = ACTIVE_QR.upi_id || 'ammakatha@upi';
   } else {
     container.innerHTML = `<div class="qr-placeholder">📱</div>`;
-    upiEl.textContent = 'Loading...';
+    upiEl.textContent = 'Contact admin for payment details';
   }
 }
 
