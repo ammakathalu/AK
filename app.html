@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -950,52 +950,61 @@ async function uploadVoice() {
   btn.disabled = true;
 
   try {
-    // ── STEP 1: Build audio blob from recorded chunks ──
+    // ── STEP 1: Build audio blob ──
     btn.innerHTML = '<span class="spinner-sm"></span>Preparing audio...';
-    const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+    const mimeType  = mediaRecorder?.mimeType || 'audio/webm';
     const audioBlob = new Blob(audioChunks, { type: mimeType });
-    const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const ext       = mimeType.includes('ogg') ? 'ogg' : 'webm';
+    const userId    = USER.id && USER.id !== 'demo' ? USER.id : 'guest';
 
     // ── STEP 2: Upload to Supabase storage ──
+    // Path inside bucket — no need to repeat bucket name
     btn.innerHTML = '<span class="spinner-sm"></span>Uploading to storage...';
-    const path = `voice-samples/${USER.id}/${Date.now()}.${ext}`;
+    const storagePath = `${userId}/${Date.now()}.${ext}`;
+    let savedPath = storagePath;
+
     const { error: uploadErr } = await sb.storage
       .from('voice-samples')
-      .upload(path, audioBlob, { contentType: mimeType, upsert: true });
+      .upload(storagePath, audioBlob, { contentType: mimeType, upsert: true });
 
-    if(uploadErr) throw new Error('Storage upload failed: ' + uploadErr.message);
+    if(uploadErr) {
+      // Storage failed — log it but continue to ElevenLabs with blob directly
+      console.warn('Storage upload failed:', uploadErr.message,
+        '— continuing with direct ElevenLabs cloning');
+      toast('⚠ Storage save skipped (' + uploadErr.message + '). Proceeding to voice clone...');
+      savedPath = null; // mark as not saved
+    } else {
+      // Save DB record only if storage succeeded
+      try {
+        await sb.rpc('insert_voice_sample', {
+          p_user_id:  USER.id,
+          p_path:     storagePath,
+          p_duration: recSeconds
+        });
+      } catch(e) { console.warn('insert_voice_sample failed:', e); }
+    }
 
-    // Save sample record in DB via RPC (bypasses RLS)
-    await sb.rpc('insert_voice_sample', {
-      p_user_id:  USER.id,
-      p_path:     path,
-      p_duration: recSeconds
-    });
-
-    // ── STEP 3: Call ElevenLabs voice cloning API ──
+    // ── STEP 3: Get ElevenLabs key ──
     btn.innerHTML = '<span class="spinner-sm"></span>Cloning voice...';
-
-    // Get ElevenLabs API key from app_config via RPC
     const { data: elKey } = await sb.rpc('get_config_value', {
       p_key: 'elevenlabs_api_key'
     });
 
     if(!elKey) {
-      // No ElevenLabs key yet — save storage path and show instructions
-      USER.voice_sample_url = path;
+      USER.voice_sample_url = savedPath;
       localStorage.setItem('ak_user', JSON.stringify(USER));
-      toast('🎙️ Voice recorded & saved! Add ElevenLabs key in admin to activate cloning.');
+      toast('🎙️ Voice saved! Add ElevenLabs key in Admin → App Config to activate cloning.');
       showScreen('home');
       btn.disabled = false;
       btn.innerHTML = (I18N[LANG]||I18N.te)['save-voice']||'Save Voice';
       return;
     }
 
-    // Call ElevenLabs Add Voice API
+    // ── STEP 4: Call ElevenLabs Add Voice API ──
     const formData = new FormData();
-    formData.append('name', `amma_${USER.id}`);
+    formData.append('name', `amma_${userId}_${Date.now()}`);
     formData.append('files', audioBlob, `voice.${ext}`);
-    formData.append('description', `AmmaKatha voice for user ${USER.mother_name}`);
+    formData.append('description', `AmmaKatha - ${USER.mother_name || 'User'}`);
 
     const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
       method: 'POST',
