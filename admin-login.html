@@ -1,0 +1,363 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,maximum-scale=1,user-scalable=no">
+<meta name="theme-color" content="#0a0a0f">
+<title>AmmaKatha · Admin Login</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Geist+Mono:wght@400;500;600&family=Instrument+Serif:ital@0;1&display=swap" rel="stylesheet">
+<style>
+:root{
+  --bg:#0a0a0f;--surface:#111118;--surface2:#1a1a24;
+  --gold:#f4c842;--saffron:#e8873a;--green:#22c55e;--red:#ef4444;
+  --text:#f1f0ed;--muted:#777;--dim:#333;
+  --border:#252530;--border2:#2e2e3a;--font:'Geist Mono',monospace;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+html,body{height:100%;}
+body{
+  background:var(--bg);color:var(--text);font-family:var(--font);
+  display:flex;align-items:center;justify-content:center;padding:16px;
+  background-image:
+    radial-gradient(1px 1px at 15% 20%,rgba(244,200,66,.25) 0%,transparent 100%),
+    radial-gradient(1px 1px at 80% 15%,rgba(244,200,66,.15) 0%,transparent 100%),
+    radial-gradient(1px 1px at 60% 70%,rgba(244,200,66,.1) 0%,transparent 100%),
+    radial-gradient(1px 1px at 30% 85%,rgba(255,255,255,.08) 0%,transparent 100%);
+}
+
+.card{
+  background:var(--surface);border:1px solid var(--border2);
+  border-radius:20px;padding:40px 36px;width:100%;max-width:400px;
+  box-shadow:0 32px 80px rgba(0,0,0,.7);
+}
+
+/* Brand */
+.brand{text-align:center;margin-bottom:36px;}
+.brand-logo{
+  width:52px;height:52px;border-radius:12px;margin:0 auto 14px;
+  background:linear-gradient(135deg,rgba(244,200,66,.15),rgba(232,135,58,.1));
+  border:1px solid rgba(244,200,66,.3);
+  display:flex;align-items:center;justify-content:center;font-size:24px;
+}
+.brand-name{
+  font-family:'Instrument Serif',serif;font-style:italic;
+  font-size:22px;color:var(--gold);letter-spacing:.01em;
+}
+.brand-sub{font-size:11px;color:var(--muted);margin-top:3px;letter-spacing:.06em;}
+.brand-badge{
+  display:inline-flex;align-items:center;gap:5px;margin-top:10px;
+  background:rgba(244,200,66,.08);border:1px solid rgba(244,200,66,.18);
+  border-radius:20px;padding:3px 10px;font-size:10px;color:var(--gold);
+}
+
+/* Tabs */
+.tabs{display:flex;background:var(--surface2);border:1px solid var(--border);
+  border-radius:10px;padding:3px;margin-bottom:28px;gap:3px;}
+.tab{flex:1;padding:8px;border-radius:8px;border:none;background:transparent;
+  color:var(--muted);font-family:var(--font);font-size:12px;
+  cursor:pointer;transition:all .18s;letter-spacing:.02em;}
+.tab.active{background:rgba(244,200,66,.12);color:var(--gold);
+  border:1px solid rgba(244,200,66,.2);}
+
+/* Steps */
+.step{display:none;}
+.step.active{display:block;animation:fadeUp .25s ease;}
+@keyframes fadeUp{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
+
+/* Form */
+.field{margin-bottom:14px;}
+.field-label{font-size:10px;color:var(--muted);letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:6px;display:block;}
+.inp{
+  width:100%;background:var(--surface2);border:1px solid var(--border2);
+  border-radius:10px;padding:11px 14px;color:var(--text);
+  font-family:var(--font);font-size:13px;outline:none;transition:border-color .2s;
+}
+.inp:focus{border-color:var(--gold);}
+.inp::placeholder{color:var(--dim);}
+.inp-wrap{position:relative;}
+.inp-eye{position:absolute;right:12px;top:50%;transform:translateY(-50%);
+  background:none;border:none;color:var(--muted);cursor:pointer;
+  font-size:14px;padding:2px;}
+.inp-eye:hover{color:var(--text);}
+
+/* Buttons */
+.btn{width:100%;border:none;border-radius:10px;padding:12px;
+  font-family:var(--font);font-size:13px;cursor:pointer;
+  font-weight:500;transition:all .18s;margin-top:4px;letter-spacing:.02em;}
+.btn-p{background:var(--gold);color:#0a0a0f;}
+.btn-p:hover{background:#f8d668;}
+.btn-p:active{transform:scale(.98);}
+.btn-p:disabled{opacity:.4;pointer-events:none;}
+.btn-g{background:transparent;color:var(--muted);border:1px solid var(--border2);}
+.btn-g:hover{background:var(--surface2);color:var(--text);}
+
+/* Status */
+.err{color:var(--red);font-size:11px;margin-top:8px;min-height:16px;
+  display:flex;align-items:center;gap:5px;}
+.info{color:var(--muted);font-size:11px;margin-top:8px;line-height:1.55;}
+.spinner{width:14px;height:14px;border:2px solid rgba(255,255,255,.15);
+  border-top-color:var(--gold);border-radius:50%;
+  animation:spin .6s linear infinite;display:inline-block;vertical-align:middle;margin-right:6px;}
+@keyframes spin{to{transform:rotate(360deg)}}
+
+/* Success */
+.success-card{text-align:center;padding:16px 0;}
+.success-icon{font-size:40px;display:block;margin-bottom:12px;}
+.success-title{font-size:15px;font-weight:500;color:var(--text);margin-bottom:4px;}
+.success-sub{font-size:12px;color:var(--muted);}
+
+/* Reset flow */
+.back-btn{background:none;border:none;color:var(--muted);font-size:12px;
+  cursor:pointer;font-family:var(--font);padding:0;margin-bottom:16px;
+  display:flex;align-items:center;gap:4px;}
+.back-btn:hover{color:var(--text);}
+
+/* Divider */
+.divider{display:flex;align-items:center;gap:8px;margin:16px 0;color:var(--dim);font-size:11px;}
+.divider::before,.divider::after{content:'';flex:1;height:1px;background:var(--border);}
+
+/* Demo hint */
+.demo-hint{background:rgba(244,200,66,.06);border:1px solid rgba(244,200,66,.15);
+  border-radius:8px;padding:10px 12px;font-size:11px;color:var(--muted);
+  margin-top:16px;line-height:1.6;}
+.demo-hint strong{color:var(--gold);}
+
+.footer{text-align:center;margin-top:24px;font-size:10px;color:var(--dim);}
+</style>
+</head>
+<body>
+<div class="card">
+
+  <!-- Brand -->
+  <div class="brand">
+    <div class="brand-logo">🌙</div>
+    <div class="brand-name">AmmaKatha</div>
+    <div class="brand-sub">ADMIN PORTAL</div>
+    <div class="brand-badge">🔐 Restricted Access</div>
+  </div>
+
+  <!-- Tabs: Login / Reset Password -->
+  <div class="tabs">
+    <button class="tab active" id="tab-login"  onclick="switchTab('login')">Sign In</button>
+    <button class="tab"        id="tab-reset"  onclick="switchTab('reset')">Reset Password</button>
+  </div>
+
+  <!-- ── LOGIN ── -->
+  <div class="step active" id="step-login">
+    <div class="field">
+      <label class="field-label">Admin Email</label>
+      <input class="inp" id="login-email" type="email"
+        placeholder="admin@ammakatha.com"
+        oninput="validateLogin()" onkeydown="if(event.key==='Enter')doLogin()">
+    </div>
+    <div class="field">
+      <label class="field-label">Password</label>
+      <div class="inp-wrap">
+        <input class="inp" id="login-pass" type="password"
+          placeholder="••••••••••"
+          oninput="validateLogin()" onkeydown="if(event.key==='Enter')doLogin()">
+        <button class="inp-eye" onclick="togglePw('login-pass',this)">👁</button>
+      </div>
+    </div>
+    <div class="err" id="login-err"></div>
+    <button class="btn btn-p" id="login-btn" onclick="doLogin()" disabled>
+      Sign In →
+    </button>
+
+    <div class="demo-hint" id="demoHint">
+      <strong>Demo mode:</strong> Supabase not configured.<br>
+      Use any email + password to enter the admin panel.<br>
+      Replace <code>YOUR_PROJECT</code> in the config to go live.
+    </div>
+  </div>
+
+  <!-- ── RESET PASSWORD ── -->
+  <div class="step" id="step-reset">
+    <div class="field">
+      <label class="field-label">Admin Email</label>
+      <input class="inp" id="reset-email" type="email"
+        placeholder="admin@ammakatha.com"
+        oninput="validateReset()" onkeydown="if(event.key==='Enter')doReset()">
+    </div>
+    <div class="err" id="reset-err"></div>
+    <button class="btn btn-p" id="reset-btn" onclick="doReset()" disabled>
+      Send Reset Link
+    </button>
+    <div class="info" id="reset-info"></div>
+  </div>
+
+  <!-- ── RESET SENT ── -->
+  <div class="step" id="step-reset-sent">
+    <div class="success-card">
+      <span class="success-icon">📧</span>
+      <div class="success-title">Reset link sent!</div>
+      <div class="success-sub" id="reset-sent-to">Check your email inbox.</div>
+    </div>
+    <button class="btn btn-g" style="margin-top:20px;" onclick="switchTab('login')">
+      ← Back to Sign In
+    </button>
+  </div>
+
+  <!-- ── SIGNING IN ── -->
+  <div class="step" id="step-signing-in">
+    <div class="success-card">
+      <span class="success-icon" style="animation:spin 2s linear infinite;display:inline-block;">🌙</span>
+      <div class="success-title" style="margin-top:12px;">Signing in...</div>
+      <div class="success-sub">Verifying credentials</div>
+    </div>
+  </div>
+
+  <div class="footer">AmmaKatha Admin · v1.0 · Access logged</div>
+</div>
+
+<script>
+// ── CONFIG ── replace with your actual values
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
+const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
+
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── INIT ──
+async function init() {
+  // Hide demo hint if Supabase is configured
+  if(!IS_DEMO) document.getElementById('demoHint').style.display='none';
+
+  // If already signed in, redirect straight to admin
+  try {
+    const { data:{ session } } = await sb.auth.getSession();
+    if(session) {
+      // Verify it's an actual admin
+      const { data } = await sb.from('admins')
+        .select('id').eq('email', session.user.email).eq('is_active',true).single();
+      if(data) { window.location.href = 'admin.html'; return; }
+      // Has session but not an admin — sign out
+      await sb.auth.signOut();
+    }
+  } catch(e) {/* demo mode — no session check needed */}
+}
+
+// ── TABS ──
+function switchTab(tab) {
+  document.getElementById('tab-login').classList.toggle('active', tab==='login');
+  document.getElementById('tab-reset').classList.toggle('active', tab==='reset');
+  showStep(tab==='login' ? 'step-login' : 'step-reset');
+}
+
+function showStep(id) {
+  document.querySelectorAll('.step').forEach(s=>s.classList.remove('active'));
+  document.getElementById(id)?.classList.add('active');
+}
+
+// ── VALIDATION ──
+function validateLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  document.getElementById('login-btn').disabled = !email || pass.length < 6;
+  document.getElementById('login-err').textContent = '';
+}
+function validateReset() {
+  const email = document.getElementById('reset-email').value.trim();
+  document.getElementById('reset-btn').disabled = !email.includes('@');
+  document.getElementById('reset-err').textContent = '';
+}
+
+// ── TOGGLE PASSWORD ──
+function togglePw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  const show = inp.type === 'password';
+  inp.type = show ? 'text' : 'password';
+  btn.textContent = show ? '🙈' : '👁';
+}
+
+// ── LOGIN ──
+async function doLogin() {
+  const email = document.getElementById('login-email').value.trim();
+  const pass  = document.getElementById('login-pass').value;
+  if(!email || pass.length < 6) return;
+
+  const btn = document.getElementById('login-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Signing in...';
+  document.getElementById('login-err').textContent = '';
+
+  // DEMO MODE — skip real auth
+  if(IS_DEMO) {
+    showStep('step-signing-in');
+    // Store a demo admin session
+    sessionStorage.setItem('ak_admin', JSON.stringify({
+      email, name: email.split('@')[0], role:'super', demo:true
+    }));
+    setTimeout(() => window.location.href = 'admin.html', 1200);
+    return;
+  }
+
+  try {
+    // Real Supabase Auth sign-in
+    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
+    if(error) throw error;
+
+    // Check admin table — prevents non-admin Supabase users from entering
+    const { data: adminRow, error: adminErr } = await sb
+      .from('admins')
+      .select('id, name, role')
+      .eq('email', email)
+      .eq('is_active', true)
+      .single();
+
+    if(adminErr || !adminRow) {
+      await sb.auth.signOut();
+      throw new Error('You are not registered as an admin.');
+    }
+
+    // Update last_login timestamp
+    await sb.from('admins').update({ last_login: new Date().toISOString() }).eq('email', email);
+
+    showStep('step-signing-in');
+    setTimeout(() => window.location.href = 'admin.html', 800);
+
+  } catch(e) {
+    document.getElementById('login-err').innerHTML =
+      '⚠ ' + (e.message === 'Invalid login credentials'
+        ? 'Wrong email or password.'
+        : e.message || 'Login failed. Try again.');
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In →';
+  }
+}
+
+// ── RESET PASSWORD ──
+async function doReset() {
+  const email = document.getElementById('reset-email').value.trim();
+  if(!email) return;
+  const btn = document.getElementById('reset-btn');
+  btn.disabled = true;
+  btn.innerHTML = '<span class="spinner"></span>Sending...';
+
+  if(IS_DEMO) {
+    document.getElementById('reset-sent-to').textContent = `Reset link sent to ${email} (demo — no actual email sent)`;
+    showStep('step-reset-sent');
+    return;
+  }
+
+  try {
+    const { error } = await sb.auth.resetPasswordForEmail(email, {
+      redirectTo: window.location.origin + '/admin-login.html'
+    });
+    if(error) throw error;
+    document.getElementById('reset-sent-to').textContent = `Reset link sent to ${email}`;
+    showStep('step-reset-sent');
+  } catch(e) {
+    document.getElementById('reset-err').innerHTML = '⚠ ' + (e.message || 'Failed. Try again.');
+    btn.disabled = false;
+    btn.innerHTML = 'Send Reset Link';
+  }
+}
+
+init();
+</script>
+</body>
+</html>

@@ -251,7 +251,7 @@ select.inp{cursor:pointer;appearance:none;
     <div class="field">
       <label class="field-label" id="rt-lang-lbl">భాష</label>
       <select class="inp" id="r-lang">
-        <option value="te">తెలుగు</option><option value="ta">தமிழ்</option>
+        <option value="en">English</option><option value="te">తెలుగు</option><option value="ta">தமிழ்</option>
         <option value="kn">ಕನ್ನಡ</option><option value="hi">हिंदी</option>
         <option value="ml">മലയാളം</option><option value="mr">मराठी</option>
       </select>
@@ -333,8 +333,8 @@ select.inp{cursor:pointer;appearance:none;
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL     = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY= 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -419,10 +419,11 @@ const T = {
   },
   kn:{brand:'ಅಮ್ಮಕಥೆ',login:'ಲಾಗಿನ್',register:'ನೋಂದಣಿ','lt-title':'ಫೋನ್ ಸಂಖ್ಯೆ ನಮೂದಿಸಿ','lt-sub':'ನೋಂದಾಯಿಸಲಾದ ಸಂಖ್ಯೆಯೊಂದಿಗೆ ಲಾಗಿನ್ ಆಗಿ','lt-phone-lbl':'ಫೋನ್ ಸಂಖ್ಯೆ','lt-next':'ಮುಂದೆ →','lt-change':'ಸಂಖ್ಯೆ ಬದಲಿಸಿ','lt-pin-title':'PIN ನಮೂದಿಸಿ','lt-logging-in-as':'ಲಾಗಿನ್ ಆಗುತ್ತಿದ್ದೀರಿ','rt-title':'ಹೊಸ ಖಾತೆ ರಚಿಸಿ','rt-sub':'ನಿಮ್ಮ ವಿವರಗಳನ್ನು ನಮೂದಿಸಿ','rt-mother-lbl':'ಅಮ್ಮನ ಹೆಸರು *','rt-child-lbl':'ಮಗುವಿನ ಹೆಸರು *','rt-age-lbl':'ಮಗುವಿನ ವಯಸ್ಸು','rt-lang-lbl':'ಭಾಷೆ','rt-next':'ಮುಂದೆ →','rt-back':'ಹಿಂದೆ','rt-phone-title':'ಫೋನ್ ಸಂಖ್ಯೆ','rt-phone-sub':'OTP ಇಲ್ಲ — ನೀವೇ PIN ಹೊಂದಿಸಿ','rt-phone-lbl':'ಮೊಬೈಲ್ ಸಂಖ್ಯೆ *','rt-phone-next':'PIN ಹೊಂದಿಸಿ →','rt-pin-title':'ನಿಮ್ಮ PIN ಹೊಂದಿಸಿ','rt-pin-sub':'6 ಅಂಕಿ ರಹಸ್ಯ PIN ಆಯ್ಕೆ ಮಾಡಿ','rt-confirm-title':'PIN ದೃಢೀಕರಿಸಿ','rt-confirm-sub':'ಅದೇ PIN ಮತ್ತೆ ನಮೂದಿಸಿ','rt-back2':'ಹಿಂದೆ','rt-back3':'PIN ಬದಲಿಸಿ','rt-creating':'ಖಾತೆ ರಚಿಸುತ್ತಿದ್ದೇವೆ...','rt-wait':'ಸ್ವಲ್ಪ ಕಾಯಿರಿ','rt-done-title':'ಖಾತೆ ಸಿದ್ಧ!','rt-done-sub':'AmmaKatha ಗೆ ಸ್ವಾಗತ','err-phone':'ಸರಿಯಾದ 10 ಅಂಕಿ ಸಂಖ್ಯೆ ನೀಡಿ','err-phone-exists':'ಈ ಸಂಖ್ಯೆ ಈಗಾಗಲೇ ನೋಂದಾಯಿಸಲಾಗಿದೆ','err-not-found':'ಈ ಸಂಖ್ಯೆ ನೋಂದಾಯಿಸಲಾಗಿಲ್ಲ','err-wrong-pin':'ತಪ್ಪು PIN','err-pin-mismatch':'PINಗಳು ಹೊಂದಾಣಿಕೆಯಾಗಲಿಲ್ಲ','err-fill':'ಹೆಸರುಗಳು ಅಗತ್ಯ','err-server':'ದೋಷ ಸಂಭವಿಸಿದೆ','strength-weak':'ದುರ್ಬಲ PIN','strength-ok':'ಸಾಮಾನ್ಯ PIN','strength-good':'ಉತ್ತಮ PIN','welcome':'ಸ್ವಾಗತ','redirect':'ಅಪ್ಲಿಕೇಶನ್ ತೆರೆಯುತ್ತಿದೆ...','attempts-left':'ಉಳಿದ ಅವಕಾಶಗಳು'},
   ml:{brand:'അമ്മക്കഥ',login:'ലോഗിൻ',register:'രജിസ്ട്രേഷൻ','lt-title':'ഫോൺ നമ്പർ നൽകുക','lt-sub':'നോന്ദണം ചെയ്ത നമ്പറിൽ ലോഗിൻ ആകൂ','lt-phone-lbl':'ഫോൺ നമ്പർ','lt-next':'അടുത്തത് →','lt-change':'നമ്പർ മാറ്റൂ','lt-pin-title':'PIN നൽകുക','lt-logging-in-as':'ലോഗിൻ ആകുന്നു','rt-title':'പുതിയ അക്കൗണ്ട് ഉണ്ടാക്കൂ','rt-sub':'വിവരങ്ങൾ നൽകൂ','rt-mother-lbl':'അമ്മയുടെ പേര് *','rt-child-lbl':'കുഞ്ഞിന്റെ പേര് *','rt-age-lbl':'കുഞ്ഞിന്റെ പ്രായം','rt-lang-lbl':'ഭാഷ','rt-next':'അടുത്തത് →','rt-back':'തിരിച്ച്','rt-phone-title':'ഫോൺ നമ്പർ','rt-phone-sub':'OTP ഇല്ല — നിങ്ങൾ തന്നെ PIN സെറ്റ് ചെയ്യൂ','rt-phone-lbl':'മൊബൈൽ നമ്പർ *','rt-phone-next':'PIN സെറ്റ് ചെയ്യൂ →','rt-pin-title':'PIN സെറ്റ് ചെയ്യൂ','rt-pin-sub':'6 അക്ക രഹസ്യ PIN തിരഞ്ഞെടുക്കൂ','rt-confirm-title':'PIN ഉറപ്പിക്കൂ','rt-confirm-sub':'അതേ PIN വീണ്ടും നൽകൂ','rt-back2':'തിരിച്ച്','rt-back3':'PIN മാറ്റൂ','rt-creating':'അക്കൗണ്ട് ഉണ്ടാക്കുന്നു...','rt-wait':'കുറച്ച് നേരം കാത്തിരിക്കൂ','rt-done-title':'അക്കൗണ്ട് തയ്യാർ!','rt-done-sub':'AmmaKatha ലേക്ക് സ്വാഗതം','err-phone':'ശരിയായ 10 അക്ക നമ്പർ നൽകൂ','err-phone-exists':'ഈ നമ്പർ ഇതിനകം രജിസ്റ്റർ ചെയ്തിട്ടുണ്ട്','err-not-found':'ഈ നമ്പർ രജിസ്റ്റർ ചെയ്തിട്ടില്ല','err-wrong-pin':'തെറ്റായ PIN','err-pin-mismatch':'PINകൾ പൊരുത്തപ്പെട്ടില്ല','err-fill':'പേരുകൾ ആവശ്യമാണ്','err-server':'പിശക് സംഭവിച്ചു','strength-weak':'ദുർബലമായ PIN','strength-ok':'സാധാരണ PIN','strength-good':'നല്ല PIN','welcome':'സ്വാഗതം','redirect':'ആപ്പ് തുറക്കുന്നു...','attempts-left':'ശേഷിക്കുന്ന ശ്രമങ്ങൾ'},
+  en:{brand:'AmmaKatha',login:'Login',register:'Register','lt-title':'Enter your phone number','lt-sub':'Login with your registered mobile number','lt-phone-lbl':'Phone Number','lt-next':'Next →','lt-change':'Change Number','lt-pin-title':'Enter your PIN','lt-logging-in-as':'Logging in as','rt-title':'Create New Account','rt-sub':'Fill in your details to get started','rt-mother-lbl':"Mother's Name *",'rt-child-lbl':"Child's Name *",'rt-age-lbl':"Child's Age",'rt-lang-lbl':'Language','rt-next':'Next →','rt-back':'Back','rt-phone-title':'Phone Number','rt-phone-sub':'No OTP — you set your own PIN','rt-phone-lbl':'Mobile Number *','rt-phone-next':'Set PIN →','rt-pin-title':'Set your PIN','rt-pin-sub':'Choose a 6-digit secret PIN','rt-confirm-title':'Confirm your PIN','rt-confirm-sub':'Enter the same PIN again','rt-back2':'Back','rt-back3':'Change PIN','rt-creating':'Creating your account...','rt-wait':'Please wait a moment','rt-done-title':'Account Ready!','rt-done-sub':'Welcome to AmmaKatha','err-phone':'Enter a valid 10-digit number','err-phone-exists':'This number is already registered — please login','err-not-found':'This number is not registered — please register','err-wrong-pin':'Wrong PIN. Please try again','err-pin-mismatch':'PINs do not match. Try again','err-fill':'Names are required','err-server':'Something went wrong. Please try again','strength-weak':'Weak PIN','strength-ok':'Moderate PIN','strength-good':'Strong PIN','welcome':'Welcome','redirect':'Opening app...','attempts-left':'Attempts left'},
   mr:{brand:'आईकथा',login:'लॉगिन',register:'नोंदणी','lt-title':'फोन नंबर टाका','lt-sub':'नोंदणीकृत नंबरने लॉगिन करा','lt-phone-lbl':'फोन नंबर','lt-next':'पुढे →','lt-change':'नंबर बदला','lt-pin-title':'PIN टाका','lt-logging-in-as':'लॉगिन होत आहे','rt-title':'नवीन खाते तयार करा','rt-sub':'तुमचे तपशील भरा','rt-mother-lbl':'आईचे नाव *','rt-child-lbl':'मुलाचे नाव *','rt-age-lbl':'मुलाचे वय','rt-lang-lbl':'भाषा','rt-next':'पुढे →','rt-back':'मागे','rt-phone-title':'फोन नंबर','rt-phone-sub':'OTP नाही — तुम्हीच PIN सेट करा','rt-phone-lbl':'मोबाइल नंबर *','rt-phone-next':'PIN सेट करा →','rt-pin-title':'तुमचा PIN सेट करा','rt-pin-sub':'6 अंकी गुप्त PIN निवडा','rt-confirm-title':'PIN पुष्टी करा','rt-confirm-sub':'तोच PIN पुन्हा टाका','rt-back2':'मागे','rt-back3':'PIN बदला','rt-creating':'खाते तयार करत आहोत...','rt-wait':'काही क्षण थांबा','rt-done-title':'खाते तयार!','rt-done-sub':'AmmaKatha मध्ये स्वागत','err-phone':'योग्य 10 अंकी नंबर द्या','err-phone-exists':'हा नंबर आधीच नोंदणीकृत आहे','err-not-found':'हा नंबर नोंदणीकृत नाही','err-wrong-pin':'चुकीचा PIN','err-pin-mismatch':'PIN जुळले नाहीत','err-fill':'नावे आवश्यक आहेत','err-server':'त्रुटी आली','strength-weak':'कमकुवत PIN','strength-ok':'सामान्य PIN','strength-good':'चांगला PIN','welcome':'स्वागत आहे','redirect':'अॅप उघडत आहे...','attempts-left':'उरलेल्या संधी'},
 };
 
-const FONT = {te:"'Noto Serif Telugu',serif",ta:"'Noto Serif Tamil',serif",kn:"'Noto Serif Kannada',serif",hi:"'Noto Serif Devanagari',serif",ml:"'Noto Serif Malayalam',serif",mr:"'Noto Serif Devanagari',serif"};
+const FONT = {te:"'Noto Serif Telugu',serif",ta:"'Noto Serif Tamil',serif",kn:"'Noto Serif Kannada',serif",hi:"'Noto Serif Devanagari',serif",ml:"'Noto Serif Malayalam',serif",mr:"'Noto Serif Devanagari',serif",en:"'Geist Mono',system-ui,sans-serif"};
 
 // ── STATE ────────────────────────────────────────────────────────
 let LANG = localStorage.getItem('ak_lang')||'te';
@@ -445,7 +446,7 @@ function init() {
 
 // ── LANGUAGE ─────────────────────────────────────────────────────
 function buildLangRow() {
-  const langs = [{c:'te',l:'తెలుగు'},{c:'ta',l:'தமிழ்'},{c:'kn',l:'ಕನ್ನಡ'},{c:'hi',l:'हिंदी'},{c:'ml',l:'മലയാളം'},{c:'mr',l:'मराठी'}];
+  const langs = [{c:'en',l:'English'},{c:'te',l:'తెలుగు'},{c:'ta',l:'தமிழ்'},{c:'kn',l:'ಕನ್ನಡ'},{c:'hi',l:'हिंदी'},{c:'ml',l:'മലയാളം'},{c:'mr',l:'मराठी'}];
   document.getElementById('langRow').innerHTML = langs.map(x=>
     `<button class="lang-btn${x.c===LANG?' active':''}" onclick="switchLang('${x.c}')">${x.l}</button>`
   ).join('');
