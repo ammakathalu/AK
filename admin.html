@@ -519,8 +519,8 @@ select.form-inp{cursor:pointer;}
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -848,18 +848,29 @@ async function rejectPayment(payId) {
 
 // ── QR CODES ──
 async function loadQRCodes() {
-  document.getElementById('qrList').innerHTML = '<div class="empty-state">Loading...</div>';
+  // Show cached immediately
+  const cached = sessionStorage.getItem('ak_admin_qr_list');
+  if(cached) {
+    try { renderQRList(JSON.parse(cached)); } catch(e){}
+  } else {
+    document.getElementById('qrList').innerHTML = '<div class="empty-state">Loading...</div>';
+  }
+  // Always fetch fresh
   try {
     const { data, error } = await sb.rpc('get_all_qr_codes');
     if(error) throw error;
-    renderQRList(data || []);
+    const list = data || [];
+    sessionStorage.setItem('ak_admin_qr_list', JSON.stringify(list));
+    renderQRList(list);
   } catch(e) {
     console.error('loadQRCodes error:', e);
-    document.getElementById('qrList').innerHTML =
-      `<div class="empty-state" style="color:var(--red);">
-        Error loading QR codes: ${e.message}<br>
-        <small>Run fix_qr_rls.sql in Supabase SQL Editor</small>
-      </div>`;
+    if(!cached) {
+      document.getElementById('qrList').innerHTML =
+        `<div class="empty-state" style="color:var(--red);">
+          Error loading QR codes: ${e.message}<br>
+          <small>Run run_this_all_rpc_fixes.sql in Supabase SQL Editor</small>
+        </div>`;
+    }
   }
 }
 
@@ -965,6 +976,7 @@ async function uploadQR() {
       return;
     }
 
+    sessionStorage.removeItem('ak_admin_qr_list'); // clear cache so fresh data loads
     toast('✓ QR Code uploaded and activated', 'success');
     closeModal('qrModal');
     loadQRCodes();

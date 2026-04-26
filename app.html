@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -924,20 +924,29 @@ function saveGenerated() { toast('💾 Saved!'); }
 
 // ── SUBSCRIBE / QR ──
 async function loadQR() {
+  // 1. Show cached QR instantly if available
+  const cached = localStorage.getItem('ak_active_qr');
+  if(cached) {
+    try { ACTIVE_QR = JSON.parse(cached); renderQR(); } catch(e){}
+  }
+  // 2. Always fetch fresh from DB
   try {
-    // Use RPC — direct table read blocked by RLS
     const { data, error } = await sb.rpc('get_active_qr');
-    if(!error && data) ACTIVE_QR = data;
+    if(!error && data) {
+      ACTIVE_QR = data;
+      localStorage.setItem('ak_active_qr', JSON.stringify(data));
+      renderQR();
+    }
   } catch(e){ console.error('loadQR error:', e); }
-  renderQR();
 }
 
 function renderQR() {
   const container = document.getElementById('qrImgContainer');
   const upiEl    = document.getElementById('upiIdDisplay');
   if(ACTIVE_QR?.qr_image_url) {
-    container.innerHTML = `<img src="${ACTIVE_QR.qr_image_url}"
-      style="width:180px;height:180px;border-radius:10px;object-fit:contain;"
+    container.innerHTML = `<img
+      src="${ACTIVE_QR.qr_image_url}"
+      style="width:180px;height:180px;border-radius:10px;object-fit:contain;background:#fff;padding:8px;"
       alt="Payment QR Code"
       onerror="this.parentElement.innerHTML='<div class=\'qr-placeholder\'>📱</div>'">`;
     upiEl.textContent = ACTIVE_QR.upi_id || 'ammakatha@upi';
@@ -1047,6 +1056,8 @@ function showScreen(id) {
   const navEl = document.getElementById('nav-'+id);
   if(navEl) navEl.classList.add('active');
   window.scrollTo(0,0);
+  // Reload QR every time subscribe screen opens — ensures latest QR is shown
+  if(id === 'subscribe') loadQR();
 }
 
 // ── UTILS ──
