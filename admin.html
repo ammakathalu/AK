@@ -528,7 +528,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // Supports two modes:
 //   1. LIVE — Supabase Auth session (email/password via admin-login.html)
 //   2. DEMO — sessionStorage token set by admin-login.html demo mode
-const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
+const IS_DEMO = SUPABASE_URL.includes('https://vbcsailtwziiggixqmqc.supabase.co');
 
 async function checkAuth() {
   // DEMO MODE: check sessionStorage
