@@ -522,8 +522,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -840,7 +840,7 @@ function renderStories() {
 let audioEl = null;   // real HTML5 Audio element
 let ttsCache = {};    // storyId -> blob URL cache
 
-function openPlayer(storyId, mode) {
+async function openPlayer(storyId, mode) {
   const s = mode==='featured' ? STORIES_DATA[0] : STORIES_DATA.find(x=>x.id===storyId);
   if(!s) return;
 
