@@ -522,8 +522,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -646,7 +646,60 @@ const I18N = {
   }
 };
 // Default Telugu for other languages not fully translated
-['kn','ml','mr'].forEach(c => { I18N[c] = {...I18N.te}; });
+// kn, ml, mr — copy Telugu structure then override language-specific strings
+I18N.kn = {
+  ...I18N.te,
+  brand:'ಅಮ್ಮಕಥೆ', login:'ಲಾಗಿನ್', register:'ನೋಂದಣಿ',
+  days:'ದಿನಗಳ ಸರಣಿ', tonight:'⭐ ಇಂದು ರಾತ್ರಿ ಕಥೆ', library:'📚 ಕಥೆ ಸಂಗ್ರಹ',
+  'ai-section':'✨ AI ಹೊಸ ಕಥೆ', 'ai-btn':'ವಿಶೇಷ ಕಥೆ ಬರೆಸಿ',
+  'rec-title':'ನಿಮ್ಮ ಧ್ವನಿ ದಾಖಲಿಸಿ', 'rec-sub':'30 ಸೆಕೆಂಡ್ ಕೆಳಗಿನ ವಾಕ್ಯಗಳನ್ನು ಓದಿ',
+  'not-recorded':'ಧ್ವನಿ ದಾಖಲಾಗಿಲ್ಲ', 'save-voice':'ಧ್ವನಿ ಉಳಿಸಿ', 'skip-voice':'ಈಗ ಬೇಡ',
+  'gen-title':'ಹೊಸ ಕಥೆ ತಯಾರಿಸಿ', 'gen-sub':'AI ನಿಮ್ಮ ಮಗುವಿಗೆ ವಿಶೇಷ ಕಥೆ ಬರೆಯುತ್ತದೆ',
+  premium:'ಅಮ್ಮಕಥೆ Premium', 'per-month':'/ ತಿಂಗಳಿಗೆ',
+  'premium-sub':'ಅಮ್ಮನ ಧ್ವನಿಯಲ್ಲಿ ಎಲ್ಲಾ ಕಥೆಗಳು', language:'ಭಾಷೆ ಬದಲಿಸಿ',
+  logout:'🚪 ಲಾಗ್ ಔಟ್', child:'ಮಗು',
+  'nl-home':'ಮುಖಪುಟ','nl-voice':'ಧ್ವನಿ','nl-gen':'ಹೊಸ ಕಥೆ','nl-sub':'Premium','nl-prof':'ಪ್ರೊಫೈಲ್',
+  'rec-prompt':'ನನ್ನ ಚಿನ್ನದ ಮಗುವೇ, ನಿನಗೆ ಒಂದು ಒಳ್ಳೆಯ ಕಥೆ ಹೇಳುತ್ತೇನೆ. ತುಂಬಾ ಹಿಂದೆ, ಒಂದು ಕಾಡಿನಲ್ಲಿ ಒಂದು ಚಾಲಾಕಿ ನರಿ ವಾಸಿಸುತ್ತಿತ್ತು. ಆ ನರಿ ಯಾವಾಗಲೂ ತನ್ನ ಬುದ್ಧಿಯಿಂದ ಎಲ್ಲರಿಗೂ ಸಹಾಯ ಮಾಡುತ್ತಿತ್ತು.',
+  greetings:{morning:'ಶುಭೋದಯ,',afternoon:'ಶುಭ ಮಧ್ಯಾಹ್ನ,',evening:'ಶುಭ ಸಂಜೆ,',night:'ಶುಭ ರಾತ್ರಿ,'},
+  'gen-loading':['ಕಥೆ ಬರೆಯುತ್ತಿದ್ದೇನೆ...','ಪಾತ್ರಗಳನ್ನು ಸಿದ್ಧಪಡಿಸುತ್ತಿದ್ದೇನೆ...','ನೀತಿ ಹೆಣೆಯುತ್ತಿದ್ದೇನೆ...','ಅಂತಿಮ ಸ್ಪರ್ಶ...'],
+  'story-prompt':(child,age,type,moral,setting)=>`Write a Kannada bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Kannada words. Start with "ನನ್ನ ${child},". Return JSON only: {"title":"...","story":"...","moral":"ನೀತಿ: ..."}`
+};
+
+I18N.ml = {
+  ...I18N.te,
+  brand:'അമ്മക്കഥ', login:'ലോഗിൻ', register:'രജിസ്ട്രേഷൻ',
+  days:'ദിവസ ശ്രേണി', tonight:'⭐ ഇന്നത്തെ രാത്രി കഥ', library:'📚 കഥ ശേഖരം',
+  'ai-section':'✨ AI പുതിയ കഥ', 'ai-btn':'പ്രത്യേക കഥ എഴുതിക്കൂ',
+  'rec-title':'നിങ്ങളുടെ ശബ്ദം രേഖപ്പെടുത്തൂ', 'rec-sub':'30 സെക്കൻഡ് ചുവടെ വായിക്കൂ',
+  'not-recorded':'ശബ്ദം രേഖപ്പെടുത്തിയിട്ടില്ല', 'save-voice':'ശബ്ദം സേവ് ചെയ്യൂ', 'skip-voice':'ഇപ്പോൾ വേണ്ട',
+  'gen-title':'പുതിയ കഥ ഉണ്ടാക്കൂ', 'gen-sub':'AI നിങ്ങളുടെ കുഞ്ഞിന് പ്രത്യേക കഥ എഴുതും',
+  premium:'അമ്മക്കഥ Premium', 'per-month':'/ മാസം',
+  'premium-sub':'അമ്മയുടെ ശബ്ദത്തിൽ എല്ലാ കഥകളും', language:'ഭാഷ മാറ്റൂ',
+  logout:'🚪 ലോഗ് ഔട്ട്', child:'കുഞ്ഞ്',
+  'nl-home':'ഹോം','nl-voice':'ശബ്ദം','nl-gen':'പുതിയ കഥ','nl-sub':'Premium','nl-prof':'പ്രൊഫൈൽ',
+  'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, നിനക്ക് ഒരു നല്ല കഥ പറയാം. വളരെ മുൻപ്, ഒരു കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കൻ എപ്പോഴും തന്റെ ബുദ്ധിയാൽ എല്ലാവരെയും സഹായിച്ചിരുന്നു.',
+  greetings:{morning:'സുപ്രഭാതം,',afternoon:'ഉച്ചനമസ്കാരം,',evening:'സന്ധ്യ നമസ്കാരം,',night:'ശുഭ രാത്രി,'},
+  'gen-loading':['കഥ എഴുതുന്നു...','കഥാപാത്രങ്ങൾ തയ്യാർ...','ധർമ്മം നെയ്യുന്നു...','അന്തിമ സ്പർശം...'],
+  'story-prompt':(child,age,type,moral,setting)=>`Write a Malayalam bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Malayalam words. Start with "എന്റെ ${child},". Return JSON only: {"title":"...","story":"...","moral":"ധർമ്മം: ..."}`
+};
+
+I18N.mr = {
+  ...I18N.te,
+  brand:'आईकथा', login:'लॉगिन', register:'नोंदणी',
+  days:'दिवस मालिका', tonight:'⭐ आजची रात्रीची गोष्ट', library:'📚 गोष्टींचा संग्रह',
+  'ai-section':'✨ AI नवी गोष्ट', 'ai-btn':'खास गोष्ट लिहा',
+  'rec-title':'तुमचा आवाज रेकॉर्ड करा', 'rec-sub':'30 सेकंद खालील वाक्ये वाचा',
+  'not-recorded':'आवाज रेकॉर्ड झाला नाही', 'save-voice':'आवाज जतन करा', 'skip-voice':'आत्ता नको',
+  'gen-title':'नवी गोष्ट बनवा', 'gen-sub':'AI तुमच्या मुलासाठी खास गोष्ट लिहेल',
+  premium:'आईकथा Premium', 'per-month':'/ महिना',
+  'premium-sub':'आईच्या आवाजात सर्व गोष्टी', language:'भाषा बदला',
+  logout:'🚪 लॉग आउट', child:'मूल',
+  'nl-home':'होम','nl-voice':'आवाज','nl-gen':'नवी गोष्ट','nl-sub':'Premium','nl-prof':'प्रोफाइल',
+  'rec-prompt':'माझ्या सोन्या बाळा, तुला एक छान गोष्ट सांगते. खूप पूर्वी, एका जंगलात एक हुशार कोल्हा राहत होता. तो कोल्हा नेहमी आपल्या बुद्धिमत्तेने सर्वांना मदत करत असे.',
+  greetings:{morning:'सुप्रभात,',afternoon:'नमस्कार,',evening:'सायंकाळ शुभ,',night:'शुभ रात्री,'},
+  'gen-loading':['गोष्ट लिहितोय...','पात्रे तयार...','नीती विणतोय...','अंतिम स्पर्श...'],
+  'story-prompt':(child,age,type,moral,setting)=>`Write a Marathi bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Marathi words. Start with "माझ्या ${child},". Return JSON only: {"title":"...","story":"...","moral":"नीती: ..."}`
+};
 
 // ── STATE ──
 let USER = null, TOKEN = null, LANG = 'te';
@@ -675,6 +728,10 @@ async function init() {
     }
   }
   LANG = USER.lang_code || localStorage.getItem('ak_lang') || 'te';
+  // Sync — ensure USER and localStorage are consistent
+  if(USER.lang_code && USER.lang_code !== localStorage.getItem('ak_lang')) {
+    localStorage.setItem('ak_lang', USER.lang_code);
+  }
   applyLang(LANG);
   updateHome();
   await Promise.all([loadStories(), loadQR()]);
@@ -687,7 +744,7 @@ async function init() {
 // ── LANGUAGE ──
 function applyLang(code) {
   LANG = code;
-  localStorage.setItem('ak_lang','te'); // track
+  localStorage.setItem('ak_lang', code); // save selected language
   document.body.style.fontFamily = FONT_MAP[code] || FONT_MAP.te;
   const L = I18N[code] || I18N.te;
   const map = {
@@ -969,15 +1026,14 @@ async function generateTTS(story) {
       },
       body: JSON.stringify({
         text,
+        // eleven_multilingual_v2 — best for Indian languages, no language_code needed
+        // It auto-detects Telugu/Tamil/Hindi/Kannada/Malayalam from the script
         model_id: 'eleven_multilingual_v2',
-        // Explicit language code forces correct pronunciation for Indian languages
-        // Without this, ElevenLabs may default to English phonetics on Telugu/Tamil text
-        language_code: LANG_TO_BCP47[LANG] || 'te',
         voice_settings: {
-          stability:        0.65,  // higher = more consistent Indian accent
-          similarity_boost: 0.90,  // high = stays close to recorded voice
-          style:            0.30,  // slight expressiveness for storytelling
-          use_speaker_boost: true  // enhances voice clarity
+          stability:        0.65,
+          similarity_boost: 0.90,
+          style:            0.25,
+          use_speaker_boost: true
         }
       })
     });
@@ -1574,13 +1630,50 @@ function renderLangGrid() {
 async function changeLang(code, el) {
   document.querySelectorAll('.lang-opt').forEach(o=>o.classList.remove('active'));
   el.classList.add('active');
+
+  // Update LANG global immediately
+  LANG = code;
+
+  // Update user object and persist
   USER.lang_code = code;
   localStorage.setItem('ak_user', JSON.stringify(USER));
-  try { await sb.rpc('update_user_lang', { p_user_id: USER.id, p_lang: code }); } catch(e){ console.warn('lang update:', e); }
+  localStorage.setItem('ak_lang', code);
+
+  // Clear TTS cache — audio generated in old language is now wrong
+  ttsCache = {};
+
+  // Clear default voice cache — may differ per language
+  configVoiceCache = {};
+
+  // Stop any playing audio
+  if(audioEl) { audioEl.pause(); audioEl.src = ''; audioEl = null; }
+  isPlaying = false;
+
+  // Save to DB
+  try { await sb.rpc('update_user_lang', { p_user_id: USER.id, p_lang: code }); }
+  catch(e){ console.warn('lang update DB:', e); }
+
+  // Apply all UI translations
   applyLang(code);
+
+  // Reload home content in new language
+  updateHome();
+
+  // Reload stories in new language
   await loadStories();
   renderStories();
-  toast('Language changed!');
+
+  // Re-render generate options in new language
+  renderGenOptions();
+
+  // Re-render plans in new language
+  renderPlans();
+
+  // Re-render lang grid to show new active
+  renderLangGrid();
+
+  const langNames = {te:'తెలుగు',ta:'தமிழ்',kn:'ಕನ್ನಡ',hi:'हिंदी',ml:'മലയാളം',mr:'मराठी',en:'English'};
+  toast(`✓ Language changed to ${langNames[code]||code}`);
 }
 
 // ── SCREENS ──
