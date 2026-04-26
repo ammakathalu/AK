@@ -973,7 +973,7 @@ async function saveConfig() {
 
 // ── UTILS ──
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
-function logout() { sb.auth.signOut(); window.location.href='admin.html'; }
+function logout() { sb.auth.signOut(); window.location.href='admin-login.html'; }
 
 function toast(msg, type='') {
   const el=document.getElementById('toastEl');
