@@ -527,7 +527,7 @@ const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 // ── AUTH CHECK ──
 async function checkAuth() {
   const { data: { session } } = await sb.auth.getSession();
-  if(!session) { window.location.href = 'admin.html'; return; }
+  if(!session) { window.location.href = 'admin-login.html'; return; }
   document.getElementById('adminName').textContent = session.user.email?.split('@')[0] || 'Admin';
 }
 
