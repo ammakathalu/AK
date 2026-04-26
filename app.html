@@ -12,34 +12,41 @@
 @import url('https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Serif+Telugu:wght@400;700&family=Noto+Serif+Tamil:wght@400;700&family=Noto+Serif+Devanagari:wght@400;700&family=Noto+Serif+Kannada:wght@400;700&family=Noto+Serif+Malayalam:wght@400;700&display=swap');
 
 :root{
-  /* ── CHILDREN'S PALETTE ── */
-  --bg:       #fff9f0;
-  --bg2:      #fff3e0;
-  --card:     #ffffff;
-  --card2:    #fffbf5;
+  /* ── EYE-SAFE CHILDREN'S PALETTE ──
+     Soft, warm, pastel tones — not harsh on eyes
+     Low saturation, high brightness — safe for children & parents
+  */
+  --bg:        #fef6e9;   /* warm parchment — like old storybooks */
+  --bg2:       #fdefd6;   /* slightly deeper parchment */
+  --card:      #fffdf8;   /* near-white, warm undertone */
+  --card2:     #fff8ee;
 
-  --green:    #2ecc71;
-  --green-l:  #d5f5e3;
-  --green-d:  #27ae60;
-  --pink:     #ff6b9d;
-  --pink-l:   #ffe0ed;
-  --pink-d:   #e91e8c;
-  --orange:   #ff8c42;
-  --orange-l: #ffe8d6;
-  --orange-d: #e67e22;
-  --purple:   #9b59b6;
-  --purple-l: #f0e6ff;
-  --yellow:   #f4d03f;
-  --sky:      #3498db;
+  /* Soft pastels — never saturated primaries */
+  --green:     #4caf7d;   /* sage green — calming */
+  --green-l:   #e8f5ee;   /* mint tint */
+  --green-d:   #2e7d52;
+  --pink:      #e07ba0;   /* dusty rose — NOT hot pink */
+  --pink-l:    #fce8f0;   /* blush tint */
+  --pink-d:    #b85080;
+  --orange:    #e8924a;   /* terracotta — warm, not harsh */
+  --orange-l:  #fdebd9;
+  --orange-d:  #c06830;
+  --purple:    #7c6baa;   /* muted lavender */
+  --purple-l:  #ede8f8;
+  --yellow:    #e8c84a;   /* golden wheat */
+  --yellow-l:  #fdf5d0;
+  --sky:       #5b9bd5;   /* soft cornflower */
+  --sky-l:     #e3eef8;
 
-  --gold:     #f4c842;
-  --text:     #2c3e50;
-  --muted:    #7f8c8d;
-  --dim:      #bdc3c7;
-  --border:   #e8e0d5;
-  --radius:   18px;
-  --shadow:   0 4px 20px rgba(0,0,0,.10);
-  --shadow-lg:0 8px 32px rgba(0,0,0,.14);
+  --gold:      #d4a843;   /* antique gold */
+  --text:      #3a2f1e;   /* warm dark brown — easier than pure black */
+  --text2:     #5a4a35;
+  --muted:     #8c7a65;   /* warm grey-brown */
+  --dim:       #c4b49e;
+  --border:    #ead9c4;
+  --radius:    20px;
+  --shadow:    0 3px 16px rgba(58,47,30,.08);
+  --shadow-lg: 0 8px 32px rgba(58,47,30,.12);
 }
 
 *{margin:0;padding:0;box-sizing:border-box;-webkit-tap-highlight-color:transparent}
@@ -549,6 +556,192 @@ body::before {
 }
 .gen-actions{display:flex;gap:10px;margin-top:14px;}
 .gen-actions .btn-p,.gen-actions .btn-g{flex:1;padding:12px;}
+
+/* ── BOOK FORMAT STORY CARD ── */
+.book-card{
+  background:var(--card);
+  border-radius:4px 20px 20px 4px;
+  margin:0 16px 14px;
+  display:flex;
+  box-shadow:
+    -4px 0 0 var(--gold),          /* book spine */
+    var(--shadow),
+    inset 0 0 0 1px var(--border); /* subtle border */
+  overflow:hidden;
+  cursor:pointer;
+  transition:transform .18s, box-shadow .18s;
+  position:relative;
+}
+.book-card:active{transform:scale(.97);}
+.book-card.locked{opacity:.72;}
+.book-spine{
+  width:28px;flex-shrink:0;
+  background:linear-gradient(180deg,var(--gold),var(--orange));
+  display:flex;align-items:center;justify-content:center;
+  position:relative;
+}
+.book-spine::after{
+  content:'';
+  position:absolute;top:8px;bottom:8px;right:0;
+  width:2px;background:rgba(255,255,255,.25);border-radius:1px;
+}
+.book-cover-emoji{
+  writing-mode:vertical-rl;
+  text-orientation:mixed;
+  font-size:13px;
+  color:rgba(255,255,255,.9);
+  font-weight:700;
+  letter-spacing:.1em;
+}
+.book-inner{
+  flex:1;padding:14px 14px 12px;
+  background:linear-gradient(to right,#fffdf8,var(--card));
+}
+.book-category{
+  font-size:10px;font-weight:700;letter-spacing:.08em;
+  text-transform:uppercase;margin-bottom:5px;
+  display:flex;align-items:center;gap:5px;
+}
+.book-title{
+  font-size:16px;font-weight:800;color:var(--text);
+  line-height:1.3;margin-bottom:5px;
+}
+.book-excerpt{
+  font-size:12px;color:var(--muted);line-height:1.5;
+  margin-bottom:8px;
+  display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;
+}
+.book-footer{
+  display:flex;align-items:center;justify-content:space-between;
+}
+.book-dur{font-size:11px;color:var(--muted);font-weight:600;}
+.book-badge{
+  font-size:10px;padding:2px 8px;border-radius:20px;font-weight:700;
+}
+.book-badge.free{background:var(--green-l);color:var(--green-d);}
+.book-badge.premium{background:var(--yellow-l);color:var(--orange-d);}
+.book-badge.locked{background:#eee;color:#999;}
+.book-play-btn{
+  width:32px;height:32px;border-radius:50%;border:none;
+  background:linear-gradient(135deg,var(--pink),var(--orange));
+  color:#fff;font-size:13px;cursor:pointer;flex-shrink:0;
+  box-shadow:0 3px 10px rgba(224,123,160,.3);
+  transition:transform .15s;
+}
+.book-play-btn:active{transform:scale(.9);}
+
+/* Spine colors by category */
+.book-card.ramayana .book-spine{background:linear-gradient(180deg,#7c6baa,#5b9bd5);}
+.book-card.mahabharat .book-spine{background:linear-gradient(180deg,#d4a843,#e8924a);}
+.book-card.panchatantra .book-spine{background:linear-gradient(180deg,#4caf7d,#5b9bd5);}
+.book-card.tenali .book-spine{background:linear-gradient(180deg,#e07ba0,#e8924a);}
+.book-card.folk .book-spine{background:linear-gradient(180deg,#e8924a,#d4a843);}
+.book-card.grandma .book-spine{background:linear-gradient(180deg,#e07ba0,#7c6baa);}
+.book-card.moral .book-spine{background:linear-gradient(180deg,#4caf7d,#d4a843);}
+
+/* Category label colors */
+.cat-ramayana{color:#7c6baa;}
+.cat-mahabharat{color:#c06830;}
+.cat-panchatantra{color:#2e7d52;}
+.cat-tenali{color:#b85080;}
+.cat-folk{color:#c06830;}
+.cat-grandma{color:#b85080;}
+.cat-moral{color:#2e7d52;}
+
+/* ── PLAYER — BOOK PAGE FORMAT ── */
+.player-book{
+  margin:0 16px 16px;
+  background:var(--card);
+  border-radius:4px 20px 20px 4px;
+  box-shadow:-6px 0 0 var(--gold), var(--shadow-lg);
+  overflow:hidden;
+}
+.player-book-header{
+  background:linear-gradient(135deg,var(--gold),var(--orange));
+  padding:16px 18px 14px;
+  display:flex;align-items:center;gap:14px;
+}
+.player-book-emoji{
+  font-size:40px;
+  width:60px;height:60px;border-radius:12px;
+  background:rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;
+  flex-shrink:0;
+}
+.player-book-title{font-size:18px;font-weight:800;color:#fff;line-height:1.3;}
+.player-book-meta{font-size:12px;color:rgba(255,255,255,.85);margin-top:3px;}
+.player-book-body{
+  padding:18px;
+  background:repeating-linear-gradient(
+    transparent,
+    transparent 27px,
+    #ead9c4 27px,
+    #ead9c4 28px
+  );
+  min-height:200px;
+}
+.player-book-text{
+  font-size:15px;line-height:1.85;color:var(--text);
+  font-family:'Noto Serif Telugu',serif;
+}
+
+/* ── HOME improvements ── */
+.home-hdr{
+  background:linear-gradient(150deg,#7c6baa 0%,#e07ba0 60%,#e8924a 100%);
+  padding:24px 20px 28px;
+  position:relative;overflow:hidden;
+}
+.home-hdr::after{
+  content:'🌙 ⭐ ✨';
+  position:absolute;right:16px;top:16px;
+  font-size:20px;opacity:.3;letter-spacing:6px;
+}
+.home-greet{font-size:13px;color:rgba(255,255,255,.85);font-weight:600;margin-bottom:3px;}
+.home-name{font-size:24px;font-weight:800;color:#fff;}
+.streak-pill{
+  display:inline-flex;align-items:center;gap:5px;
+  background:rgba(255,255,255,.18);border-radius:20px;
+  padding:4px 12px;font-size:12px;color:#fff;font-weight:700;
+  margin-top:8px;
+}
+
+/* Now card */
+.now-card{
+  margin:14px 16px;
+  background:var(--card);
+  border-radius:4px 20px 20px 4px;
+  box-shadow:-5px 0 0 var(--purple), var(--shadow-lg);
+  padding:16px;cursor:pointer;
+  transition:transform .18s;overflow:hidden;
+}
+.now-card:active{transform:scale(.98);}
+.nc-label{font-size:11px;font-weight:700;color:var(--purple);
+  letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;}
+.nc-title{font-size:18px;font-weight:800;color:var(--text);margin-bottom:8px;line-height:1.3;}
+.nc-controls{display:flex;align-items:center;gap:12px;}
+.nc-play{
+  width:44px;height:44px;border-radius:50%;border:none;flex-shrink:0;
+  background:linear-gradient(135deg,var(--purple),var(--sky));
+  color:#fff;font-size:18px;cursor:pointer;
+  box-shadow:0 4px 14px rgba(124,107,170,.4);transition:transform .15s;
+}
+.nc-play:active{transform:scale(.9);}
+.prog-wrap{flex:1;}
+.prog-bar{height:5px;background:var(--bg2);border-radius:3px;overflow:hidden;margin-bottom:5px;}
+.prog-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--sky));border-radius:3px;width:0%;}
+.prog-time{display:flex;justify-content:space-between;font-size:11px;color:var(--muted);}
+
+/* Section header */
+.section-hd{
+  font-size:17px;font-weight:800;color:var(--text);
+  padding:18px 16px 10px;
+  display:flex;align-items:center;gap:8px;
+}
+.section-hd::after{
+  content:'';flex:1;height:2px;
+  background:linear-gradient(90deg,var(--border),transparent);
+  border-radius:2px;margin-left:8px;
+}
 
 /* ── QR PLACEHOLDER ── */
 .qr-placeholder{
@@ -1239,22 +1432,50 @@ async function loadStories() {
 }
 
 function renderStories() {
-  const L = I18N[LANG] || I18N.te;
   const isPremium = USER?.subscription_status === 'active';
-  document.getElementById('storyList').innerHTML = STORIES_DATA.map(s => {
-    const locked = s.is_premium && !isPremium;
-    const action = locked ? "showScreen('subscribe')" : "handleStoryClick('" + s.id + "')";
-    return '<div class="card story-card ' + (locked?'locked':'') + '" onclick="' + action + '">'
-      + '<div class="s-thumb">' + (s.emoji||'📖') + '</div>'
-      + '<div class="s-info">'
-      + '<div class="s-title">' + s.title + '</div>'
-      + '<div class="s-meta">' + (s.category||'') + ' • ' + formatTime(s.duration_secs||300) + '</div>'
-      + '<div class="s-tags">' + (s.tags||[]).slice(0,2).map(t=>'<span class="tag">'+t+'</span>').join('')
-      + (!s.is_premium ? '<span class="badge-voice">🎙️ Free</span>' : '') + '</div>'
-      + '</div>'
-      + '<span class="s-arr">' + (locked?'🔒':'▶') + '</span>'
-      + '</div>';
-  }).join('');
+
+  // Category display names per language
+  const catNames = {
+    ramayana:    {te:'రామాయణం',ta:'ராமாயணம்',hi:'रामायण',kn:'ರಾಮಾಯಣ',ml:'രാമായണം',mr:'रामायण',en:'Ramayana'},
+    mahabharat:  {te:'మహాభారతం',ta:'மகாபாரதம்',hi:'महाभारत',kn:'ಮಹಾಭಾರತ',ml:'മഹാഭാരതം',mr:'महाभारत',en:'Mahabharata'},
+    panchatantra:{te:'పంచతంత్రం',ta:'பஞ்சதந்திரம்',hi:'पंचतंत्र',kn:'ಪಂಚತಂತ್ರ',ml:'പഞ്ചതന്ത്രം',mr:'पंचतंत्र',en:'Panchatantra'},
+    tenali:      {te:'తెనాలి రామ',ta:'தெனாலி ராமா',hi:'तेनाली राम',kn:'ತೆನಾಲಿ ರಾಮ',ml:'തെനാലി രാമ',mr:'तेनाली राम',en:'Tenali Rama'},
+    folk:        {te:'జానపద కథలు',ta:'நாட்டுப்புற கதைகள்',hi:'लोक कथाएं',kn:'ಜಾನಪದ ಕಥೆಗಳು',ml:'നാടോടി കഥകൾ',mr:'लोककथा',en:'Folk Tales'},
+    grandma:     {te:'అమ్మమ్మ కథలు',ta:'பாட்டி கதைகள்',hi:'दादी की कहानियां',kn:'ಅಜ್ಜಿ ಕಥೆಗಳು',ml:'മുത്തശ്ശി കഥകൾ',mr:'आजीच्या गोष्टी',en:"Grandma's Tales"},
+    moral:       {te:'నీతి కథలు',ta:'நீதிக் கதைகள்',hi:'नैतिक कहानियां',kn:'ನೀತಿ ಕಥೆಗಳು',ml:'ധർമ്മ കഥകൾ',mr:'नैतिक गोष्टी',en:'Moral Stories'},
+    jataka:      {te:'జాతక కథలు',ta:'ஜாதக கதைகள்',hi:'जातक कथाएं',kn:'ಜಾತಕ ಕಥೆಗಳು',ml:'ജാതക കഥകൾ',mr:'जातक कथा',en:'Jataka Tales'},
+  };
+
+  const getCatLabel = (cat) => (catNames[cat] || {})[LANG] || (catNames[cat] || {}).en || cat || 'Story';
+
+  document.getElementById('storyList').innerHTML = STORIES_DATA.length
+    ? STORIES_DATA.map(s => {
+        const locked  = s.is_premium && !isPremium;
+        const cat     = s.category || 'moral';
+        const action  = locked ? "showScreen('subscribe')" : "openPlayer('" + s.id + "')";
+        const excerpt = (s.story_text||'').slice(0,80).trim();
+        const catLabel = getCatLabel(cat);
+        return `<div class="book-card ${cat} ${locked?'locked':''}" onclick="${action}">
+          <div class="book-spine">
+            <span class="book-cover-emoji">${s.emoji||'📖'}</span>
+          </div>
+          <div class="book-inner">
+            <div class="book-category cat-${cat}">
+              ${catLabel}
+            </div>
+            <div class="book-title">${s.title}</div>
+            ${excerpt ? '<div class="book-excerpt">' + excerpt + '...</div>' : ''}
+            <div class="book-footer">
+              <span class="book-dur">${s.duration_secs ? '🕐 ' + formatTime(s.duration_secs) : ''}</span>
+              <span class="book-badge ${locked?'locked':s.is_premium?'premium':'free'}">
+                ${locked ? '🔒 Premium' : s.is_premium ? '👑 Premium' : '✓ Free'}
+              </span>
+              ${!locked ? '<button class="book-play-btn" onclick="event.stopPropagation();openPlayer(this.dataset.id)" data-id="' + s.id + '">▶</button>' : ''}
+            </div>
+          </div>
+        </div>`;
+      }).join('')
+    : '<div style="padding:24px 16px;text-align:center;color:var(--muted);font-size:14px;">కథలు లోడ్ అవుతున్నాయి...</div>';
 }
 
 // ── PLAYER ──
@@ -1274,20 +1495,30 @@ async function openPlayer(storyId, mode) {
   clearInterval(playInterval);
 
   currentStory = s; isPlaying = false; playSeconds = 0;
-  document.getElementById('playerArt').textContent   = s.emoji||'🌙';
+
+  const hasOwnVoice = !!(USER?.elevenlabs_voice_id);
+
+  document.getElementById('playerArt').textContent   = s.emoji||'📖';
+  document.getElementById('playerArt').className     = 'player-art';
   document.getElementById('playerTitle').textContent  = s.title;
-  document.getElementById('playerText').innerHTML    = (s.story_text||'').replace(/\n\n/g,'<br><br>');
+  document.getElementById('playerMeta').innerHTML    =
+    '<span class="badge-voice">🎙 ' + (hasOwnVoice ? 'అమ్మ గొంతు' : 'కథకుడు') + '</span>';
   document.getElementById('playerProg').style.width  = '0%';
   document.getElementById('playerCur').textContent   = '0:00';
   document.getElementById('playerTot').textContent   = s.duration_secs ? formatTime(s.duration_secs) : '--:--';
   document.getElementById('mainPlayBtn').textContent  = '▶';
   document.getElementById('mainPlayBtn').disabled     = false;
-  document.getElementById('playerArt').className     = 'player-art';
+
+  // Book-page format: paragraphs separated, moral highlighted
+  const rawText = s.story_text || '';
+  const bookHtml = rawText.split(/\n+/).filter(l=>l.trim()).map(line => {
+    const isMoral = /నీతి:|Moral:|नीति:|ನೀತಿ:|ধর্ম:|nneethi:|Neethi:/i.test(line) || line.length < 80 && line.includes('నీతి');
+    if(isMoral) return '<p style="margin:16px 0 0;padding:12px 14px;background:var(--yellow-l);border-left:4px solid var(--gold);border-radius:0 12px 12px 0;font-weight:700;font-size:14px;color:var(--text2);">' + line + '</p>';
+    return '<p style="margin:0 0 14px;font-size:15px;line-height:1.9;color:var(--text);">' + line + '</p>';
+  }).join('');
+  document.getElementById('playerText').innerHTML = bookHtml;
 
   const voiceId = await getVoiceId();
-  const hasOwnVoice = !!(USER?.elevenlabs_voice_id);
-  document.getElementById('playerMeta').innerHTML =
-    `<span class="badge-voice">🎙 ${hasOwnVoice ? 'అమ్మ గొంతు' : 'కథకుడు'}</span>`;
 
   showScreen('player');
   logPlay(s.id);
