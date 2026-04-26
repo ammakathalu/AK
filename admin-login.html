@@ -214,8 +214,8 @@ body{
 
 <script>
 // ── CONFIG ── replace with your actual values
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
 
 const { createClient } = supabase;
@@ -230,14 +230,11 @@ async function init() {
   try {
     const { data:{ session } } = await sb.auth.getSession();
     if(session) {
-      // Verify it's an actual admin
-      const { data } = await sb.from('admins')
-        .select('id').eq('email', session.user.email).eq('is_active',true).single();
-      if(data) { window.location.href = 'admin.html'; return; }
-      // Has session but not an admin — sign out
+      const { data: adminData } = await sb.rpc('get_admin_by_email', { p_email: session.user.email });
+      if(adminData) { window.location.href = 'admin.html'; return; }
       await sb.auth.signOut();
     }
-  } catch(e) {/* demo mode — no session check needed */}
+  } catch(e) {/* not signed in or demo mode */}
 }
 
 // ── TABS ──
@@ -296,25 +293,25 @@ async function doLogin() {
   }
 
   try {
-    // Real Supabase Auth sign-in
+    // Step 1 — Supabase Auth sign-in (email + password)
     const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
     if(error) throw error;
 
-    // Check admin table — prevents non-admin Supabase users from entering
-    const { data: adminRow, error: adminErr } = await sb
-      .from('admins')
-      .select('id, name, role')
-      .eq('email', email)
-      .eq('is_active', true)
-      .single();
+    // Step 2 — verify admin role via RPC (bypasses RLS, safe)
+    // Direct SELECT on admins table fails because RLS blocks anon/authenticated reads.
+    // The get_admin_by_email() function is SECURITY DEFINER so it reads as superuser.
+    const { data: adminData, error: rpcErr } = await sb.rpc('get_admin_by_email', {
+      p_email: email
+    });
 
-    if(adminErr || !adminRow) {
+    if(rpcErr || !adminData) {
+      // Valid Supabase user but not in admins table
       await sb.auth.signOut();
-      throw new Error('You are not registered as an admin.');
+      throw new Error('Access denied. This account is not an admin.');
     }
 
-    // Update last_login timestamp
-    await sb.from('admins').update({ last_login: new Date().toISOString() }).eq('email', email);
+    // Store admin info for admin.html to read
+    sessionStorage.setItem('ak_admin', JSON.stringify(adminData));
 
     showStep('step-signing-in');
     setTimeout(() => window.location.href = 'admin.html', 800);
