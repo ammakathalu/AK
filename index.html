@@ -333,8 +333,8 @@ select.inp{cursor:pointer;appearance:none;
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL     = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY= 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -509,28 +509,18 @@ async function lSubmitPhone() {
   if(phone.length!==10){ document.getElementById('l-phone-err').textContent=t('err-phone'); return; }
   const btn = document.getElementById('l-phone-btn');
   btn.disabled=true;
-  btn.innerHTML=`<span class="spinner"></span>${t('lt-next').replace('→','')}`;
+  btn.innerHTML=`<span class="spinner"></span>`;
 
-  try {
-    const full = '+91'+phone;
-    const { data, error } = await sb.from('users')
-      .select('id').eq('phone',full).eq('is_active',true).maybeSingle();
+  // WHY we skip the phone-exists DB check here:
+  // The anon key cannot read the users table (RLS blocks it by design).
+  // The verify-pin Edge Function uses the service role key and will
+  // return a clear "user not found" error if the phone doesn't exist.
+  // So we just go straight to the PIN step — wrong phones get rejected there.
+  regData.phone = '+91'+phone;
+  document.getElementById('l-phone-show').textContent = '+91 '+phone;
+  lPinDigits=[]; lAttempts=0; lUpdateDots();
+  showStep('l-pin');
 
-    if(!data) {
-      document.getElementById('l-phone-err').textContent = t('err-not-found');
-      btn.disabled=false; btn.innerHTML=t('lt-next'); return;
-    }
-    regData.phone = full;
-    document.getElementById('l-phone-show').textContent = '+91 '+phone;
-    lPinDigits=[]; lAttempts=0; lUpdateDots();
-    showStep('l-pin');
-  } catch(e) {
-    // Demo mode — let through
-    regData.phone = '+91'+phone;
-    document.getElementById('l-phone-show').textContent = '+91 '+phone;
-    lPinDigits=[]; lUpdateDots();
-    showStep('l-pin');
-  }
   btn.disabled=false; btn.innerHTML=t('lt-next');
 }
 
@@ -554,18 +544,54 @@ function lDelKey() { lPinDigits.pop(); lUpdateDots(); document.getElementById('l
 async function lSubmitPin() {
   const pin = lPinDigits.join('');
   document.getElementById('l-pin-err').textContent='';
+
+  // DEMO MODE: bypass Edge Function, accept any 6-digit PIN
+  if(SUPABASE_URL.includes('YOUR_PROJECT')) {
+    const demoUser={id:'demo',mother_name:'అమ్మ',child_name:'బాబు',child_age:5,lang_code:LANG,subscription_status:'trial'};
+    localStorage.setItem('ak_token','demo-'+Date.now());
+    localStorage.setItem('ak_user', JSON.stringify(demoUser));
+    document.getElementById('l-welcome-msg').textContent  = t('welcome')+'!';
+    document.getElementById('l-redirect-msg').textContent = t('redirect');
+    showStep('l-success');
+    setTimeout(()=>window.location.href='app.html',1400);
+    return;
+  }
+
   try {
     const { data, error } = await sb.functions.invoke('verify-pin',{
       body:{ phone: regData.phone, pin }
     });
-    if(error||!data?.token) throw new Error('bad pin');
+
+    // Edge Function returned an error object
+    if(error) {
+      // FunctionsFetchError = Edge Function not deployed yet
+      if(error.message?.includes('Failed to send') || error.message?.includes('FunctionsHttpError')) {
+        showEdgeFnFallback(pin); return;
+      }
+      throw new Error(error.message||'error');
+    }
+
+    // Edge Function returned but with an error payload
+    if(!data?.token) {
+      const msg = data?.error || '';
+      if(msg.includes('not found') || msg.includes('User not found')) {
+        // Phone truly not in DB — send back to phone step
+        document.getElementById('l-pin-err').textContent = t('err-not-found');
+        setTimeout(()=>{ showStep('l-phone'); document.getElementById('l-phone-err').textContent=t('err-not-found'); },1200);
+        return;
+      }
+      throw new Error('invalid_pin');
+    }
+
+    // SUCCESS
     localStorage.setItem('ak_token', data.token);
     localStorage.setItem('ak_user',  JSON.stringify(data.user));
     localStorage.setItem('ak_lang',  data.user?.lang_code||LANG);
     document.getElementById('l-welcome-msg').textContent  = t('welcome')+' '+(data.user?.mother_name||'')+'!';
     document.getElementById('l-redirect-msg').textContent = t('redirect');
     showStep('l-success');
-    setTimeout(()=>window.location.href='app.html', 1400);
+    setTimeout(()=>window.location.href='app.html', 1200);
+
   } catch(e) {
     lAttempts++;
     lShakeErr();
@@ -577,14 +603,31 @@ async function lSubmitPin() {
     }
     const left = MAX_ATTEMPTS-lAttempts;
     document.getElementById('l-pin-err').textContent = t('err-wrong-pin')+` (${t('attempts-left')}: ${left})`;
-    // Demo fallback — any 6-digit PIN works
-    if(SUPABASE_URL.includes('YOUR_PROJECT')) {
-      const demoUser={id:'demo',mother_name:'అమ్మ',child_name:'బాబు',child_age:5,lang_code:LANG,subscription_status:'trial'};
-      localStorage.setItem('ak_token','demo-'+Date.now());
-      localStorage.setItem('ak_user', JSON.stringify(demoUser));
-      showStep('l-success');
-      setTimeout(()=>window.location.href='app.html',1400);
-    }
+  }
+}
+
+// Called when Edge Function isn't deployed yet — do direct bcrypt check via RPC
+async function showEdgeFnFallback(pin) {
+  try {
+    // Supabase has pgcrypto built-in — call a simple RPC that does the check
+    const { data, error } = await sb.rpc('check_user_pin', {
+      p_phone: regData.phone, p_pin: pin
+    });
+    if(error || !data) throw new Error('bad');
+    // data = { id, mother_name, child_name, lang_code, subscription_status }
+    const token = 'rpc-'+Date.now();
+    localStorage.setItem('ak_token', token);
+    localStorage.setItem('ak_user',  JSON.stringify(data));
+    localStorage.setItem('ak_lang',  data.lang_code||LANG);
+    document.getElementById('l-welcome-msg').textContent  = t('welcome')+' '+(data.mother_name||'')+'!';
+    document.getElementById('l-redirect-msg').textContent = t('redirect');
+    showStep('l-success');
+    setTimeout(()=>window.location.href='app.html',1200);
+  } catch(e) {
+    lAttempts++;
+    lShakeErr();
+    const left = MAX_ATTEMPTS-lAttempts;
+    document.getElementById('l-pin-err').textContent = t('err-wrong-pin')+` (${t('attempts-left')}: ${left})`;
   }
 }
 
@@ -616,12 +659,9 @@ async function rGoPin() {
   const btn=document.getElementById('r-phone-btn');
   btn.disabled=true; btn.innerHTML=`<span class="spinner"></span>`;
 
-  try {
-    const full = '+91'+phone;
-    const { data } = await sb.from('users').select('id').eq('phone',full).maybeSingle();
-    if(data){ document.getElementById('r-phone-err').textContent=t('err-phone-exists'); btn.disabled=false; btn.innerHTML=t('rt-phone-next'); return; }
-    regData.phone = full;
-  } catch(e) { regData.phone='+91'+phone; /* demo */ }
+  // Skip client-side phone-exists check — RLS blocks anon reads.
+  // The create-user Edge Function will return a 409 conflict if phone is taken.
+  regData.phone = '+91'+phone;
 
   rPinDigits=[]; rUpdateDots(); showStep('r-pin');
   btn.disabled=false; btn.innerHTML=t('rt-phone-next');
