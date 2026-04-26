@@ -297,12 +297,12 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
   </div>
 
   <!-- Now Playing -->
-  <div class="now-card" id="nowCard" onclick="openPlayer(null,'featured')">
+  <div class="now-card" id="nowCard" onclick="handleFeaturedClick()">
     <div class="nc-label" id="t-tonight">⭐ ఈ రాత్రి కథ</div>
     <div class="nc-title" id="ncTitle">లోడ్ అవుతోంది...</div>
     <div style="margin-bottom:8px;"><span class="badge-voice" id="ncVoice">🎙️ అమ్మ గొంతు</span></div>
     <div class="nc-controls">
-      <button class="nc-play" id="ncPlayBtn" onclick="event.stopPropagation();toggleHomePlay()">▶</button>
+      <button class="nc-play" id="ncPlayBtn" onclick="event.stopPropagation();handleFeaturedClick()">▶</button>
       <div class="prog-wrap">
         <div class="prog-bar"><div class="prog-fill" id="ncProg"></div></div>
         <div class="prog-time"><span id="ncCur">0:00</span><span id="ncDur">—</span></div>
@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -777,16 +777,17 @@ function renderStories() {
   const isPremium = USER?.subscription_status === 'active';
   document.getElementById('storyList').innerHTML = STORIES_DATA.map(s => {
     const locked = s.is_premium && !isPremium;
-    return `<div class="card story-card ${locked?'locked':''}" onclick="${locked?`showScreen('subscribe')`:`openPlayer('${s.id}')`}">
-      <div class="s-thumb">${s.emoji||'📖'}</div>
-      <div class="s-info">
-        <div class="s-title">${s.title}</div>
-        <div class="s-meta">${s.category||''} • ${formatTime(s.duration_secs||300)}</div>
-        <div class="s-tags">${(s.tags||[]).slice(0,2).map(t=>`<span class="tag">${t}</span>`).join('')}
-          ${!s.is_premium?'<span class="badge-voice">🎙️ Free</span>':''}</div>
-      </div>
-      <span class="s-arr">${locked?'🔒':'▶'}</span>
-    </div>`;
+    const action = locked ? "showScreen('subscribe')" : "handleStoryClick('" + s.id + "')";
+    return '<div class="card story-card ' + (locked?'locked':'') + '" onclick="' + action + '">'
+      + '<div class="s-thumb">' + (s.emoji||'📖') + '</div>'
+      + '<div class="s-info">'
+      + '<div class="s-title">' + s.title + '</div>'
+      + '<div class="s-meta">' + (s.category||'') + ' • ' + formatTime(s.duration_secs||300) + '</div>'
+      + '<div class="s-tags">' + (s.tags||[]).slice(0,2).map(t=>'<span class="tag">'+t+'</span>').join('')
+      + (!s.is_premium ? '<span class="badge-voice">🎙️ Free</span>' : '') + '</div>'
+      + '</div>'
+      + '<span class="s-arr">' + (locked?'🔒':'▶') + '</span>'
+      + '</div>';
   }).join('');
 }
 
@@ -987,7 +988,14 @@ function togglePlay() {
   }
 }
 
-function toggleHomePlay() { openPlayer(null,'featured'); }
+// Wrapper for inline onclick — async functions fail silently in onclick attributes
+function handleStoryClick(storyId) {
+  openPlayer(storyId, null);
+}
+function handleFeaturedClick() {
+  openPlayer(null, 'featured');
+}
+function toggleHomePlay() { handleFeaturedClick(); }
 function skip(secs) { if(audioEl) audioEl.currentTime = Math.max(0, Math.min(audioEl.currentTime+secs, audioEl.duration||0)); }
 function prevStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i>0) openPlayer(STORIES_DATA[i-1].id); }
 function nextStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i<STORIES_DATA.length-1) openPlayer(STORIES_DATA[i+1].id); }
@@ -1296,10 +1304,20 @@ async function saveUserStory(story) {
 
 function playGenerated() {
   if(!generatedStory) return;
-  const fake = {id:'gen-'+Date.now(),emoji:'✨',title:generatedStory.title,duration_secs:300,tags:[],is_premium:false,story_text:generatedStory.story+'\n\n'+generatedStory.moral};
+  const fake = {
+    id: 'gen-' + Date.now(),
+    emoji: '✨',
+    title: generatedStory.title,
+    duration_secs: null,
+    tags: [],
+    is_premium: false,
+    audio_url: null,
+    story_text: (generatedStory.story || '') + ' ' + (generatedStory.moral || '')
+  };
   STORIES_DATA.unshift(fake);
-  openPlayer(fake.id);
+  handleStoryClick(fake.id);
 }
+
 async function saveGenerated() {
   if(!generatedStory) return;
   try {
@@ -1435,7 +1453,26 @@ async function submitPayment() {
 
 // ── PROFILE ──
 function renderProfile() {
+  // Always re-read USER from localStorage for fresh values
+  try { USER = JSON.parse(localStorage.getItem('ak_user')) || USER; } catch(e){}
+
   renderLangGrid();
+
+  // Update name / child
+  const nameEl = document.getElementById('profName');
+  const childEl = document.getElementById('profChild');
+  if(nameEl) nameEl.textContent = USER?.mother_name || '—';
+  if(childEl) childEl.textContent = USER?.child_name || '—';
+
+  // Voice status
+  const vs = document.getElementById('voiceStatus');
+  if(vs) vs.textContent = USER?.elevenlabs_voice_id ? '🟢 గొంతు సిద్ధం' : '🔴 నమోదు కాలేదు';
+
+  // Subscription badge + status
+  const badge = document.getElementById('subBadge');
+  if(badge) badge.textContent = USER?.subscription_status === 'active' ? '👑 Premium' : '🆓 Free';
+  const subSt = document.getElementById('subStatus');
+  if(subSt) subSt.textContent = USER?.subscription_status === 'active' ? 'Active ✓' : 'Free →';
 }
 
 function renderLangGrid() {
@@ -1460,14 +1497,28 @@ async function changeLang(code, el) {
 
 // ── SCREENS ──
 function showScreen(id) {
+  // Stop audio when leaving player
+  if(id !== 'player' && audioEl && isPlaying) {
+    audioEl.pause();
+    isPlaying = false;
+    const btn = document.getElementById('mainPlayBtn');
+    if(btn) btn.textContent = '▶';
+    const art = document.getElementById('playerArt');
+    if(art) art.className = 'player-art';
+  }
+
   document.querySelectorAll('.screen').forEach(s=>s.classList.remove('active'));
   document.getElementById(id)?.classList.add('active');
   document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
   const navEl = document.getElementById('nav-'+id);
   if(navEl) navEl.classList.add('active');
   window.scrollTo(0,0);
-  // Reload QR every time subscribe screen opens — ensures latest QR is shown
-  if(id === 'subscribe') loadQR();
+
+  // Tab-specific refresh
+  if(id === 'subscribe') { loadQR(); renderPlans(); }
+  if(id === 'profile')   { renderProfile(); }
+  if(id === 'generate')  { renderGenOptions(); }
+  if(id === 'home')      { updateHome(); }
 }
 
 // ── UTILS ──
@@ -1480,12 +1531,17 @@ function toast(msg,dur=2800) {
 }
 
 async function getConfig(key) {
-  try { const {data}=await sb.from('app_config').select('value').eq('key',key).single(); return data?.value; } catch(e){ return null; }
+  try {
+    const { data } = await sb.rpc('get_config_value', { p_key: key });
+    return data || null;
+  } catch(e) { return null; }
 }
 
 function logout() {
-  localStorage.removeItem('ak_token'); localStorage.removeItem('ak_user');
-  window.location.href='login.html';
+  localStorage.removeItem('ak_token');
+  localStorage.removeItem('ak_user');
+  localStorage.removeItem('ak_active_qr');
+  window.location.href='index.html';
 }
 
 init();
