@@ -993,6 +993,16 @@ body::before {
       <div class="opt-grid" id="typeGrid"></div>
     </div>
 
+    <div class="gen-form-card">
+      <label class="gen-form-label" id="t-moral-val">నేర్పాల్సిన విలువ</label>
+      <div class="opt-grid" id="moralGrid"></div>
+    </div>
+
+    <div class="gen-form-card">
+      <label class="gen-form-label" id="t-setting">నేపథ్యం</label>
+      <div class="opt-grid" id="settingGrid"></div>
+    </div>
+
     <!-- Story length note -->
     <div style="background:var(--green-l);border-radius:14px;padding:10px 14px;
                 margin-bottom:14px;display:flex;align-items:center;gap:10px;">
@@ -1214,8 +1224,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -2206,7 +2216,9 @@ function renderGenOptions() {
     const optKey = ['type','moral','setting'][i];
     const defVal = ['animal','honest','village'][i];
     if(!items) return;
-    document.getElementById(gridId).innerHTML = items.map(item =>
+    const el = document.getElementById(gridId);
+    if(!el) return; // guard — element may not exist on current screen
+    el.innerHTML = items.map(item =>
       `<div class="opt ${storyOpts[optKey]===item.k||(!storyOpts[optKey]&&item.k===defVal)?'sel':''}"
         onclick="selectOpt('${optKey}','${item.k}',this,'${gridId}')">
         <span class="oe">${item.e}</span>
