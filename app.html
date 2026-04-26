@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -681,33 +681,93 @@ function updateHome() {
   document.getElementById('profName').textContent = USER?.mother_name || '—';
   document.getElementById('profChild').textContent = USER?.child_name || '—';
   document.getElementById('subBadge').textContent = USER?.subscription_status==='active' ? '👑 Premium' : '🆓 Free';
-  document.getElementById('voiceStatus').textContent = USER?.elevenlabs_voice_id ? '🟢 נмоਦੂ' : '🔴 ' + (I18N[LANG]['not-recorded']||'');
+  document.getElementById('voiceStatus').textContent = USER?.elevenlabs_voice_id
+    ? '🟢 గొంతు సిద్ధం' : '🔴 నమోదు కాలేదు';
   document.getElementById('subStatus').textContent = USER?.subscription_status==='active' ? 'Active ✓' : 'Free →';
 }
 
 // ── STORIES ──
+// ── DEFAULT FEMALE NARRATOR VOICES ──────────────────────────
+// All are ElevenLabs built-in voices, female, warm storytelling tone.
+// eleven_multilingual_v2 model speaks all Indian languages with any voice.
+// These are the STABLE built-in voice IDs — won't change.
+//
+// How to find better voices:
+//   elevenlabs.io/voice-library → filter: Female, Language, Use case: Narration
+//   Paste the voice ID in Admin → App Config → default_voice_<lang>
+//   e.g. key = "default_voice_te", value = "<voice_id>"
+//
+const DEFAULT_VOICES = {
+  // Sarah — warm, soft, storytelling female voice. Works beautifully for
+  // Telugu, Tamil, Kannada, Malayalam with eleven_multilingual_v2
+  te: 'EXAVITQu4vr4xnSDxMaL', // Sarah (female, warm, storytelling)
+  ta: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+  kn: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+  ml: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+
+  // Aria — slightly more expressive, great for Hindi/Marathi narration
+  hi: 'cgSgspJ2msm6clMCkdW9', // Aria (female, expressive, warm)
+  mr: 'cgSgspJ2msm6clMCkdW9', // Aria
+
+  // Sarah for English too
+  en: 'EXAVITQu4vr4xnSDxMaL', // Sarah
+};
+
+// Cache of admin-configured voice overrides
+let configVoiceCache = {};
+
+async function getVoiceId() {
+  // Always refresh USER first
+  try { USER = JSON.parse(localStorage.getItem('ak_user')) || USER; } catch(e){}
+
+  // 1. Own cloned voice — highest priority
+  if(USER?.elevenlabs_voice_id) return USER.elevenlabs_voice_id;
+
+  // 2. Admin-configured default per language (from app_config)
+  //    key format: default_voice_te, default_voice_ta, etc.
+  const configKey = `default_voice_${LANG}`;
+  if(configVoiceCache[configKey]) return configVoiceCache[configKey];
+  try {
+    const { data: cfgVoice } = await sb.rpc('get_config_value', { p_key: configKey });
+    if(cfgVoice && cfgVoice.trim()) {
+      configVoiceCache[configKey] = cfgVoice.trim();
+      return cfgVoice.trim();
+    }
+  } catch(e) {}
+
+  // 3. Hardcoded default female voice for this language
+  return DEFAULT_VOICES[LANG] || DEFAULT_VOICES.te;
+}
+
 async function loadStories() {
   try {
-    const { data } = await sb.from('stories')
-      .select('*')
-      .eq('lang_code', LANG)
-      .eq('is_published', true)
-      .order('is_premium', {ascending:true})
-      .limit(20);
-    if(data) STORIES_DATA = data;
+    // Use RPC to bypass RLS
+    const { data, error } = await sb.rpc('get_published_stories', { p_lang: LANG });
+    if(error) throw error;
+    if(data && data.length > 0) STORIES_DATA = data;
+    else throw new Error('no stories');
   } catch(e) {
-    // fallback demo stories
+    console.warn('loadStories RPC failed:', e.message, '— using demo stories');
+    // Demo stories with full text so TTS can generate audio
     STORIES_DATA = [
-      {id:'s1',emoji:'🦊',title:'తెనాలి రామ — మూడు కుండలు',category:'tenali',duration_secs:512,tags:['తెలివి','హాస్యం'],is_premium:false,story_text:'చాలా కాలం క్రితం, విజయనగర సామ్రాజ్యంలో తెనాలి రామకృష్ణ అనే గొప్ప కవి జీవించేవాడు...\n\n**నీతి: తెలివితేటలతో పెద్ద సమస్యలను కూడా పరిష్కరించవచ్చు.**'},
-      {id:'s2',emoji:'🦁',title:'నక్క మరియు సింహం',category:'panchatantra',duration_secs:360,tags:['ధైర్యం','స్నేహం'],is_premium:false,story_text:'అడవిలో ఒక బలమైన సింహం మరియు తెలివైన నక్క స్నేహితులుగా ఉండేవారు...\n\n**నీతి: నిజమైన స్నేహం కష్టకాలంలో మరింత ప్రకాశిస్తుంది.**'},
-      {id:'s3',emoji:'👸',title:'తెలివైన రాకుమారి',category:'folk',duration_secs:600,tags:['ధైర్యం','నీతి'],is_premium:true,story_text:'ఒక చిన్న రాజ్యంలో ఒక తెలివైన రాకుమారి ఉండేది...\n\n**నీతి: తెలివి మరియు ధైర్యం కలిస్తే ఏ సమస్యనైనా జయించవచ్చు.**'},
-      {id:'s4',emoji:'🐇',title:'తెలివైన కుందేలు',category:'panchatantra',duration_secs:420,tags:['తెలివి'],is_premium:true,story_text:'అడవిలో ఒక తెలివైన కుందేలు ఉండేది...\n\n**నీతి: శారీరక బలం కంటే మేధాశక్తి మరింత శక్తివంతమైనది.**'}
+      {id:'s1',emoji:'🦊',title:'తెనాలి రామ — మూడు కుండలు',category:'tenali',
+       duration_secs:null,tags:['తెలివి','హాస్యం'],is_premium:false,audio_url:null,
+       story_text:'చాలా కాలం క్రితం, విజయనగర సామ్రాజ్యంలో తెనాలి రామకృష్ణ అనే గొప్ప కవి జీవించేవాడు. ఒకరోజు రాజు కృష్ణదేవరాయలు తన దర్బారులో ఒక పెద్ద సమస్య చెప్పాడు. మన రాజ్యంలో చాలా మంది పేదవారు ఉన్నారు, వారికి సహాయం చేయాలి అని అడిగాడు. అందరు మంత్రులు తమ అభిప్రాయాలు చెప్పారు. కానీ తెనాలి రామ మాత్రం నవ్వుతూ నా దగ్గర ఒక మంచి పాత్ర ఉంది అని చెప్పాడు. నీతి: తెలివితేటలతో పెద్ద సమస్యలను కూడా పరిష్కరించవచ్చు.'},
+      {id:'s2',emoji:'🦁',title:'నక్క మరియు సింహం',category:'panchatantra',
+       duration_secs:null,tags:['ధైర్యం','స్నేహం'],is_premium:false,audio_url:null,
+       story_text:'అడవిలో ఒక బలమైన సింహం మరియు తెలివైన నక్క స్నేహితులుగా ఉండేవారు. ఒకరోజు సింహం చాలా గాయపడింది. నక్క తన స్నేహితుడికి సహాయం చేయాలని నిర్ణయించుకుంది. తెలివైన నక్క అడవిలోని మూలికలతో మందు తయారు చేసింది. రోజూ సింహానికి జాగ్రత్తగా సేవ చేసింది. సింహం కోలుకుంది మరియు నక్కకు ధన్యవాదాలు చెప్పింది. నీతి: నిజమైన స్నేహం కష్టకాలంలో మరింత ప్రకాశిస్తుంది.'},
+      {id:'s3',emoji:'👸',title:'తెలివైన రాకుమారి',category:'folk',
+       duration_secs:null,tags:['ధైర్యం','నీతి'],is_premium:true,audio_url:null,
+       story_text:'ఒక చిన్న రాజ్యంలో ఒక తెలివైన రాకుమారి ఉండేది. ఆమె చాలా తెలివైనది మరియు ధైర్యవంతురాలు. రాజ్యంలో ఒక భయంకరమైన రాక్షసుడు వచ్చాడు. అందరూ భయపడ్డారు కానీ రాకుమారి తన తెలివితేటలతో రాక్షసుడిని ఓడించింది. నీతి: తెలివి మరియు ధైర్యం కలిస్తే ఏ సమస్యనైనా జయించవచ్చు.'},
+      {id:'s4',emoji:'🐇',title:'తెలివైన కుందేలు',category:'panchatantra',
+       duration_secs:null,tags:['తెలివి'],is_premium:true,audio_url:null,
+       story_text:'అడవిలో ఒక తెలివైన కుందేలు ఉండేది. ఒకరోజు క్రూరమైన పులి వచ్చింది. కుందేలు భయపడలేదు. బదులుగా తన తెలివితేటలను ఉపయోగించింది. ఓ పులి రాజా, నీకంటే బలమైన శత్రువును చూపిస్తాను అని చెప్పింది. పులిని బావి దగ్గరికి తీసుకెళ్ళింది. పులి నీటిలో తన నీడను చూసి దూకింది. నీతి: శారీరక బలం కంటే మేధాశక్తి మరింత శక్తివంతమైనది.'}
     ];
   }
   if(STORIES_DATA.length > 0) {
     const ft = STORIES_DATA[0];
     document.getElementById('ncTitle').textContent = ft.title;
-    document.getElementById('ncDur').textContent = formatTime(ft.duration_secs||300);
+    document.getElementById('ncDur').textContent = ft.duration_secs ? formatTime(ft.duration_secs) : '—';
     currentStory = ft;
   }
 }
@@ -757,24 +817,22 @@ function openPlayer(storyId, mode) {
   document.getElementById('mainPlayBtn').disabled     = false;
   document.getElementById('playerArt').className     = 'player-art';
 
-  const hasVoice = !!(USER?.elevenlabs_voice_id);
+  const voiceId = await getVoiceId();
+  const hasOwnVoice = !!(USER?.elevenlabs_voice_id);
   document.getElementById('playerMeta').innerHTML =
-    `<span class="badge-voice">🎙 ${hasVoice ? 'అమ్మ గొంతు' : 'కథకుడు'}</span>`;
+    `<span class="badge-voice">🎙 ${hasOwnVoice ? 'అమ్మ గొంతు' : 'కథకుడు'}</span>`;
 
   showScreen('player');
   logPlay(s.id);
 
-  // Priority: admin audio → TTS cache → generate with cloned voice → text only
+  // Priority: admin audio → TTS cache → generate TTS (own voice or default narrator)
   if(s.audio_url) {
     setupAudio(s.audio_url);
   } else if(ttsCache[s.id]) {
     setupAudio(ttsCache[s.id]);
-  } else if(hasVoice) {
-    generateTTS(s);
   } else {
-    document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice">📖 గొంతు నమోదు చేస్తే కథ వినవచ్చు</span>';
-    document.getElementById('mainPlayBtn').textContent = '🎙';
+    // Always generate TTS — use own voice if cloned, else default narrator
+    generateTTS(s);
   }
 }
 
@@ -816,8 +874,8 @@ async function generateTTS(story) {
     // Re-read USER to get latest voice_id
     try { USER = JSON.parse(localStorage.getItem('ak_user')) || USER; } catch(e){}
 
-    const voiceId = USER?.elevenlabs_voice_id;
-    if(!voiceId) throw new Error('No cloned voice found. Please record your voice first.');
+    const voiceId = await getVoiceId();
+    if(!voiceId) throw new Error('No voice available. Check ElevenLabs config.');
 
     const { data: elKey } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
     if(!elKey) throw new Error('ElevenLabs key not set — go to Admin → App Config');
@@ -903,15 +961,14 @@ function togglePlay() {
 
   if(!audioEl) {
     if(ttsGenerating) return; // already generating — wait
-    const hasVoice = !!(USER?.elevenlabs_voice_id);
     if(currentStory?.audio_url) {
       setupAudio(currentStory.audio_url);
-      // short delay so setupAudio initialises audioEl
       setTimeout(togglePlay, 100);
-    } else if(hasVoice && currentStory) {
+    } else if(currentStory) {
+      // Always try TTS — uses own voice or default narrator
       generateTTS(currentStory);
     } else {
-      toast('🎙 గొంతు నమోదు చేయండి — Voice screen లో Record చేయండి');
+      toast('కథ ఎంచుకోండి');
     }
     return;
   }

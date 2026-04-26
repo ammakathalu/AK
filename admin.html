@@ -585,8 +585,8 @@ select.form-inp{cursor:pointer;}
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -1360,6 +1360,14 @@ const CONFIG_KEYS = [
   { key:'trial_days',            label:'Trial Period (days)',      desc:'Days of free trial after signup',                            secret:false },
   { key:'app_name',              label:'App Name',                 desc:'Display name of the app',                                    secret:false },
   { key:'maintenance_mode',      label:'Maintenance Mode',         desc:'Set to true to show maintenance page',                       secret:false },
+  // Default narrator voice IDs (female) — override per language
+  // Find voice IDs at: elevenlabs.io/voice-library (filter: Female, Narration)
+  { key:'default_voice_te', label:'Default Voice — Telugu',   desc:'ElevenLabs voice ID for Telugu narrator. Default: Sarah (EXAVITQu4vr4xnSDxMaL)', secret:false },
+  { key:'default_voice_ta', label:'Default Voice — Tamil',    desc:'ElevenLabs voice ID for Tamil narrator. Default: Sarah (EXAVITQu4vr4xnSDxMaL)', secret:false },
+  { key:'default_voice_kn', label:'Default Voice — Kannada',  desc:'ElevenLabs voice ID for Kannada narrator. Default: Sarah (EXAVITQu4vr4xnSDxMaL)', secret:false },
+  { key:'default_voice_hi', label:'Default Voice — Hindi',    desc:'ElevenLabs voice ID for Hindi narrator. Default: Aria (cgSgspJ2msm6clMCkdW9)', secret:false },
+  { key:'default_voice_ml', label:'Default Voice — Malayalam',desc:'ElevenLabs voice ID for Malayalam narrator. Default: Sarah (EXAVITQu4vr4xnSDxMaL)', secret:false },
+  { key:'default_voice_mr', label:'Default Voice — Marathi',  desc:'ElevenLabs voice ID for Marathi narrator. Default: Aria (cgSgspJ2msm6clMCkdW9)', secret:false },
 ];
 
 async function loadConfig() {
