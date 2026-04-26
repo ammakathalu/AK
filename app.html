@@ -701,40 +701,6 @@ I18N.mr = {
   'story-prompt':(child,age,type,moral,setting)=>`Write a Marathi bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Marathi words. Start with "माझ्या ${child},". Return JSON only: {"title":"...","story":"...","moral":"नीती: ..."}`
 };
 
-// English I18N
-I18N.en = {
-  ...I18N.te,
-  brand:'AmmaKatha',login:'Login',register:'Register',
-  days:'day streak',tonight:'⭐ Tonights Story',library:'📚 Story Library',
-  'ai-section':'✨ AI New Story','ai-btn':'Generate a Special Story',
-  back:'Back','rec-title':'Record Your Voice','rec-sub':'Read the text below for 30 seconds',
-  'read-now':'Read Now','not-recorded':'Voice not recorded',
-  'save-voice':'Save Voice','skip-voice':'Skip for Now',
-  'gen-title':'Generate New Story','gen-sub':'AI will write a special story for your child',
-  'story-type':'Story Type','moral-val':'Value to Teach','setting':'Setting',
-  listen:'Listen',save:'Save',premium:'AmmaKatha Premium',
-  'per-month':'/ month','premium-sub':'All stories in mother's voice — every night',
-  'scan-pay':'Scan & Pay','scan-sub':'Scan with PhonePe / GPay / Paytm
-Then upload screenshot',
-  'upload-proof':'Upload payment screenshot','choose-file':'Choose Screenshot',
-  'submit-payment':'Submit Payment',language:'Change Language',settings:'Settings',
-  'record-voice':'Record Voice',subscription:'Subscription',bedtime:'10 PM Bedtime Reminder',
-  logout:'🚪 Logout',child:'Child',
-  'nl-home':'Home','nl-voice':'Voice','nl-gen':'New Story','nl-sub':'Premium','nl-prof':'Profile',
-  'rec-prompt':'My dear little one, let me tell you a wonderful story. Long long ago, in a beautiful forest, there lived a very clever fox. That fox always helped everyone with her wisdom and kindness.',
-  greetings:{morning:'Good morning,',afternoon:'Good afternoon,',evening:'Good evening,',night:'Good night,'},
-  'gen-loading':['Writing the story...','Creating characters...','Weaving the moral...','Final touches...'],
-  types:[{k:'animal',e:'🦁',l:'Animal Story'},{k:'folk',e:'👸',l:'Folk Tale'},{k:'tenali',e:'🦊',l:'Tenali Rama'},{k:'moral',e:'⭐',l:'Moral Story'}],
-  morals:[{k:'honest',e:'💛',l:'Honesty'},{k:'brave',e:'🦁',l:'Courage'},{k:'kind',e:'🌸',l:'Kindness'},{k:'smart',e:'💡',l:'Wisdom'}],
-  settings_list:[{k:'village',e:'🏡',l:'Village'},{k:'forest',e:'🌳',l:'Forest'},{k:'river',e:'🌊',l:'Riverside'},{k:'kingdom',e:'🏰',l:'Kingdom'}],
-  plans:[
-    {id:'monthly',name:'Monthly',desc:'Cancel anytime',price:'₹99',days:30},
-    {id:'annual',name:'Annual',desc:'Just ₹2.17/day',price:'₹799',days:365,save:'33% off',featured:true},
-    {id:'family',name:'Family Plan',desc:'5 children',price:'₹149',days:30}
-  ],
-  features:['500+ stories in mothers own voice','Childs name in the story','Download without internet','10 PM bedtime reminder','AI new stories','Telugu, Tamil, Kannada, Hindi'],
-  'story-prompt':(child,age,type,moral,setting)=>`Write an English bedtime story for a ${age}-year-old child named ${child}. Story type: ${type}, Moral value: ${moral}, Setting: ${setting}. 200-250 simple English words suitable for a child. Include the child's name naturally. Start with "My dear ${child},". Return JSON only: {"title":"...","story":"...","moral":"Moral: ..."}`
-};
 
 // ── STATE ──
 let USER = null, TOKEN = null, LANG = 'te';
