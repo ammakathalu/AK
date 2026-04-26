@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -731,51 +731,145 @@ function renderStories() {
 }
 
 // ── PLAYER ──
+let audioEl = null;   // real HTML5 Audio element
+let ttsCache = {};    // storyId -> blob URL cache
+
 function openPlayer(storyId, mode) {
   const s = mode==='featured' ? STORIES_DATA[0] : STORIES_DATA.find(x=>x.id===storyId);
   if(!s) return;
   if(s.is_premium && USER?.subscription_status !== 'active') { showScreen('subscribe'); return; }
-  currentStory = s;
-  isPlaying = false; playSeconds = 0;
-  document.getElementById('playerArt').textContent = s.emoji||'🌙';
+
+  if(audioEl) { audioEl.pause(); audioEl.src = ''; }
+  clearInterval(playInterval);
+
+  currentStory = s; isPlaying = false; playSeconds = 0;
+  document.getElementById('playerArt').textContent  = s.emoji||'🌙';
   document.getElementById('playerTitle').textContent = s.title;
-  document.getElementById('playerMeta').innerHTML = `<span class="badge-voice">🎙️ ${USER?.elevenlabs_voice_id?'అమ్మ గొంతు':'కథకుడు'}</span> &nbsp;• ${formatTime(s.duration_secs||300)}`;
-  document.getElementById('playerText').innerHTML = (s.story_text||'').replace(/\n\n/g,'<br><br>').replace(/\*\*(.+?)\*\*/g,'<strong>$1</strong>');
-  document.getElementById('playerTot').textContent = formatTime(s.duration_secs||300);
+  document.getElementById('playerText').innerHTML   = (s.story_text||'').replace(/\n\n/g,'<br><br>');
   document.getElementById('playerProg').style.width = '0%';
+  document.getElementById('playerCur').textContent  = '0:00';
+  document.getElementById('playerTot').textContent  = s.duration_secs ? formatTime(s.duration_secs) : '--:--';
   document.getElementById('mainPlayBtn').textContent = '▶';
-  document.getElementById('playerArt').className = 'player-art';
+  document.getElementById('playerArt').className    = 'player-art';
+  document.getElementById('playerMeta').innerHTML   =
+    `<span class="badge-voice">🎙 ${USER?.elevenlabs_voice_id ? 'అమ్మ గొంతు' : 'కథకుడు'}</span>`;
+
   showScreen('player');
   logPlay(s.id);
+
+  // Priority: admin-uploaded audio > TTS cache > generate TTS > text only
+  if(s.audio_url)          { setupAudio(s.audio_url); }
+  else if(ttsCache[s.id])  { setupAudio(ttsCache[s.id]); }
+  else if(USER?.elevenlabs_voice_id) { generateTTS(s); }
+  else {
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice">📖 Record your voice to hear stories</span>';
+  }
+}
+
+function setupAudio(url) {
+  audioEl = new Audio(url);
+  audioEl.preload = 'auto';
+  audioEl.ontimeupdate = () => {
+    if(!audioEl.duration) return;
+    playSeconds = Math.floor(audioEl.currentTime);
+    document.getElementById('playerProg').style.width = (audioEl.currentTime/audioEl.duration*100)+'%';
+    document.getElementById('playerCur').textContent  = formatTime(playSeconds);
+    document.getElementById('playerTot').textContent  = formatTime(Math.floor(audioEl.duration));
+  };
+  audioEl.onended = () => {
+    isPlaying = false;
+    document.getElementById('mainPlayBtn').textContent = '▶';
+    document.getElementById('playerArt').className    = 'player-art';
+  };
+  audioEl.onerror = () => {
+    toast('Audio failed to load.');
+    isPlaying = false;
+    document.getElementById('mainPlayBtn').textContent = '▶';
+    document.getElementById('playerArt').className    = 'player-art';
+  };
+}
+
+async function generateTTS(story) {
+  const btn = document.getElementById('mainPlayBtn');
+  btn.textContent = '⏳'; btn.disabled = true;
+  document.getElementById('playerMeta').innerHTML =
+    '<span class="badge-voice">🎙 Generating voice...</span>';
+  try {
+    const { data: elKey } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
+    if(!elKey) throw new Error('ElevenLabs key not set in Admin → App Config');
+
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${USER.elevenlabs_voice_id}`, {
+      method: 'POST',
+      headers: { 'xi-api-key': elKey, 'Content-Type': 'application/json', 'Accept': 'audio/mpeg' },
+      body: JSON.stringify({
+        text: (story.story_text||story.title).substring(0,2500),
+        model_id: 'eleven_multilingual_v2',
+        voice_settings: { stability: 0.5, similarity_boost: 0.85 }
+      })
+    });
+    if(!res.ok) throw new Error('ElevenLabs: ' + await res.text());
+
+    const blob = await res.blob();
+    const url  = URL.createObjectURL(blob);
+    ttsCache[story.id] = url;
+
+    // Optionally save to storage for future use
+    try {
+      await sb.storage.from('generated-audio')
+        .upload(`generated-audio/${USER.id}/${story.id}.mp3`, blob,
+                { contentType:'audio/mpeg', upsert:true });
+    } catch(e) {}
+
+    setupAudio(url);
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice">🎙 అమ్మ గొంతు</span>';
+    btn.disabled = false; btn.textContent = '▶';
+    togglePlay(); // auto-play after generation
+  } catch(e) {
+    console.error('TTS error:', e);
+    toast('Voice error: ' + e.message);
+    btn.disabled = false; btn.textContent = '▶';
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice">📖 Text only</span>';
+  }
 }
 
 function togglePlay() {
+  if(!audioEl) {
+    if(USER?.elevenlabs_voice_id && currentStory) { generateTTS(currentStory); return; }
+    toast('Record your voice first to play stories.');
+    return;
+  }
   isPlaying = !isPlaying;
   const btn = document.getElementById('mainPlayBtn');
   const art = document.getElementById('playerArt');
   btn.textContent = isPlaying ? '⏸' : '▶';
-  art.className = `player-art ${isPlaying?'playing':''}`;
-  if(isPlaying) {
-    clearInterval(playInterval);
-    const total = currentStory?.duration_secs || 300;
-    playInterval = setInterval(() => {
-      playSeconds++;
-      const pct = Math.min((playSeconds/total)*100, 100);
-      document.getElementById('playerProg').style.width = pct+'%';
-      document.getElementById('playerCur').textContent = formatTime(playSeconds);
-      if(playSeconds >= total) { clearInterval(playInterval); isPlaying=false; btn.textContent='▶'; art.className='player-art'; }
-    },1000);
-  } else clearInterval(playInterval);
+  art.className   = `player-art ${isPlaying ? 'playing' : ''}`;
+  if(isPlaying) audioEl.play().catch(e => { toast('Playback error: '+e.message); isPlaying=false; btn.textContent='▶'; art.className='player-art'; });
+  else audioEl.pause();
 }
 
 function toggleHomePlay() { openPlayer(null,'featured'); }
-function skip(s) { playSeconds = Math.max(0, Math.min(playSeconds+s, currentStory?.duration_secs||300)); }
+function skip(secs) { if(audioEl) audioEl.currentTime = Math.max(0, Math.min(audioEl.currentTime+secs, audioEl.duration||0)); }
 function prevStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i>0) openPlayer(STORIES_DATA[i-1].id); }
 function nextStory() { const i=STORIES_DATA.findIndex(x=>x.id===currentStory?.id); if(i<STORIES_DATA.length-1) openPlayer(STORIES_DATA[i+1].id); }
-function seekPlayer(e) { const r=e.currentTarget.getBoundingClientRect(); const pct=(e.clientX-r.left)/r.width; playSeconds=Math.floor(pct*(currentStory?.duration_secs||300)); document.getElementById('playerProg').style.width=(pct*100)+'%'; }
+function seekPlayer(e) {
+  if(!audioEl||!audioEl.duration) return;
+  const r=e.currentTarget.getBoundingClientRect();
+  audioEl.currentTime=(e.clientX-r.left)/r.width*audioEl.duration;
+}
+
 
 async function logPlay(storyId) {
-  try { await sb.from('play_history').insert({user_id:USER.id,story_id:storyId,lang_code:LANG}); } catch(e){}
+  try {
+    if(!storyId || !USER?.id) return;
+    await sb.rpc('log_story_play', {
+      p_user_id:  USER.id,
+      p_story_id: storyId,
+      p_lang:     LANG
+    });
+  } catch(e){ console.error('logPlay error:', e); }
 }
 
 // ── VOICE RECORD ──
@@ -783,28 +877,59 @@ function toggleRecord() {
   if(!isRecording) startRecord(); else stopRecord();
 }
 
+let audioChunks = [];  // stores recorded audio data
+
 function startRecord() {
-  isRecording = true; recSeconds = 0;
+  isRecording = true; recSeconds = 0; audioChunks = [];
   const btn = document.getElementById('micBtn');
   btn.classList.add('recording'); btn.textContent='⏹';
   document.getElementById('waveEl').classList.add('rec');
   document.getElementById('recStatus').textContent = (I18N[LANG]||I18N.te)['rec-sub']||'';
+
   recInterval = setInterval(()=>{
     recSeconds++;
-    const m=Math.floor(recSeconds/60),s=recSeconds%60;
+    const m=Math.floor(recSeconds/60), s=recSeconds%60;
     document.getElementById('recTimer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
-    if(recSeconds>=30) stopRecord();
-  },1000);
+    if(recSeconds >= 30) stopRecord();
+  }, 1000);
+
   if(navigator.mediaDevices?.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({audio:true}).then(stream=>{
-      mediaRecorder = new MediaRecorder(stream);
-      mediaRecorder.start();
-    }).catch(()=>{});
+    navigator.mediaDevices.getUserMedia({ audio: true })
+      .then(stream => {
+        // Pick best supported format
+        const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
+          ? 'audio/webm;codecs=opus'
+          : MediaRecorder.isTypeSupported('audio/webm')
+            ? 'audio/webm'
+            : 'audio/ogg';
+
+        mediaRecorder = new MediaRecorder(stream, { mimeType });
+
+        // ✅ Collect audio chunks as they come in
+        mediaRecorder.ondataavailable = e => {
+          if(e.data && e.data.size > 0) audioChunks.push(e.data);
+        };
+
+        mediaRecorder.onstop = () => {
+          // Stop all mic tracks to release microphone
+          stream.getTracks().forEach(t => t.stop());
+        };
+
+        mediaRecorder.start(100); // collect every 100ms
+      })
+      .catch(err => {
+        toast('Microphone access denied. Please allow mic permission.');
+        console.error('getUserMedia error:', err);
+        stopRecord();
+      });
+  } else {
+    toast('Microphone not supported on this browser.');
   }
 }
 
 function stopRecord() {
-  isRecording = false; clearInterval(recInterval);
+  isRecording = false;
+  clearInterval(recInterval);
   const btn = document.getElementById('micBtn');
   btn.classList.remove('recording'); btn.classList.add('done'); btn.textContent='✓';
   document.getElementById('waveEl').classList.remove('rec');
@@ -812,23 +937,99 @@ function stopRecord() {
   document.getElementById('uploadVoiceBtn').style.display='block';
   const chip = document.getElementById('voiceStatusChip');
   chip.className='voice-status-chip recorded';
-  chip.innerHTML='🟢 ' + (I18N[LANG]||I18N.te)['not-recorded']?.replace('నమోదు కాలేదు','నమోదు అయింది')||'Recorded';
-  if(mediaRecorder) mediaRecorder.stop();
+  chip.innerHTML='🟢 Recorded — tap Save to clone voice';
+  if(mediaRecorder && mediaRecorder.state !== 'inactive') mediaRecorder.stop();
 }
 
 async function uploadVoice() {
+  if(audioChunks.length === 0) {
+    toast('No recording found. Please record again.'); return;
+  }
+
   const btn = document.getElementById('uploadVoiceBtn');
   btn.disabled = true;
-  btn.innerHTML = '<span class="spinner-sm"></span>Uploading...';
+
   try {
-    // In production: upload audio blob to Supabase storage, then call ElevenLabs clone API
-    // Simulated here:
-    await new Promise(r=>setTimeout(r,2000));
-    USER.elevenlabs_voice_id = 'demo-voice-'+Date.now();
+    // ── STEP 1: Build audio blob from recorded chunks ──
+    btn.innerHTML = '<span class="spinner-sm"></span>Preparing audio...';
+    const mimeType = mediaRecorder?.mimeType || 'audio/webm';
+    const audioBlob = new Blob(audioChunks, { type: mimeType });
+    const ext = mimeType.includes('ogg') ? 'ogg' : 'webm';
+
+    // ── STEP 2: Upload to Supabase storage ──
+    btn.innerHTML = '<span class="spinner-sm"></span>Uploading to storage...';
+    const path = `voice-samples/${USER.id}/${Date.now()}.${ext}`;
+    const { error: uploadErr } = await sb.storage
+      .from('voice-samples')
+      .upload(path, audioBlob, { contentType: mimeType, upsert: true });
+
+    if(uploadErr) throw new Error('Storage upload failed: ' + uploadErr.message);
+
+    // Save sample record in DB via RPC (bypasses RLS)
+    await sb.rpc('insert_voice_sample', {
+      p_user_id:  USER.id,
+      p_path:     path,
+      p_duration: recSeconds
+    });
+
+    // ── STEP 3: Call ElevenLabs voice cloning API ──
+    btn.innerHTML = '<span class="spinner-sm"></span>Cloning voice...';
+
+    // Get ElevenLabs API key from app_config via RPC
+    const { data: elKey } = await sb.rpc('get_config_value', {
+      p_key: 'elevenlabs_api_key'
+    });
+
+    if(!elKey) {
+      // No ElevenLabs key yet — save storage path and show instructions
+      USER.voice_sample_url = path;
+      localStorage.setItem('ak_user', JSON.stringify(USER));
+      toast('🎙️ Voice recorded & saved! Add ElevenLabs key in admin to activate cloning.');
+      showScreen('home');
+      btn.disabled = false;
+      btn.innerHTML = (I18N[LANG]||I18N.te)['save-voice']||'Save Voice';
+      return;
+    }
+
+    // Call ElevenLabs Add Voice API
+    const formData = new FormData();
+    formData.append('name', `amma_${USER.id}`);
+    formData.append('files', audioBlob, `voice.${ext}`);
+    formData.append('description', `AmmaKatha voice for user ${USER.mother_name}`);
+
+    const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
+      method: 'POST',
+      headers: { 'xi-api-key': elKey },
+      body: formData
+    });
+
+    if(!elRes.ok) {
+      const errText = await elRes.text();
+      throw new Error('ElevenLabs error: ' + errText);
+    }
+
+    const elData = await elRes.json();
+    const voiceId = elData.voice_id;
+
+    // ── STEP 4: Save voice_id to user record ──
+    btn.innerHTML = '<span class="spinner-sm"></span>Saving...';
+    await sb.rpc('save_user_voice_id', {
+      p_user_id: USER.id,
+      p_voice_id: voiceId,
+      p_sample_path: path
+    });
+
+    USER.elevenlabs_voice_id = voiceId;
     localStorage.setItem('ak_user', JSON.stringify(USER));
-    toast('🎙️ Voice saved successfully!');
+
+    toast('🎙️ అమ్మ గొంతు సిద్ధం! Voice cloning complete!');
     showScreen('home');
-  } catch(e) { toast('Upload failed. Try again.'); }
+
+  } catch(e) {
+    console.error('uploadVoice error:', e);
+    toast('Error: ' + e.message);
+  }
+
   btn.disabled = false;
   btn.innerHTML = (I18N[LANG]||I18N.te)['save-voice']||'Save Voice';
 }
@@ -910,8 +1111,17 @@ async function generateStory() {
 
 async function saveUserStory(story) {
   try {
-    await sb.from('user_stories').insert({user_id:USER.id,lang_code:LANG,title:story.title,story_text:story.story,moral_text:story.moral,category:storyOpts.type,moral_value:storyOpts.moral,setting:storyOpts.setting});
-  } catch(e){}
+    await sb.rpc('save_user_story', {
+      p_user_id:    USER.id,
+      p_lang_code:  LANG,
+      p_title:      story.title,
+      p_story_text: story.story,
+      p_moral_text: story.moral,
+      p_category:   storyOpts.type,
+      p_setting:    storyOpts.setting,
+      p_moral_val:  storyOpts.moral
+    });
+  } catch(e){ console.error('saveUserStory error:', e); }
 }
 
 function playGenerated() {
@@ -920,7 +1130,22 @@ function playGenerated() {
   STORIES_DATA.unshift(fake);
   openPlayer(fake.id);
 }
-function saveGenerated() { toast('💾 Saved!'); }
+async function saveGenerated() {
+  if(!generatedStory) return;
+  try {
+    await sb.rpc('save_user_story', {
+      p_user_id:    USER.id,
+      p_lang_code:  LANG,
+      p_title:      generatedStory.title,
+      p_story_text: generatedStory.story,
+      p_moral_text: generatedStory.moral,
+      p_category:   storyOpts.type,
+      p_setting:    storyOpts.setting,
+      p_moral_val:  storyOpts.moral
+    });
+    toast('💾 Story saved to your library!');
+  } catch(e) { toast('Save failed: ' + e.message); }
+}
 
 // ── SUBSCRIBE / QR ──
 async function loadQR() {
