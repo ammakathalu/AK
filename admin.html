@@ -519,8 +519,8 @@ select.form-inp{cursor:pointer;}
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -596,45 +596,37 @@ async function refreshAll() { showSection('dashboard'); }
 
 // ── DASHBOARD ──
 async function loadDashboard() {
+  // Stats via RPC
   try {
-    const { data: stats } = await sb.from('admin_stats').select('*').single();
-    if(stats) {
-      document.getElementById('st-total').textContent = stats.total_users?.toLocaleString() || '0';
-      document.getElementById('st-paying').textContent = stats.paying_users?.toLocaleString() || '0';
-      document.getElementById('st-revenue').textContent = '₹'+(stats.revenue_this_month?.toLocaleString()||'0');
-      document.getElementById('st-pending').textContent = stats.pending_payments || '0';
-      document.getElementById('st-new').textContent = stats.new_users_week || '0';
-      document.getElementById('st-plays').textContent = stats.plays_today?.toLocaleString() || '0';
-    }
-  } catch(e) {
-    // Demo data
-    document.getElementById('st-total').textContent = '1,247';
-    document.getElementById('st-paying').textContent = '312';
-    document.getElementById('st-revenue').textContent = '₹28,450';
-    document.getElementById('st-pending').textContent = '7';
-    document.getElementById('st-new').textContent = '43';
-    document.getElementById('st-plays').textContent = '2,891';
-  }
+    const { data, error } = await sb.rpc('admin_get_stats');
+    if(error) throw error;
+    document.getElementById('st-total').textContent   = data.total_users?.toLocaleString()        || '0';
+    document.getElementById('st-paying').textContent  = data.paying_users?.toLocaleString()       || '0';
+    document.getElementById('st-revenue').textContent = '₹'+(data.revenue_this_month?.toLocaleString()||'0');
+    document.getElementById('st-pending').textContent = data.pending_payments                      || '0';
+    document.getElementById('st-new').textContent     = data.new_users_week                        || '0';
+    document.getElementById('st-plays').textContent   = data.plays_today?.toLocaleString()        || '0';
+  } catch(e) { console.error('Stats error:', e); }
 
-  // Language stats
+  // Language stats via RPC
   try {
-    const { data } = await sb.from('lang_stats').select('*');
-    document.getElementById('langTable').innerHTML = (data||demoLangStats()).map(r=>
-      `<tr><td>${r.name_native} <span style="color:var(--muted);font-size:11px;">${r.name_en}</span></td>
-      <td>${r.user_count?.toLocaleString()||0}</td>
-      <td><span class="badge badge-green">${r.paying_count||0}</span></td></tr>`
-    ).join('');
-  } catch(e) {
-    document.getElementById('langTable').innerHTML = demoLangStats().map(r=>
-      `<tr><td>${r.name_native}</td><td>${r.user_count}</td><td><span class="badge badge-green">${r.paying_count}</span></td></tr>`
-    ).join('');
-  }
+    const { data, error } = await sb.rpc('admin_get_lang_stats');
+    if(error) throw error;
+    document.getElementById('langTable').innerHTML = (data||[]).map(r=>
+      `<tr>
+        <td>${r.name_native} <span style="color:var(--muted);font-size:11px;">${r.name_en}</span></td>
+        <td>${r.user_count?.toLocaleString()||0}</td>
+        <td><span class="badge badge-green">${r.paying_count||0}</span></td>
+      </tr>`
+    ).join('') || '<tr><td colspan="3" class="empty-state">No data</td></tr>';
+  } catch(e) { console.error('Lang stats error:', e); }
 
-  // Recent payments
+  // Recent payments via RPC
   try {
-    const { data } = await sb.from('payments').select('*,users(mother_name,phone)').order('created_at',{ascending:false}).limit(5);
+    const { data, error } = await sb.rpc('admin_get_recent_payments', { p_limit: 5 });
+    if(error) throw error;
     renderRecentPayments(data||[]);
-  } catch(e) { renderRecentPayments([]); }
+  } catch(e) { console.error('Recent payments error:', e); renderRecentPayments([]); }
 }
 
 function demoLangStats() {
@@ -646,9 +638,11 @@ function demoLangStats() {
 
 function renderRecentPayments(data) {
   document.getElementById('recentPayments').innerHTML = data.length ? data.map(p=>
-    `<tr><td>${p.users?.mother_name||'Unknown'}</td>
-    <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
-    <td><span class="badge ${p.status==='verified'?'badge-green':p.status==='rejected'?'badge-red':'badge-amber'}">${p.status||'—'}</span></td></tr>`
+    `<tr>
+      <td>${p.mother_name||p.users?.mother_name||'Unknown'}</td>
+      <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
+      <td><span class="badge ${p.status==='verified'?'badge-green':p.status==='rejected'?'badge-red':'badge-amber'}">${p.status||'—'}</span></td>
+    </tr>`
   ).join('') : '<tr><td colspan="3" class="empty-state">No payments yet</td></tr>';
 }
 
@@ -657,9 +651,18 @@ let allUsers = [];
 async function loadUsers() {
   document.getElementById('usersTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
   try {
-    const { data } = await sb.from('users').select('*').order('created_at',{ascending:false}).limit(100);
-    allUsers = data || demoUsers();
-  } catch(e) { allUsers = demoUsers(); }
+    const { data, error } = await sb.rpc('admin_get_users', { p_limit: 100, p_offset: 0 });
+    if(error) throw error;
+    allUsers = data || [];
+  } catch(e) {
+    console.error('loadUsers error:', e);
+    allUsers = [];
+    document.getElementById('usersTable').innerHTML =
+      `<tr><td colspan="7" class="empty-state" style="color:var(--red);">
+        Error: ${e.message} — Run fix_admin_users_rls.sql
+      </td></tr>`;
+    return;
+  }
   renderUsersTable(allUsers);
 }
 
@@ -738,11 +741,13 @@ async function createUser() {
 
 async function grantPremium(userId) {
   try {
-    const end = new Date(); end.setDate(end.getDate()+30);
-    await sb.from('users').update({subscription_status:'active',subscription_plan:'monthly',subscription_end:end.toISOString()}).eq('id',userId);
-    toast('✓ Premium granted','success');
+    const { error } = await sb.rpc('admin_grant_premium', {
+      p_user_id: userId, p_plan: 'monthly', p_days: 30
+    });
+    if(error) throw error;
+    toast('✓ Premium granted for 30 days','success');
     loadUsers();
-  } catch(e) { toast('✓ Done (demo)','success'); }
+  } catch(e) { console.error('grantPremium error:', e); toast('Error: '+e.message,'error'); }
 }
 
 function editUser(userId) {
@@ -768,15 +773,17 @@ function editUser(userId) {
 
 async function saveUser(userId) {
   try {
-    await sb.from('users').update({
-      mother_name: document.getElementById('eu-mother').value,
-      child_name: document.getElementById('eu-child').value,
-      subscription_status: document.getElementById('eu-status').value,
-      subscription_end: document.getElementById('eu-sub-end').value || null
-    }).eq('id',userId);
+    const { error } = await sb.rpc('admin_update_user', {
+      p_user_id: userId,
+      p_mother:  document.getElementById('eu-mother').value,
+      p_child:   document.getElementById('eu-child').value,
+      p_status:  document.getElementById('eu-status').value,
+      p_sub_end: document.getElementById('eu-sub-end').value || null
+    });
+    if(error) throw error;
     toast('✓ User updated','success');
     closeModal('userModal'); loadUsers();
-  } catch(e) { toast('✓ Done (demo)','success'); closeModal('userModal'); }
+  } catch(e) { console.error('saveUser error:', e); toast('Error: '+e.message,'error'); }
 }
 
 // ── PAYMENTS ──
@@ -784,18 +791,17 @@ async function loadPayments() {
   const status = document.getElementById('payFilter').value;
   document.getElementById('paymentsTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
   try {
-    let q = sb.from('payments').select('*,users(mother_name,phone)').order('created_at',{ascending:false}).limit(50);
-    if(status) q = q.eq('status',status);
-    const { data } = await q;
+    const { data, error } = await sb.rpc('admin_get_payments', { p_status: status || null });
+    if(error) throw error;
     renderPaymentsTable(data||[]);
-  } catch(e) { renderPaymentsTable([]); }
+  } catch(e) { console.error('loadPayments error:', e); renderPaymentsTable([]); }
 }
 
 function renderPaymentsTable(data) {
   document.getElementById('paymentsTable').innerHTML = data.length ? data.map(p=>{
     const sb_class = {verified:'badge-green',rejected:'badge-red',screenshot_uploaded:'badge-amber',pending:'badge-gray'}[p.status]||'badge-gray';
     return `<tr>
-      <td>${p.users?.mother_name||'Unknown'} <span style="color:var(--muted);font-size:11px;">${p.users?.phone||''}</span></td>
+      <td>${p.mother_name||p.users?.mother_name||'Unknown'} <span style="color:var(--muted);font-size:11px;">${p.phone||p.users?.phone||''}</span></td>
       <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
       <td style="color:var(--gold);">₹${p.amount_inr||0}</td>
       <td style="color:var(--muted);">${p.created_at?new Date(p.created_at).toLocaleDateString('en-IN'):'—'}</td>
@@ -813,27 +819,31 @@ function renderPaymentsTable(data) {
 
 async function verifyPayment(payId, userId, planId, amount) {
   if(!confirm('Verify this payment and activate subscription?')) return;
+  const daysMap = {monthly:30, annual:365, family:30};
   try {
-    const daysMap = {monthly:30,annual:365,family:30};
-    const days = daysMap[planId]||30;
-    const end = new Date(); end.setDate(end.getDate()+days);
-    await Promise.all([
-      sb.from('payments').update({status:'verified',verified_at:new Date().toISOString()}).eq('id',payId),
-      sb.from('users').update({subscription_status:'active',subscription_plan:planId,subscription_start:new Date().toISOString(),subscription_end:end.toISOString()}).eq('id',userId)
-    ]);
+    const { error } = await sb.rpc('admin_verify_payment', {
+      p_payment_id: payId,
+      p_user_id:    userId,
+      p_plan_id:    planId,
+      p_days:       daysMap[planId] || 30
+    });
+    if(error) throw error;
     toast('✓ Payment verified & subscription activated','success');
     loadPayments();
-  } catch(e) { toast('✓ Done (demo)','success'); }
+  } catch(e) { console.error('verifyPayment error:', e); toast('Error: '+e.message,'error'); }
 }
 
 async function rejectPayment(payId) {
   const reason = prompt('Reason for rejection:');
   if(!reason) return;
   try {
-    await sb.from('payments').update({status:'rejected',rejection_note:reason}).eq('id',payId);
+    const { error } = await sb.rpc('admin_reject_payment', {
+      p_payment_id: payId, p_reason: reason
+    });
+    if(error) throw error;
     toast('Payment rejected','error');
     loadPayments();
-  } catch(e) { toast('Done (demo)'); }
+  } catch(e) { console.error('rejectPayment error:', e); toast('Error: '+e.message,'error'); }
 }
 
 // ── QR CODES ──
