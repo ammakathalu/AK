@@ -333,8 +333,8 @@ select.inp{cursor:pointer;appearance:none;
 
 <script>
 // ── CONFIG ──────────────────────────────────────────────────────
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL     = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY= 'YOUR_ANON_KEY';
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
 
@@ -557,77 +557,57 @@ async function lSubmitPin() {
     return;
   }
 
+  // Use check_user_pin RPC directly — Edge Function not deployed
   try {
-    const { data, error } = await sb.functions.invoke('verify-pin',{
-      body:{ phone: regData.phone, pin }
+    const { data, error } = await sb.rpc('check_user_pin', {
+      p_phone: regData.phone,
+      p_pin:   pin
     });
 
-    // Edge Function returned an error object
+    console.log('check_user_pin result:', { data, error });
+
     if(error) {
-      // FunctionsFetchError = Edge Function not deployed yet
-      if(error.message?.includes('Failed to send') || error.message?.includes('FunctionsHttpError')) {
-        showEdgeFnFallback(pin); return;
-      }
-      throw new Error(error.message||'error');
+      console.error('RPC error:', error);
+      throw new Error(error.message || 'Login failed');
     }
 
-    // Edge Function returned but with an error payload
-    if(!data?.token) {
-      const msg = data?.error || '';
-      if(msg.includes('not found') || msg.includes('User not found')) {
-        // Phone truly not in DB — send back to phone step
+    if(!data) {
+      throw new Error('invalid_pin');
+    }
+
+    // check_user_pin returns JSON with error field if wrong
+    if(data.error) {
+      if(data.error.includes('not found') || data.error.includes('User not found')) {
         document.getElementById('l-pin-err').textContent = t('err-not-found');
         setTimeout(()=>{ showStep('l-phone'); document.getElementById('l-phone-err').textContent=t('err-not-found'); },1200);
         return;
       }
+      // Wrong PIN
       throw new Error('invalid_pin');
     }
 
-    // SUCCESS
-    localStorage.setItem('ak_token', data.token);
-    localStorage.setItem('ak_user',  JSON.stringify(data.user));
-    localStorage.setItem('ak_lang',  data.user?.lang_code||LANG);
-    document.getElementById('l-welcome-msg').textContent  = t('welcome')+' '+(data.user?.mother_name||'')+'!';
-    document.getElementById('l-redirect-msg').textContent = t('redirect');
-    showStep('l-success');
-    setTimeout(()=>window.location.href='app.html', 1200);
-
-  } catch(e) {
-    lAttempts++;
-    lShakeErr();
-    if(lAttempts>=MAX_ATTEMPTS){
-      document.getElementById('l-pin-err').textContent='🔒 Too many attempts. Wait 15 min.';
-      document.getElementById('l-numpad').style.pointerEvents='none';
-      setTimeout(()=>{ document.getElementById('l-numpad').style.pointerEvents=''; lAttempts=0; },900000);
-      return;
-    }
-    const left = MAX_ATTEMPTS-lAttempts;
-    document.getElementById('l-pin-err').textContent = t('err-wrong-pin')+` (${t('attempts-left')}: ${left})`;
-  }
-}
-
-// Called when Edge Function isn't deployed yet — do direct bcrypt check via RPC
-async function showEdgeFnFallback(pin) {
-  try {
-    // Supabase has pgcrypto built-in — call a simple RPC that does the check
-    const { data, error } = await sb.rpc('check_user_pin', {
-      p_phone: regData.phone, p_pin: pin
-    });
-    if(error || !data) throw new Error('bad');
-    // data = { id, mother_name, child_name, lang_code, subscription_status }
-    const token = 'rpc-'+Date.now();
+    // SUCCESS — data contains user fields
+    const token = 'rpc-' + Date.now();
     localStorage.setItem('ak_token', token);
     localStorage.setItem('ak_user',  JSON.stringify(data));
-    localStorage.setItem('ak_lang',  data.lang_code||LANG);
-    document.getElementById('l-welcome-msg').textContent  = t('welcome')+' '+(data.mother_name||'')+'!';
+    localStorage.setItem('ak_lang',  data.lang_code || LANG);
+    document.getElementById('l-welcome-msg').textContent  = t('welcome') + ' ' + (data.mother_name || '') + '!';
     document.getElementById('l-redirect-msg').textContent = t('redirect');
     showStep('l-success');
-    setTimeout(()=>window.location.href='app.html',1200);
+    setTimeout(() => window.location.href = 'app.html', 1200);
+
   } catch(e) {
     lAttempts++;
     lShakeErr();
-    const left = MAX_ATTEMPTS-lAttempts;
-    document.getElementById('l-pin-err').textContent = t('err-wrong-pin')+` (${t('attempts-left')}: ${left})`;
+    if(lAttempts >= MAX_ATTEMPTS) {
+      document.getElementById('l-pin-err').textContent = '🔒 Too many attempts. Wait 15 min.';
+      document.getElementById('l-numpad').style.pointerEvents = 'none';
+      setTimeout(() => { document.getElementById('l-numpad').style.pointerEvents = ''; lAttempts = 0; }, 900000);
+      return;
+    }
+    const left = MAX_ATTEMPTS - lAttempts;
+    const msg = e.message === 'invalid_pin' ? t('err-wrong-pin') : e.message;
+    document.getElementById('l-pin-err').textContent = msg + ` (${t('attempts-left')}: ${left})`;
   }
 }
 
@@ -729,35 +709,49 @@ async function rSubmit() {
   }
   showStep('r-submitting');
   try {
-    const { data, error } = await sb.functions.invoke('create-user',{
-      body:{
-        phone:       regData.phone,
-        pin:         rFirstPin,
-        mother_name: regData.mother_name,
-        child_name:  regData.child_name,
-        child_age:   regData.child_age,
-        lang_code:   regData.lang_code,
-        subscription_status: 'trial',
-      }
+    // Use register_user RPC directly — Edge Function not deployed
+    const { data, error } = await sb.rpc('register_user', {
+      p_phone:       regData.phone,
+      p_pin:         rFirstPin,
+      p_mother_name: regData.mother_name,
+      p_child_name:  regData.child_name,
+      p_child_age:   regData.child_age,
+      p_lang_code:   regData.lang_code
     });
-    if(error) throw error;
+
+    console.log('register_user result:', { data, error });
+
+    if(error) throw new Error(error.message);
+    if(data?.error) {
+      if(data.error.includes('already') || data.error.includes('exists')) {
+        showStep('r-confirm');
+        document.getElementById('r-confirm-err').textContent = t('err-phone-exists');
+        return;
+      }
+      throw new Error(data.error);
+    }
+
     // Auto-login after registration
-    localStorage.setItem('ak_user', JSON.stringify(data.user||{mother_name:regData.mother_name,child_name:regData.child_name,lang_code:regData.lang_code,subscription_status:'trial'}));
-    localStorage.setItem('ak_token', data.token||'reg-'+Date.now());
+    const newUser = {
+      id:                  data.id,
+      mother_name:         regData.mother_name,
+      child_name:          regData.child_name,
+      child_age:           regData.child_age,
+      lang_code:           regData.lang_code,
+      subscription_status: 'trial'
+    };
+    localStorage.setItem('ak_user',  JSON.stringify(newUser));
+    localStorage.setItem('ak_token', 'reg-' + Date.now());
     localStorage.setItem('ak_lang',  regData.lang_code);
     document.getElementById('r-done-chip').textContent =
       `👩 ${regData.mother_name}  •  🧒 ${regData.child_name}  •  📱 ${regData.phone}`;
     showStep('r-done');
-    setTimeout(()=>window.location.href='app.html', 2000);
+    setTimeout(() => window.location.href = 'app.html', 2000);
+
   } catch(e) {
-    // Demo mode
-    localStorage.setItem('ak_user', JSON.stringify({mother_name:regData.mother_name,child_name:regData.child_name,child_age:regData.child_age,lang_code:regData.lang_code,subscription_status:'trial'}));
-    localStorage.setItem('ak_token','demo-reg-'+Date.now());
-    localStorage.setItem('ak_lang', regData.lang_code);
-    document.getElementById('r-done-chip').textContent =
-      `👩 ${regData.mother_name}  •  🧒 ${regData.child_name}`;
-    showStep('r-done');
-    setTimeout(()=>window.location.href='app.html', 2000);
+    console.error('Registration error:', e);
+    showStep('r-confirm');
+    document.getElementById('r-confirm-err').textContent = e.message || t('err-server');
   }
 }
 
