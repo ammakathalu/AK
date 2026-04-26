@@ -522,8 +522,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -773,12 +773,12 @@ async function getVoiceId() {
   const configKey = `default_voice_${LANG}`;
   if(configVoiceCache[configKey]) return configVoiceCache[configKey];
   try {
-    const { data: cfgVoice } = await sb.rpc('get_config_value', { p_key: configKey });
-    if(cfgVoice && cfgVoice.trim()) {
+    const { data: cfgVoice, error: cfgErr } = await sb.rpc('get_config_value', { p_key: configKey });
+    if(!cfgErr && cfgVoice && cfgVoice.trim()) {
       configVoiceCache[configKey] = cfgVoice.trim();
       return cfgVoice.trim();
     }
-  } catch(e) {}
+  } catch(e) { console.warn('getVoiceId config fetch error:', e); }
 
   // 3. Hardcoded default female voice for this language
   return DEFAULT_VOICES[LANG] || DEFAULT_VOICES.te;
@@ -923,8 +923,24 @@ async function generateTTS(story) {
     const voiceId = await getVoiceId();
     if(!voiceId) throw new Error('No voice available. Check ElevenLabs config.');
 
-    const { data: elKey } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
-    if(!elKey) throw new Error('ElevenLabs key not set — go to Admin → App Config');
+    // Try RPC first, then localStorage cache, then fail clearly
+    let elKey = null;
+    try {
+      const { data: rpcKey, error: rpcErr } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
+      if(rpcErr) console.warn('get_config_value RPC error:', rpcErr.message);
+      if(rpcKey && rpcKey.trim()) {
+        elKey = rpcKey.trim();
+        // Cache it so next call is instant
+        localStorage.setItem('ak_el_key', elKey);
+      }
+    } catch(e) { console.warn('get_config_value failed:', e); }
+
+    // Fallback to cached key
+    if(!elKey) elKey = localStorage.getItem('ak_el_key');
+
+    if(!elKey || elKey === '') {
+      throw new Error('ElevenLabs API key not found. Go to Admin → App Config → ElevenLabs API Key and save it.');
+    }
 
     // Clean story text — remove markdown, limit to 2500 chars
     const rawText = (story.story_text || story.title || '').substring(0, 2500);
@@ -1190,9 +1206,15 @@ async function uploadVoice() {
 
     // ── STEP 3: Get ElevenLabs key ──
     btn.innerHTML = '<span class="spinner-sm"></span>Cloning voice...';
-    const { data: elKey } = await sb.rpc('get_config_value', {
-      p_key: 'elevenlabs_api_key'
-    });
+    let elKey = null;
+    try {
+      const { data: rpcKey } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
+      if(rpcKey && rpcKey.trim()) {
+        elKey = rpcKey.trim();
+        localStorage.setItem('ak_el_key', elKey);
+      }
+    } catch(e) {}
+    if(!elKey) elKey = localStorage.getItem('ak_el_key');
 
     if(!elKey) {
       USER.voice_sample_url = savedPath;
