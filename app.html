@@ -519,8 +519,8 @@ body{background:var(--night);color:var(--text);font-family:var(--font);
 
 <script>
 // ── CONFIG ──
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const CLAUDE_API_KEY = '';// Set via admin config or env
 const { createClient } = supabase;
 const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
@@ -1023,9 +1023,9 @@ async function uploadVoice() {
     // ── STEP 4: Save voice_id to user record ──
     btn.innerHTML = '<span class="spinner-sm"></span>Saving...';
     await sb.rpc('save_user_voice_id', {
-      p_user_id: USER.id,
-      p_voice_id: voiceId,
-      p_sample_path: path
+      p_user_id:     USER.id,
+      p_voice_id:    voiceId,
+      p_sample_path: savedPath || storagePath || ''
     });
 
     USER.elevenlabs_voice_id = voiceId;
