@@ -171,6 +171,14 @@ body{
       Use any email + password to enter the admin panel.<br>
       Replace <code>YOUR_PROJECT</code> in the config to go live.
     </div>
+
+    <!-- Debug info — visible only when Supabase IS configured -->
+    <div id="debugPanel" style="display:none;margin-top:14px;background:rgba(59,130,246,.08);
+      border:1px solid rgba(59,130,246,.2);border-radius:8px;padding:10px 12px;font-size:11px;color:#60a5fa;line-height:1.7;">
+      <strong>🔍 Connection info</strong><br>
+      <span id="dbUrl"></span><br>
+      <span id="dbStatus"></span>
+    </div>
   </div>
 
   <!-- ── RESET PASSWORD ── -->
@@ -214,8 +222,8 @@ body{
 
 <script>
 // ── CONFIG ── replace with your actual values
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
 
 const { createClient } = supabase;
@@ -235,6 +243,22 @@ async function init() {
       await sb.auth.signOut();
     }
   } catch(e) {/* not signed in or demo mode */}
+
+  // Show connection debug info if Supabase is configured
+  if(!IS_DEMO) {
+    const panel = document.getElementById('debugPanel');
+    panel.style.display = 'block';
+    document.getElementById('dbUrl').textContent = 'URL: ' + SUPABASE_URL.replace('https://','').split('.')[0] + '.supabase.co';
+    // Quick ping to check if project is reachable
+    try {
+      const { error } = await sb.from('admins').select('count').limit(1);
+      document.getElementById('dbStatus').textContent = error
+        ? '⚠ DB: ' + error.message
+        : '✅ DB: Connected (RLS active — use RPC)';
+    } catch(e) {
+      document.getElementById('dbStatus').textContent = '❌ DB: ' + e.message;
+    }
+  }
 }
 
 // ── TABS ──
@@ -279,51 +303,52 @@ async function doLogin() {
   const btn = document.getElementById('login-btn');
   btn.disabled = true;
   btn.innerHTML = '<span class="spinner"></span>Signing in...';
-  document.getElementById('login-err').textContent = '';
+  const errEl = document.getElementById('login-err');
+  errEl.textContent = '';
 
-  // DEMO MODE — skip real auth
-  if(IS_DEMO) {
-    showStep('step-signing-in');
-    // Store a demo admin session
-    sessionStorage.setItem('ak_admin', JSON.stringify({
-      email, name: email.split('@')[0], role:'super', demo:true
-    }));
-    setTimeout(() => window.location.href = 'admin.html', 1200);
+  // ── STEP 1: Supabase Auth sign-in ──────────────────────────
+  const { data: authData, error: authError } = await sb.auth.signInWithPassword({
+    email: email.trim(),
+    password: pass
+  });
+
+  if(authError) {
+    // Show the RAW Supabase error — no mapping that could hide the real reason
+    errEl.innerHTML = '⚠ Auth error: ' + authError.message;
+    console.error('Auth error:', authError);
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In →';
     return;
   }
 
-  try {
-    // Step 1 — Supabase Auth sign-in (email + password)
-    const { data, error } = await sb.auth.signInWithPassword({ email, password: pass });
-    if(error) throw error;
+  // Auth succeeded — now check admin table via RPC
+  // ── STEP 2: Verify admin role ──────────────────────────────
+  const { data: adminData, error: rpcError } = await sb.rpc('get_admin_by_email', {
+    p_email: email.trim()
+  });
 
-    // Step 2 — verify admin role via RPC (bypasses RLS, safe)
-    // Direct SELECT on admins table fails because RLS blocks anon/authenticated reads.
-    // The get_admin_by_email() function is SECURITY DEFINER so it reads as superuser.
-    const { data: adminData, error: rpcErr } = await sb.rpc('get_admin_by_email', {
-      p_email: email
-    });
+  console.log('Admin RPC result:', adminData, rpcError);
 
-    if(rpcErr || !adminData) {
-      // Valid Supabase user but not in admins table
-      await sb.auth.signOut();
-      throw new Error('Access denied. This account is not an admin.');
-    }
-
-    // Store admin info for admin.html to read
-    sessionStorage.setItem('ak_admin', JSON.stringify(adminData));
-
-    showStep('step-signing-in');
-    setTimeout(() => window.location.href = 'admin.html', 800);
-
-  } catch(e) {
-    document.getElementById('login-err').innerHTML =
-      '⚠ ' + (e.message === 'Invalid login credentials'
-        ? 'Wrong email or password.'
-        : e.message || 'Login failed. Try again.');
+  if(rpcError) {
+    await sb.auth.signOut();
+    errEl.innerHTML = '⚠ RPC error: ' + rpcError.message + ' — did you run admin_rls_fix.sql?';
     btn.disabled = false;
     btn.innerHTML = 'Sign In →';
+    return;
   }
+
+  if(!adminData) {
+    await sb.auth.signOut();
+    errEl.innerHTML = '⚠ This email is not in the admins table. Run admin_setup.sql in Supabase.';
+    btn.disabled = false;
+    btn.innerHTML = 'Sign In →';
+    return;
+  }
+
+  // ── SUCCESS ────────────────────────────────────────────────
+  sessionStorage.setItem('ak_admin', JSON.stringify(adminData));
+  showStep('step-signing-in');
+  setTimeout(() => window.location.href = 'admin.html', 800);
 }
 
 // ── RESET PASSWORD ──
