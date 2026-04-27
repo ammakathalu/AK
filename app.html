@@ -1341,8 +1341,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -2004,20 +2004,30 @@ async function generateTTS(story) {
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
       headers: { 'xi-api-key': elKey, 'Content-Type':'application/json', 'Accept':'audio/mpeg' },
-      body: JSON.stringify({
-        text,
-        // eleven_turbo_v2_5 with explicit language_code forces NATIVE phonetics
-        // The cloned voice speaks in pure Telugu/Tamil/Kannada/Malayalam/Marathi/Hindi
-        // Without language_code, ElevenLabs auto-detects and may apply generic accent
-        model_id: 'eleven_turbo_v2_5',
-        language_code: {'te':'te','ta':'ta','kn':'kn','hi':'hi','ml':'ml','mr':'mr','en':'en'}[LANG] || 'te',
-        voice_settings: {
-          stability:        0.75,  // higher = more consistent native pronunciation
-          similarity_boost: 0.95,  // very high = stays extremely close to cloned voice
-          style:            0.0,   // 0 = pure cloned voice, no added expressiveness
-          use_speaker_boost: true  // enhances clarity of cloned voice
+      body: JSON.stringify((() => {
+        // Model selection per language:
+        // - eleven_turbo_v2_5: supports language_code for hi + en only
+        // - eleven_multilingual_v2: best for te/ta/kn/ml/mr (auto-detects script)
+        // Sending language_code to multilingual_v2 causes 400 error
+        const useHindi = LANG === 'hi';
+        const useEnglish = LANG === 'en';
+        const useTurbo = useHindi || useEnglish;
+        const body = {
+          text,
+          model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
+          voice_settings: {
+            stability:        0.75,
+            similarity_boost: 0.95,
+            style:            0.0,
+            use_speaker_boost: true
+          }
+        };
+        // Only add language_code for turbo model with supported languages
+        if(useTurbo) {
+          body.language_code = useHindi ? 'hi' : 'en';
         }
-      })
+        return body;
+      })())
     });
 
     if(!res.ok) {
@@ -2076,12 +2086,14 @@ async function generateTTS(story) {
     }
 
   } catch(e) {
-    console.error('generateTTS error:', e);
-    toast('🎙 Voice error: ' + e.message);
+    console.error('generateTTS error full:', e);
+    // Show full error so we can diagnose
+    const errMsg = e.message || 'Unknown error';
+    toast('Error: ' + errMsg.substring(0,80));
     btn.disabled = false;
     btn.textContent = '▶';
     document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice">📖 Text only — tap ▶ to retry</span>';
+      '<span class="badge-voice" style="color:var(--orange);cursor:pointer;" onclick="generateTTS(currentStory)">⚠ ' + errMsg.substring(0,50) + ' — tap to retry</span>';
   } finally {
     ttsGenerating = false;
   }
