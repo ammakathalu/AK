@@ -921,7 +921,7 @@ body::before {
     <button class="ctrl" onclick="showScreen('home')">←</button>
     <div style="margin-top:16px;text-align:center;">
       <div class="voice-title" id="t-rec-title">మీ గొంతు నమోదు చేయండి</div>
-      <div class="voice-sub" id="t-rec-sub">30 సెకండ్లు దిగువ వాక్యాలు చదవండి</div>
+      <div class="voice-sub" id="t-rec-sub">దిగువ వాక్యాలు చదవండి (60 సెకండ్లు)</div>
     </div>
     <div class="prompt-box">
       <span class="prompt-lbl" id="t-read-now">ఇప్పుడు చదవండి</span>
@@ -956,59 +956,67 @@ body::before {
 
 <!-- ═══ GENERATE ═══ -->
 <div class="screen pb" id="generate">
+  <!-- Header -->
   <div class="gen-hdr">
     <button class="ctrl" onclick="showScreen('home')" style="margin-bottom:12px;">←</button>
-    <h1 id="t-gen-title">కొత్త కథ తయారు చేయండి</h1>
-    <p id="t-gen-sub">పుస్తకం పేరు రాయండి — AI snippet తయారు చేస్తుంది</p>
+    <h1 id="t-gen-title">కొత్త కథ</h1>
+    <p id="t-gen-sub">AI కథ రాయించండి లేదా మీ కథ అప్లోడ్ చేయండి</p>
   </div>
 
-  <div style="padding:0 16px 16px;">
+  <!-- Tab: AI / Upload / Write -->
+  <div style="display:flex;gap:0;margin:0 16px 14px;background:var(--bg2);
+              border-radius:14px;padding:3px;border:1px solid var(--border);">
+    <button id="tab-ai" onclick="switchGenTab('ai')"
+      style="flex:1;padding:9px;border-radius:11px;border:none;font-family:'Baloo 2',sans-serif;
+             font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;
+             background:linear-gradient(135deg,var(--purple),var(--sky));color:#fff;">
+      ✨ AI కథ
+    </button>
+    <button id="tab-upload" onclick="switchGenTab('upload')"
+      style="flex:1;padding:9px;border-radius:11px;border:none;font-family:'Baloo 2',sans-serif;
+             font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;
+             background:transparent;color:var(--muted);">
+      📁 అప్లోడ్
+    </button>
+    <button id="tab-write" onclick="switchGenTab('write')"
+      style="flex:1;padding:9px;border-radius:11px;border:none;font-family:'Baloo 2',sans-serif;
+             font-size:13px;font-weight:700;cursor:pointer;transition:all .2s;
+             background:transparent;color:var(--muted);">
+      ✏️ రాయండి
+    </button>
+  </div>
 
-    <!-- Book title input -->
+  <!-- ── AI TAB ── -->
+  <div id="gen-tab-ai" style="padding:0 16px 8px;">
+
+    <!-- Book prompt input -->
     <div style="background:var(--card);border-radius:var(--radius);padding:16px;
-                box-shadow:var(--shadow);margin-bottom:14px;
-                border-left:5px solid var(--gold);">
-      <label style="font-size:11px;font-weight:700;color:var(--gold);
-                    letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:8px;">
-        📚 పుస్తకం / కథ పేరు
+                box-shadow:var(--shadow);margin-bottom:10px;border-left:4px solid var(--gold);">
+      <label style="font-size:11px;font-weight:700;color:var(--gold);letter-spacing:.07em;
+                    text-transform:uppercase;display:block;margin-bottom:8px;">
+        📚 పుస్తకం / కథ పేరు లేదా prompt
       </label>
-      <input id="bookTitleInput" type="text"
-        style="width:100%;background:var(--bg2);border:2px solid var(--border);
-               border-radius:12px;padding:12px 14px;font-size:15px;font-weight:600;
-               color:var(--text);font-family:'Baloo 2',sans-serif;outline:none;"
+      <input id="bookTitleInput" type="text" class="book-input"
         placeholder="ఉదా: రామాయణం, పంచతంత్రం, Cinderella..."
-        oninput="document.getElementById('bookTitleInput').style.borderColor='var(--gold)'">
-      <div style="font-size:11px;color:var(--muted);margin-top:6px;">
-        తెలుగు, తమిళ్, హిందీ, ఆంగ్లం — ఏ పుస్తక పేరైనా రాయవచ్చు
+        oninput="this.style.borderColor='var(--gold)'">
+      <div style="font-size:11px;color:var(--muted);margin-top:5px;">
+        ఏ పుస్తక పేరైనా, కథ పేరైనా, లేదా మీ స్వంత prompt రాయవచ్చు
       </div>
     </div>
 
-    <!-- Age appropriateness -->
-    <div style="background:var(--card);border-radius:var(--radius);padding:14px 16px;
-                box-shadow:var(--shadow);margin-bottom:14px;">
-      <label style="font-size:11px;font-weight:700;color:var(--muted);
-                    letter-spacing:.07em;text-transform:uppercase;display:block;margin-bottom:10px;">
-        🎯 కథ రకం ఎంచుకోండి
-      </label>
-      <div class="opt-grid" id="typeGrid"></div>
+    <!-- Suggestions chips -->
+    <div style="margin-bottom:12px;">
+      <div style="font-size:11px;font-weight:700;color:var(--muted);letter-spacing:.06em;
+                  text-transform:uppercase;margin-bottom:8px;">💡 సూచనలు — tap to use</div>
+      <div id="suggestionChips" style="display:flex;flex-wrap:wrap;gap:6px;"></div>
     </div>
 
-    <div class="gen-form-card">
-      <label class="gen-form-label" id="t-moral-val">నేర్పాల్సిన విలువ</label>
-      <div class="opt-grid" id="moralGrid"></div>
-    </div>
-
-    <div class="gen-form-card">
-      <label class="gen-form-label" id="t-setting">నేపథ్యం</label>
-      <div class="opt-grid" id="settingGrid"></div>
-    </div>
-
-    <!-- Story length note -->
-    <div style="background:var(--green-l);border-radius:14px;padding:10px 14px;
-                margin-bottom:14px;display:flex;align-items:center;gap:10px;">
-      <span style="font-size:20px;">⏱</span>
+    <!-- Duration note -->
+    <div style="background:var(--green-l);border-radius:12px;padding:10px 14px;
+                margin-bottom:12px;display:flex;align-items:center;gap:10px;">
+      <span style="font-size:18px;">⏱</span>
       <div>
-        <div style="font-size:12px;font-weight:700;color:var(--green-d);">1–7 నిమిషాల కథ</div>
+        <div style="font-size:12px;font-weight:700;color:var(--green-d);" id="dur-note-title">1–7 నిమిషాల కథ</div>
         <div style="font-size:11px;color:var(--muted);">పిల్లలకు సరైన నిడివి — రాత్రి నిద్రకు అనుకూలం</div>
       </div>
     </div>
@@ -1018,25 +1026,75 @@ body::before {
     </button>
   </div>
 
-  <div class="gen-loading" id="genLoading" style="display:none;text-align:center;padding:32px;">
-    <div style="font-size:48px;animation:playerPulse 1.5s ease-in-out infinite;">📖</div>
-    <div id="genLoadTxt" style="font-size:14px;color:var(--muted);margin-top:12px;">కథ రాస్తున్నాను...</div>
+  <!-- ── UPLOAD TAB ── -->
+  <div id="gen-tab-upload" style="display:none;padding:0 16px 8px;">
+    <div style="background:var(--card);border-radius:var(--radius);padding:20px;
+                box-shadow:var(--shadow);margin-bottom:14px;text-align:center;">
+      <div style="font-size:40px;margin-bottom:10px;">📄</div>
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px;">కథ ఫైల్ అప్లోడ్ చేయండి</div>
+      <div style="font-size:12px;color:var(--muted);margin-bottom:16px;">.txt ఫైల్ — మీరు రాసిన కథ</div>
+      <label style="display:inline-flex;align-items:center;gap:8px;background:var(--purple-l);
+                    border:2px solid var(--purple);border-radius:30px;padding:10px 20px;
+                    cursor:pointer;font-size:13px;font-weight:700;color:var(--purple);">
+        📁 ఫైల్ ఎంచుకోండి
+        <input type="file" accept=".txt,.pdf" onchange="handleStoryFileUpload(this)" style="display:none;">
+      </label>
+      <div id="uploadedFileName" style="font-size:12px;color:var(--muted);margin-top:10px;"></div>
+    </div>
+    <div id="uploadedStoryPreview" style="display:none;margin-bottom:14px;">
+      <div style="font-size:13px;font-weight:700;color:var(--text);margin-bottom:6px;">📖 కథ Preview</div>
+      <div id="uploadPreviewText" style="background:var(--card);border-radius:14px;padding:14px;
+           max-height:200px;overflow-y:auto;font-size:14px;line-height:1.7;
+           border:1px solid var(--border);color:var(--text);"></div>
+      <div style="margin-top:8px;">
+        <input id="uploadTitleInput" type="text" class="book-input" placeholder="కథకు పేరు ఇవ్వండి..." style="margin-bottom:8px;">
+        <button class="btn-p" onclick="saveUploadedStory()">💾 కథ సేవ్ చేయండి</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── WRITE TAB ── -->
+  <div id="gen-tab-write" style="display:none;padding:0 16px 8px;">
+    <div style="background:var(--card);border-radius:var(--radius);padding:16px;
+                box-shadow:var(--shadow);margin-bottom:14px;">
+      <div style="font-size:15px;font-weight:700;color:var(--text);margin-bottom:12px;">✏️ మీ కథ రాయండి</div>
+      <input id="writeTitleInput" type="text" class="book-input"
+        placeholder="కథ పేరు..." style="margin-bottom:10px;">
+      <textarea id="writeStoryText"
+        style="width:100%;background:var(--bg2);border:2px solid var(--border);border-radius:14px;
+               padding:14px;font-size:14px;line-height:1.8;color:var(--text);
+               font-family:'Baloo 2',sans-serif;min-height:200px;outline:none;resize:vertical;"
+        placeholder="ఇక్కడ కథ రాయండి... మీ పిల్లవాడికి నచ్చే కథ, మీ అమ్మమ్మ చెప్పిన కథ, ఏదైనా రాయండి 📖"
+        oninput="this.style.borderColor='var(--gold)'"></textarea>
+      <textarea id="writeMoralText"
+        style="width:100%;background:var(--bg2);border:2px solid var(--border);border-radius:14px;
+               padding:12px 14px;font-size:13px;color:var(--text);font-family:'Baloo 2',sans-serif;
+               height:60px;outline:none;resize:none;margin-top:8px;"
+        placeholder="నీతి / Moral (ఐచ్ఛికం)..."></textarea>
+    </div>
+    <button class="btn-p" onclick="saveWrittenStory()" style="margin-bottom:16px;">
+      💾 కథ సేవ్ &amp; వినండి
+    </button>
+  </div>
+
+  <!-- Loading -->
+  <div id="genLoading" style="display:none;text-align:center;padding:40px 16px;">
+    <div style="font-size:52px;animation:playerPulse 1.5s ease-in-out infinite;">📖</div>
+    <div id="genLoadTxt" style="font-size:14px;color:var(--muted);margin-top:14px;font-weight:600;">కథ రాస్తున్నాను...</div>
   </div>
 
   <!-- Result in book format -->
-  <div class="result-box" id="resultBox" style="display:none;padding:0 16px 16px;">
+  <div id="resultBox" style="display:none;padding:0 16px 16px;">
     <div style="background:var(--card);border-radius:4px 20px 20px 4px;
                 box-shadow:-5px 0 0 var(--gold),var(--shadow-lg);overflow:hidden;">
-      <!-- Book cover -->
       <div style="background:linear-gradient(135deg,var(--purple),var(--sky));
                   padding:16px 18px;display:flex;align-items:center;gap:12px;">
         <span style="font-size:36px;">📖</span>
-        <div>
+        <div style="flex:1;">
           <div id="resTitle" style="font-size:17px;font-weight:800;color:#fff;line-height:1.3;"></div>
           <div style="font-size:11px;color:rgba(255,255,255,.8);margin-top:3px;" id="resBookLabel">AI Generated Story</div>
         </div>
       </div>
-      <!-- Book page lines -->
       <div style="padding:18px;background:repeating-linear-gradient(transparent,transparent 27px,#ead9c4 27px,#ead9c4 28px);">
         <div id="resText" style="font-size:15px;line-height:1.9;color:var(--text);margin-bottom:14px;"></div>
         <div id="resMoral" style="padding:12px 14px;background:var(--yellow-l);
@@ -1048,6 +1106,13 @@ body::before {
       <button class="btn-p" style="flex:1;" onclick="playGenerated()">▶ <span id="t-listen">వినండి</span></button>
       <button class="btn-g" style="flex:1;" onclick="saveGenerated()">💾 <span id="t-save">సేవ్</span></button>
     </div>
+  </div>
+
+  <!-- Hidden grids (still used by renderGenOptions internally) -->
+  <div style="display:none;">
+    <div id="typeGrid"></div>
+    <div id="moralGrid"></div>
+    <div id="settingGrid"></div>
   </div>
 </div>
 
@@ -1224,8 +1289,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -1266,7 +1331,7 @@ const I18N = {
     days:'రోజుల వరుస',tonight:'⭐ ఈ రాత్రి కథ',library:'📚 కథల సంగ్రహం',
     'ai-section':'✨ AI కొత్త కథ','ai-btn':'ప్రత్యేక కథ రాయించండి',
     back:'వెనక్కి','rec-title':'మీ గొంతు నమోదు చేయండి',
-    'rec-sub':'30 సెకండ్లు దిగువ వాక్యాలు చదవండి','read-now':'ఇప్పుడు చదవండి',
+    'rec-sub':'దిగువ వాక్యాలు చదవండి (60 సెకండ్లు — మంచి clone కోసం)','read-now':'ఇప్పుడు చదవండి',
     'not-recorded':'గొంతు నమోదు కాలేదు','save-voice':'గొంతు సేవ్ చేయండి',
     'skip-voice':'ఇప్పుడు వద్దు','gen-title':'కొత్త కథ తయారు చేయండి',
     'gen-sub':'AI మీ పిల్లవాడికి ప్రత్యేక కథ రాస్తుంది',
@@ -1280,7 +1345,7 @@ const I18N = {
     'record-voice':'గొంతు నమోదు చేయండి',subscription:'Subscription',bedtime:'రాత్రి 10 గంటల Reminder',
     logout:'🚪 లాగ్ అవుట్',child:'పిల్లవాడు',
     'nl-home':'హోమ్','nl-voice':'గొంతు','nl-gen':'కొత్త కథ','nl-sub':'Premium','nl-prof':'ప్రొఫైల్',
-    'rec-prompt':'నా బంగారు బాబూ, నీకు ఒక మంచి కథ చెప్తాను. చాలా కాలం క్రితం, ఒక అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్క ఎప్పుడూ తన తెలివితేటలతో అందరికీ సహాయం చేసేది.',
+    'rec-prompt':'నా బంగారు బాబూ, ఇప్పుడు నేను నీకు ఒక మంచి కథ చెప్తాను. శ్రద్ధగా విను. చాలా కాలం క్రితం, ఒక పచ్చని అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్కకు చాలా స్నేహితులు ఉండేవారు. అందరినీ ప్రేమగా పలకరించేది. ఒకరోజు అడవిలో వర్షం పడింది. చిన్న చిన్న జంతువులు వణికిపోయాయి. నక్క అందరికీ ఆశ్రయం ఇచ్చింది. అందుకే అందరూ నక్కను చాలా ప్రేమించేవారు. ఇప్పుడు నువ్వు కూడా పడుకో, రేపు మళ్ళీ కథ చెప్తాను.',
     types:[{k:'animal',e:'🦁',l:'జంతు కథ'},{k:'folk',e:'👸',l:'జానపదం'},{k:'tenali',e:'🦊',l:'తెనాలి రామ'},{k:'moral',e:'⭐',l:'నీతి కథ'}],
     morals:[{k:'honest',e:'💛',l:'నిజాయితీ'},{k:'brave',e:'🦁',l:'ధైర్యం'},{k:'kind',e:'🌸',l:'దయాగుణం'},{k:'smart',e:'💡',l:'తెలివితేటలు'}],
     settings_list:[{k:'village',e:'🏡',l:'పల్లెటూరు'},{k:'forest',e:'🌳',l:'అడవి'},{k:'river',e:'🌊',l:'నది ఒడ్డు'},{k:'kingdom',e:'🏰',l:'రాజ్యం'}],
@@ -1379,7 +1444,7 @@ I18N.ml = {
   'premium-sub':'അമ്മയുടെ ശബ്ദത്തിൽ എല്ലാ കഥകളും', language:'ഭാഷ മാറ്റൂ',
   logout:'🚪 ലോഗ് ഔട്ട്', child:'കുഞ്ഞ്',
   'nl-home':'ഹോം','nl-voice':'ശബ്ദം','nl-gen':'പുതിയ കഥ','nl-sub':'Premium','nl-prof':'പ്രൊഫൈൽ',
-  'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, നിനക്ക് ഒരു നല്ല കഥ പറയാം. വളരെ മുൻപ്, ഒരു കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കൻ എപ്പോഴും തന്റെ ബുദ്ധിയാൽ എല്ലാവരെയും സഹായിച്ചിരുന്നു.',
+  'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, ഇപ്പോൾ ഞാൻ നിനക്ക് ഒരു നല്ല കഥ പറയാം. ശ്രദ്ധിച്ചു കേൾക്കൂ. വളരെ മുൻപ്, ഒരു പച്ചനിറമുള്ള കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കന് ഒരുപാട് സ്നേഹിതന്മാർ ഉണ്ടായിരുന്നു. എല്ലാവരെയും സ്നേഹത്തോടെ സ്വീകരിച്ചിരുന്നു. ഒരു ദിവസം കാട്ടിൽ മഴ പെയ്തു. ചെറിയ മൃഗങ്ങൾ വിറച്ചു. കുറുക്കൻ എല്ലാവർക്കും അഭയം നൽകി. അതുകൊണ്ടാണ് എല്ലാവരും കുറുക്കനെ ഇഷ്ടപ്പെട്ടിരുന്നത്. ഇനി നീ ഉറങ്ങൂ, നാളെ വീണ്ടും കഥ പറയാം.',
   greetings:{morning:'സുപ്രഭാതം,',afternoon:'ഉച്ചനമസ്കാരം,',evening:'സന്ധ്യ നമസ്കാരം,',night:'ശുഭ രാത്രി,'},
   'gen-loading':['കഥ എഴുതുന്നു...','കഥാപാത്രങ്ങൾ തയ്യാർ...','ധർമ്മം നെയ്യുന്നു...','അന്തിമ സ്പർശം...'],
   'story-prompt':(child,age,type,moral,setting)=>`Write a Malayalam bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Malayalam words. Start with "എന്റെ ${child},". Return JSON only: {"title":"...","story":"...","moral":"ധർമ്മം: ..."}`
@@ -1991,7 +2056,7 @@ function startRecord() {
     recSeconds++;
     const m=Math.floor(recSeconds/60), s=recSeconds%60;
     document.getElementById('recTimer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
-    if(recSeconds >= 30) stopRecord();
+    if(recSeconds >= 60) stopRecord(); // 60s for better native clone
   }, 1000);
 
   if(navigator.mediaDevices?.getUserMedia) {
@@ -2209,6 +2274,113 @@ async function uploadVoice() {
 }
 
 // ── GENERATE ──
+// ── GENERATE TAB SWITCHER ──
+function switchGenTab(tab) {
+  ['ai','upload','write'].forEach(t => {
+    const el = document.getElementById('gen-tab-'+t);
+    const btn = document.getElementById('tab-'+t);
+    if(!el || !btn) return;
+    const isActive = t === tab;
+    el.style.display = isActive ? 'block' : 'none';
+    if(isActive) {
+      btn.style.background = 'linear-gradient(135deg,var(--purple),var(--sky))';
+      btn.style.color = '#fff';
+    } else {
+      btn.style.background = 'transparent';
+      btn.style.color = 'var(--muted)';
+    }
+  });
+}
+
+// ── SUGGESTIONS PER LANGUAGE ──
+const STORY_SUGGESTIONS = {
+  te: ['రామాయణం','మహాభారతం','పంచతంత్రం','తెనాలి రామ','అక్కడ గోపాల కృష్ణుడు','బుద్ధుని కథలు','నక్కా కాకి','అమ్మమ్మ చెప్పిన కథ','బాలనాగమ్మ','రాజు పేద అయిన కథ'],
+  ta: ['ராமாயணம்','மகாபாரதம்','பஞ்சதந்திரம்','தெனாலி ராமா','கிருஷ்ணன் கதை','பாட்டி கதை','சின்னக்கதை','நரியும் காகமும்','முயலும் ஆமையும்','அக்கமாம்பிள்ளை கதை'],
+  hi: ['रामायण','महाभारत','पंचतंत्र','तेनाली राम','कृष्ण की कहानी','दादी की कहानी','अकबर बीरबल','जातक कथा','हितोपदेश','बेताल पच्चीसी'],
+  kn: ['ರಾಮಾಯಣ','ಮಹಾಭಾರತ','ಪಂಚತಂತ್ರ','ತೆನಾಲಿ ರಾಮ','ಕೃಷ್ಣನ ಕಥೆ','ಅಜ್ಜಿ ಕಥೆ','ನರಿ ಮತ್ತು ದ್ರಾಕ್ಷಿ','ಮೊಲ ಮತ್ತು ಆಮೆ','ಕೊಕ್ಕರೆ ಮತ್ತು ನರಿ','ರಾಜನ ಕಥೆ'],
+  ml: ['രാമായണം','മഹാഭാരതം','പഞ്ചതന്ത്രം','കൃഷ്ണകഥ','മുത്തശ്ശി കഥ','കുഞ്ഞരിയൻ','കാക്കയും കുറുക്കനും','മുയലും ആമയും','നാടൻ കഥ','ഒറ്റക്കല്ല്'],
+  mr: ['रामायण','महाभारत','पंचतंत्र','तेनाली राम','कृष्णाची गोष्ट','आजीची गोष्ट','गोपाळाची कथा','ससा आणि कासव','कोल्हा आणि कावळा','राजाची गोष्ट'],
+  en: ['Ramayana','Panchatantra','Tenali Rama','Jataka Tales','Cinderella','The Lion & Mouse','Aesop Fables','Beauty and Beast','Grandma Stories','Krishna Stories'],
+};
+
+function renderSuggestions() {
+  const el = document.getElementById('suggestionChips');
+  if(!el) return;
+  const list = STORY_SUGGESTIONS[LANG] || STORY_SUGGESTIONS.te;
+  el.innerHTML = list.map(s =>
+    `<button onclick="useSuggestion('${s.replace(/'/g,"\\'")}')"
+      style="background:var(--card);border:1.5px solid var(--border);border-radius:20px;
+             padding:6px 12px;font-size:12px;font-weight:600;color:var(--text2);
+             cursor:pointer;font-family:'Baloo 2',sans-serif;transition:all .15s;"
+      onmousedown="this.style.background='var(--purple-l)';this.style.borderColor='var(--purple)'"
+      onmouseup="this.style.background='var(--card)';this.style.borderColor='var(--border)'"
+      ontouchend="this.style.background='var(--card)';this.style.borderColor='var(--border)'">
+      📚 ${s}
+    </button>`
+  ).join('');
+}
+
+function useSuggestion(text) {
+  const inp = document.getElementById('bookTitleInput');
+  if(inp) {
+    inp.value = text;
+    inp.style.borderColor = 'var(--gold)';
+    inp.focus();
+  }
+}
+
+// ── UPLOAD STORY ──
+function handleStoryFileUpload(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const text = e.target.result;
+    document.getElementById('uploadedFileName').textContent = '✓ ' + file.name;
+    document.getElementById('uploadPreviewText').textContent = text.substring(0,500) + (text.length>500?'...':'');
+    document.getElementById('uploadedStoryPreview').style.display = 'block';
+    document.getElementById('uploadTitleInput').value = file.name.replace(/\.[^.]+$/, '');
+    // Store full text for saving
+    window._uploadedStoryText = text;
+  };
+  reader.readAsText(file, 'UTF-8');
+}
+
+async function saveUploadedStory() {
+  const title = document.getElementById('uploadTitleInput').value.trim();
+  const text  = window._uploadedStoryText || '';
+  if(!title) { toast('కథకు పేరు ఇవ్వండి'); return; }
+  if(!text)  { toast('ఫైల్ అప్లోడ్ చేయండి'); return; }
+
+  generatedStory = { title, story: text, moral: '' };
+  document.getElementById('resTitle').textContent = title;
+  const lbl = document.getElementById('resBookLabel');
+  if(lbl) lbl.textContent = '📁 Uploaded Story';
+  document.getElementById('resText').innerHTML = text.split(/\n\n+/).filter(p=>p.trim()).map(p=>'<p style="margin-bottom:12px;">'+p+'</p>').join('');
+  document.getElementById('resMoral').textContent = '';
+  document.getElementById('resultBox').style.display = 'block';
+  await saveUserStory(generatedStory);
+  toast('✓ కథ సేవ్ అయింది!');
+}
+
+// ── WRITE STORY ──
+async function saveWrittenStory() {
+  const title = document.getElementById('writeTitleInput').value.trim();
+  const text  = document.getElementById('writeStoryText').value.trim();
+  const moral = document.getElementById('writeMoralText').value.trim();
+  if(!title) { toast('కథకు పేరు ఇవ్వండి'); return; }
+  if(!text || text.length < 30) { toast('కొంచెం ఎక్కువ రాయండి'); return; }
+
+  generatedStory = { title, story: text, moral };
+  document.getElementById('resTitle').textContent = title;
+  const lbl = document.getElementById('resBookLabel');
+  if(lbl) lbl.textContent = '✏️ Written Story';
+  document.getElementById('resText').innerHTML = text.split(/\n+/).filter(p=>p.trim()).map(p=>'<p style="margin-bottom:12px;">'+p+'</p>').join('');
+  document.getElementById('resultBox').style.display = 'block';
+  await saveUserStory(generatedStory);
+  toast('✓ కథ సేవ్ అయింది!');
+}
+
 function renderGenOptions() {
   const L = I18N[LANG] || I18N.te;
   ['typeGrid','moralGrid','settingGrid'].forEach((gridId, i) => {
@@ -2594,6 +2766,7 @@ async function changeLang(code, el) {
   // Re-render lang grid to show new active
   renderLangGrid();
 
+  renderSuggestions(); // update suggestions for new language
   const langNames = {te:'తెలుగు',ta:'தமிழ்',kn:'ಕನ್ನಡ',hi:'हिंदी',ml:'മലയാളം',mr:'मराठी',en:'English'};
   toast(`✓ Language changed to ${langNames[code]||code}`);
 }
@@ -2620,7 +2793,7 @@ function showScreen(id) {
   // Tab-specific refresh
   if(id === 'subscribe') { loadQR(); renderPlans(); }
   if(id === 'profile')   { renderProfile(); }
-  if(id === 'generate')  { renderGenOptions(); }
+  if(id === 'generate')  { renderGenOptions(); renderSuggestions(); switchGenTab('ai'); }
   if(id === 'home')      { updateHome(); }
 }
 
