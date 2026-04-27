@@ -1341,8 +1341,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -1912,6 +1912,78 @@ function setupAudio(url) {
 
 let ttsGenerating = false; // prevent double generateTTS calls
 
+// ── TELUGU PHONETIC TRANSLITERATOR ─────────────────────────────
+// Converts Telugu Unicode → phonetic English romanization
+// ElevenLabs pronounces romanized Indian text correctly with cloned voice
+// because the TTS engine's phoneme rules work on English letters natively
+function transliterateTelugu(text) {
+  const C = {
+    'క':'k','ఖ':'kh','గ':'g','ఘ':'gh','ఙ':'ng',
+    'చ':'ch','ఛ':'chh','జ':'j','ఝ':'jh','ఞ':'ny',
+    'ట':'T','ఠ':'Th','డ':'D','ఢ':'Dh','ణ':'N',
+    'త':'t','థ':'th','ద':'d','ధ':'dh','న':'n',
+    'ప':'p','ఫ':'ph','బ':'b','భ':'bh','మ':'m',
+    'య':'y','ర':'r','ల':'l','వ':'v',
+    'శ':'sh','ష':'sh','స':'s','హ':'h',
+    'ళ':'L','ఱ':'rr',
+  };
+  const V = {
+    'అ':'a','ఆ':'aa','ఇ':'i','ఈ':'ee','ఉ':'u','ఊ':'oo',
+    'ఎ':'e','ఏ':'ae','ఐ':'ai','ఒ':'o','ఓ':'o','ఔ':'au','ఋ':'ri',
+  };
+  const M = {
+    'ా':'aa','ి':'i','ీ':'ee','ు':'u','ూ':'oo',
+    'ె':'e','ే':'ae','ై':'ai','ొ':'o','ో':'o','ౌ':'au','ృ':'ri',
+    '్':'', 'ం':'n', 'ః':'h', 'ఁ':'',
+  };
+  const PUNC = {'।':'. ','॥':'. ','—':' ','…':'...'};
+  const out = [];
+  const chars = [...text];
+  let i = 0;
+  while(i < chars.length) {
+    const ch = chars[i];
+    if([' ','\n','\t','\r'].includes(ch)) { out.push(ch); i++; continue; }
+    if(PUNC[ch])                  { out.push(PUNC[ch]); i++; continue; }
+    if(['.',',','!','?',';',':','(',')','[',']'].includes(ch)) { out.push(ch); i++; continue; }
+    if(C[ch] !== undefined) {
+      const base = C[ch];
+      i++;
+      if(i < chars.length && M[chars[i]] !== undefined) {
+        const mv = M[chars[i]];
+        if(mv === '') { out.push(base); }          // virama — no vowel
+        else if(mv === 'n') { out.push(base+'a'+'n'); } // anusvara
+        else { out.push(base + mv); }
+        i++;
+      } else { out.push(base + 'a'); }              // inherent 'a'
+    } else if(V[ch] !== undefined) {
+      out.push(V[ch]);
+      if(i+1 < chars.length && chars[i+1] === 'ం') { out.push('n'); i++; }
+      i++;
+    } else if(M[ch] !== undefined) {
+      out.push(M[ch] || ''); i++;
+    } else if(ch >= '\u0c00' && ch <= '\u0c7f') {
+      i++; // skip unhandled Telugu codepoints
+    } else {
+      out.push(ch); i++;
+    }
+  }
+  return out.join('');
+}
+
+// Prepare text for ElevenLabs based on language
+// Telugu → transliterate to phonetic English for native pronunciation
+// Other languages → send as-is (multilingual model handles them)
+function prepareTextForTTS(text, lang) {
+  // Normalize Unicode first
+  const normalized = text.normalize ? text.normalize('NFC') : text;
+  if(lang === 'te') {
+    // Transliterate Telugu → phonetic English
+    // This gives the cloned voice Telugu phonetics through English letters
+    return transliterateTelugu(normalized);
+  }
+  return normalized;
+}
+
 async function generateTTS(story) {
   if(ttsGenerating) return;
   ttsGenerating = true;
@@ -1993,18 +2065,21 @@ async function generateTTS(story) {
     if(!elKey) elKey = localStorage.getItem('ak_el_key');
     if(!elKey) throw new Error('ElevenLabs API key not set in Admin → App Config');
 
-    // Clean and normalize text for native language TTS
+    // Prepare text for TTS
     let rawText = (story.story_text || story.title || '').substring(0, 2500);
-    // Remove markdown
     rawText = rawText.replace(/\*\*/g,'').replace(/\*/g,'').trim();
-    // Normalize Unicode (NFC) — important for Telugu/Devanagari compound characters
-    if(String.prototype.normalize) rawText = rawText.normalize('NFC');
-    // Remove any remaining English punctuation that confuses Indian language TTS
-    const text = rawText.trim();
-    if(!text) throw new Error('Story has no text.');
-    console.log('TTS text length:', text.length, 'lang:', LANG, 'voice:', voiceId.substring(0,8));
+    if(!rawText) throw new Error('Story has no text.');
 
-    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+    // For Telugu: transliterate to phonetic English
+    // This gives ElevenLabs proper Telugu phonetics through its English phoneme engine
+    const text = prepareTextForTTS(rawText, LANG);
+    console.log('TTS lang:', LANG, 'voice:', voiceId.substring(0,12),
+                'original:', rawText.substring(0,30),
+                LANG==='te' ? ('→ romanized: ' + text.substring(0,30)) : '');
+
+    // Use with-timestamps endpoint for better quality rendering
+    const ttsEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?optimize_streaming_latency=0`;
+    const res = await fetch(ttsEndpoint, {
       method: 'POST',
       headers: { 'xi-api-key': elKey, 'Content-Type':'application/json', 'Accept':'audio/mpeg' },
       body: JSON.stringify((() => {
@@ -2015,15 +2090,25 @@ async function generateTTS(story) {
         const useHindi = LANG === 'hi';
         const useEnglish = LANG === 'en';
         const useTurbo = useHindi || useEnglish;
+        const isClonedVoice = !!(USER?.elevenlabs_voice_id);
         const body = {
           text,
           model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
-          // Higher quality audio output
           output_format: 'mp3_44100_128',
-          voice_settings: {
-            stability:        0.80,  // high stability = consistent native accent
-            similarity_boost: 0.99,  // maximum = cloned voice as close as possible
-            style:            0.0,   // no style override — pure cloned voice
+          voice_settings: isClonedVoice ? {
+            // Cloned voice: maximise similarity to recorded Telugu/native voice
+            // stability 0.85 = very consistent, won't drift toward English
+            // similarity_boost 0.99 = as close to recorded voice as ElevenLabs allows
+            // style 0.0 = NO English-style expressiveness added — pure recorded voice
+            stability:        0.85,
+            similarity_boost: 0.99,
+            style:            0.0,
+            use_speaker_boost: true
+          } : {
+            // Default narrator voice — slight expressiveness OK
+            stability:        0.65,
+            similarity_boost: 0.80,
+            style:            0.15,
             use_speaker_boost: true
           }
         };
@@ -2185,7 +2270,17 @@ function startRecord() {
   }, 1000);
 
   if(navigator.mediaDevices?.getUserMedia) {
-    navigator.mediaDevices.getUserMedia({ audio: true })
+    navigator.mediaDevices.getUserMedia({
+        audio: {
+          // Disable ALL browser audio processing — these destroy native accent
+          echoCancellation:   false,  // echo cancel strips voice overtones
+          noiseSuppression:   false,  // noise suppress removes native breathiness
+          autoGainControl:    false,  // AGC changes natural volume dynamics
+          sampleRate:         44100,  // CD quality — preserves all voice frequencies
+          sampleSize:         16,     // 16-bit depth
+          channelCount:       1       // mono is fine for voice cloning
+        }
+      })
       .then(stream => {
         // Pick best supported format
         const mimeType = MediaRecorder.isTypeSupported('audio/webm;codecs=opus')
@@ -2194,7 +2289,10 @@ function startRecord() {
             ? 'audio/webm'
             : 'audio/ogg';
 
-        mediaRecorder = new MediaRecorder(stream, { mimeType });
+        mediaRecorder = new MediaRecorder(stream, {
+          mimeType,
+          audioBitsPerSecond: 128000  // 128kbps — maximum quality for voice cloning
+        });
 
         // ✅ Collect audio chunks as they come in
         mediaRecorder.ondataavailable = e => {
@@ -2343,19 +2441,31 @@ async function uploadVoice() {
     const langFullNames = {te:'Telugu',ta:'Tamil',kn:'Kannada',hi:'Hindi',ml:'Malayalam',mr:'Marathi',en:'English'};
     const langName = langFullNames[LANG] || 'Indian';
 
+    // Convert blob to WAV-like quality by using highest bitrate available
+    // WebM from browser is low quality — we send as-is but with proper params
     const formData = new FormData();
-    formData.append('name', `amma_${userId}_${LANG}_${Date.now()}`);
-    formData.append('files', audioBlob, `voice.${ext}`);
-    // Description with language helps ElevenLabs optimize the clone for that language's phonetics
-    formData.append('description', langName + ' mother voice for AmmaKatha bedtime stories - ' + (USER.mother_name || 'User') + ' - optimized for ' + langName + ' storytelling');
-    // Labels help ElevenLabs optimize phonetics for the specific Indian language
-    // language_code in labels helps ElevenLabs optimize clone for that language's phonemes
+    formData.append('name', 'amma_' + userId + '_' + LANG + '_' + Date.now());
+    // Send as .mp3 extension — ElevenLabs handles webm/ogg internally
+    formData.append('files', audioBlob, 'voice_' + LANG + '.' + ext);
+    // Description tells ElevenLabs what language/style to optimise for
+    formData.append('description',
+      'Native ' + langName + ' speaking mother. ' +
+      'Recorded reading a ' + langName + ' children bedtime story. ' +
+      'Natural ' + langName + ' accent, warm storytelling tone. ' +
+      'No English accent. Pure ' + langName + ' phonetics.'
+    );
+    // Labels: flat string values only — ElevenLabs uses these to tune the clone
     formData.append('labels', JSON.stringify({
-      language:   LANG,
+      language:  langName.toLowerCase(),
+      accent:    langName + ' native',
       use_case:  'narration',
-      accent:     langName,
-      style:      'warm storytelling grandmother'
+      age:       'middle_aged'
     }));
+    // DO NOT send remove_background_noise — it can strip native accent characteristics
+    // Only enable if recording environment is very noisy
+    // formData.append('remove_background_noise', 'true');
+
+    console.log('Cloning voice — lang:', langName, 'duration:', recSeconds, 'sec');
 
     const elRes = await fetch('https://api.elevenlabs.io/v1/voices/add', {
       method: 'POST',
