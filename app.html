@@ -1341,8 +1341,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -1397,7 +1397,7 @@ const I18N = {
     'record-voice':'గొంతు నమోదు చేయండి',subscription:'Subscription',bedtime:'రాత్రి 10 గంటల Reminder',
     logout:'🚪 లాగ్ అవుట్',child:'పిల్లవాడు',
     'nl-home':'హోమ్','nl-voice':'గొంతు','nl-gen':'కొత్త కథ','nl-sub':'Premium','nl-prof':'ప్రొఫైల్',
-    'rec-prompt':'నా బంగారు బాబూ, ఇప్పుడు నేను నీకు ఒక మంచి కథ చెప్తాను. శ్రద్ధగా విను. చాలా కాలం క్రితం, ఒక పచ్చని అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్కకు చాలా స్నేహితులు ఉండేవారు. అందరినీ ప్రేమగా పలకరించేది. ఒకరోజు అడవిలో వర్షం పడింది. చిన్న చిన్న జంతువులు వణికిపోయాయి. నక్క అందరికీ ఆశ్రయం ఇచ్చింది. అందుకే అందరూ నక్కను చాలా ప్రేమించేవారు. ఇప్పుడు నువ్వు కూడా పడుకో, రేపు మళ్ళీ కథ చెప్తాను.',
+    'rec-prompt':'నా బంగారు బాబూ, నీకు ఒక అద్భుతమైన కథ చెప్తాను. చాలా కాలం క్రితం, ఒక పచ్చని అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్కకు ఉడత, కుందేలు, లేడి పిల్ల అందరూ స్నేహితులు. ప్రతి రోజూ సాయంత్రం అందరూ ఒక పెద్ద మర్రి చెట్టు కింద కూర్చునేవారు. నక్క కథలు చెప్పేది. ఒకరోజు పెద్ద తుఫాను వచ్చింది. అందరూ భయపడ్డారు. నక్క ధైర్యంగా అందరికీ దారి చూపించింది. కలిసి ఉండటంలో శక్తి ఉందని నేర్చుకున్నారు. నా బాబూ నువ్వు కూడా మంచి స్నేహితుడివి అవుతావు. ఇప్పుడు పడుకో, రేపు మరో కథ చెప్తాను బంగారం.',
     types:[{k:'animal',e:'🦁',l:'జంతు కథ'},{k:'folk',e:'👸',l:'జానపదం'},{k:'tenali',e:'🦊',l:'తెనాలి రామ'},{k:'moral',e:'⭐',l:'నీతి కథ'}],
     morals:[{k:'honest',e:'💛',l:'నిజాయితీ'},{k:'brave',e:'🦁',l:'ధైర్యం'},{k:'kind',e:'🌸',l:'దయాగుణం'},{k:'smart',e:'💡',l:'తెలివితేటలు'}],
     settings_list:[{k:'village',e:'🏡',l:'పల్లెటూరు'},{k:'forest',e:'🌳',l:'అడవి'},{k:'river',e:'🌊',l:'నది ఒడ్డు'},{k:'kingdom',e:'🏰',l:'రాజ్యం'}],
@@ -1496,7 +1496,7 @@ I18N.ml = {
   'premium-sub':'അമ്മയുടെ ശബ്ദത്തിൽ എല്ലാ കഥകളും', language:'ഭാഷ മാറ്റൂ',
   logout:'🚪 ലോഗ് ഔട്ട്', child:'കുഞ്ഞ്',
   'nl-home':'ഹോം','nl-voice':'ശബ്ദം','nl-gen':'പുതിയ കഥ','nl-sub':'Premium','nl-prof':'പ്രൊഫൈൽ',
-  'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, ഇപ്പോൾ ഞാൻ നിനക്ക് ഒരു നല്ല കഥ പറയാം. ശ്രദ്ധിച്ചു കേൾക്കൂ. വളരെ മുൻപ്, ഒരു പച്ചനിറമുള്ള കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കന് ഒരുപാട് സ്നേഹിതന്മാർ ഉണ്ടായിരുന്നു. എല്ലാവരെയും സ്നേഹത്തോടെ സ്വീകരിച്ചിരുന്നു. ഒരു ദിവസം കാട്ടിൽ മഴ പെയ്തു. ചെറിയ മൃഗങ്ങൾ വിറച്ചു. കുറുക്കൻ എല്ലാവർക്കും അഭയം നൽകി. അതുകൊണ്ടാണ് എല്ലാവരും കുറുക്കനെ ഇഷ്ടപ്പെട്ടിരുന്നത്. ഇനി നീ ഉറങ്ങൂ, നാളെ വീണ്ടും കഥ പറയാം.',
+  'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, നിനക്ക് ഒരു അത്ഭുതമായ കഥ പറയാം. വളരെ മുൻപ്, ഒരു പച്ചക്കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കന് അണ്ണാൻ, മുയൽ, മാൻകുട്ടി എല്ലാം സ്നേഹിതരായിരുന്നു. എല്ലാ വൈകുന്നേരവും ഒരു വലിയ ആൽമരത്തിനടിയിൽ ഒത്തുചേർന്നിരുന്നു. ഒരു ദിവസം വലിയ കൊടുങ്കാറ്റ് വന്നു. എല്ലാവരും ഭയന്നു. കുറുക്കൻ ധൈര്യത്തോടെ എല്ലാവർക്കും വഴി കാട്ടി. ഒരുമിച്ചിരിക്കുന്നതിൽ ശക്തിയുണ്ടെന്ന് അവർ പഠിച്ചു. ഇനി ഉറങ്ങൂ, നാളെ ഇനിയൊരു കഥ പറയാം.',
   greetings:{morning:'സുപ്രഭാതം,',afternoon:'ഉച്ചനമസ്കാരം,',evening:'സന്ധ്യ നമസ്കാരം,',night:'ശുഭ രാത്രി,'},
   'gen-loading':['കഥ എഴുതുന്നു...','കഥാപാത്രങ്ങൾ തയ്യാർ...','ധർമ്മം നെയ്യുന്നു...','അന്തിമ സ്പർശം...'],
   'story-prompt':(child,age,type,moral,setting)=>`Write a Malayalam bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}. 200-250 simple Malayalam words. Start with "എന്റെ ${child},". Return JSON only: {"title":"...","story":"...","moral":"ധർമ്മം: ..."}`
@@ -1876,6 +1876,8 @@ async function openPlayer(storyId, mode) {
 
   // Priority: admin audio → TTS cache → generate TTS (own voice or default narrator)
   if(s.audio_url) {
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio — Free</span>';
     setupAudio(s.audio_url);
   } else if(ttsCache[s.id]) {
     setupAudio(ttsCache[s.id]);
@@ -1934,11 +1936,9 @@ async function generateTTS(story) {
         '<span class="badge-voice">🎙 అమ్మ గొంతు</span>';
       btn.disabled = false; btn.textContent = '▶';
       // Auto-play from cache
-      if(audioEl) { isPlaying=true; btn.textContent='⏸';
-        document.getElementById('playerArt').className='player-art playing';
-        audioEl.play().catch(()=>{isPlaying=false;btn.textContent='▶';
-          document.getElementById('playerArt').className='player-art';});
-      }
+      btn.disabled = false; btn.textContent = '▶';
+      btn.style.background = 'linear-gradient(135deg,var(--green),var(--green-d))';
+      setTimeout(() => { btn.style.background = ''; }, 2000);
       ttsGenerating = false; return;
     }
 
@@ -1962,13 +1962,10 @@ async function generateTTS(story) {
             ttsCache[story.id] = cachedUrl;
             setupAudio(cachedUrl);
             document.getElementById('playerMeta').innerHTML =
-              '<span class="badge-voice">🎙 అమ్మ గొంతు</span>';
+              '<span class="badge-voice" style="background:var(--sky-l);color:var(--sky);">💾 Stored audio — No API call</span>';
             btn.disabled = false; btn.textContent = '▶';
-            if(audioEl) { isPlaying=true; btn.textContent='⏸';
-              document.getElementById('playerArt').className='player-art playing';
-              audioEl.play().catch(()=>{isPlaying=false;btn.textContent='▶';
-                document.getElementById('playerArt').className='player-art';});
-            }
+            btn.style.background = 'linear-gradient(135deg,var(--green),var(--green-d))';
+            setTimeout(() => { btn.style.background = ''; }, 2000);
             ttsGenerating = false; return;
           } else {
             console.warn('Cached URL inaccessible (status '+testResp.status+') — regenerating');
@@ -1981,8 +1978,8 @@ async function generateTTS(story) {
 
     // 3. Nothing cached — call ElevenLabs (charged)
     document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice">🎙 Generating voice...</span>';
-    console.log('ElevenLabs TTS: generating for story', story.id, 'voice', voiceId);
+      '<span class="badge-voice" style="background:var(--orange-l);color:var(--orange-d);">⏳ Calling ElevenLabs API...</span>';
+    console.log('ElevenLabs TTS: generating for story', story.id, 'voice:', voiceId.substring(0,12), 'lang:', LANG);
 
     // Get API key
     let elKey = null;
@@ -1996,10 +1993,16 @@ async function generateTTS(story) {
     if(!elKey) elKey = localStorage.getItem('ak_el_key');
     if(!elKey) throw new Error('ElevenLabs API key not set in Admin → App Config');
 
-    // Clean text
-    const rawText = (story.story_text || story.title || '').substring(0, 2500);
-    const text = rawText.replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    // Clean and normalize text for native language TTS
+    let rawText = (story.story_text || story.title || '').substring(0, 2500);
+    // Remove markdown
+    rawText = rawText.replace(/\*\*/g,'').replace(/\*/g,'').trim();
+    // Normalize Unicode (NFC) — important for Telugu/Devanagari compound characters
+    if(String.prototype.normalize) rawText = rawText.normalize('NFC');
+    // Remove any remaining English punctuation that confuses Indian language TTS
+    const text = rawText.trim();
     if(!text) throw new Error('Story has no text.');
+    console.log('TTS text length:', text.length, 'lang:', LANG, 'voice:', voiceId.substring(0,8));
 
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
       method: 'POST',
@@ -2015,10 +2018,12 @@ async function generateTTS(story) {
         const body = {
           text,
           model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
+          // Higher quality audio output
+          output_format: 'mp3_44100_128',
           voice_settings: {
-            stability:        0.75,
-            similarity_boost: 0.95,
-            style:            0.0,
+            stability:        0.80,  // high stability = consistent native accent
+            similarity_boost: 0.99,  // maximum = cloned voice as close as possible
+            style:            0.0,   // no style override — pure cloned voice
             use_speaker_boost: true
           }
         };
@@ -2066,24 +2071,19 @@ async function generateTTS(story) {
         }
       }).catch(e => console.warn('Storage upload (non-critical):', e.message));
 
-    // 6. Play immediately
+    // 6. Set up audio and signal ready — user taps ▶ to play
+    // (Auto-play blocked by browsers after async fetch — requires user gesture)
     setupAudio(blobUrl);
+    const hasOwnVoice = !!(USER?.elevenlabs_voice_id);
+    const srcLabel = hasOwnVoice ? '🎙 అమ్మ గొంతు' : '🎙 కథకుడు';
+    const apiNote  = '<span style="font-size:10px;opacity:.7;"> (ElevenLabs API called)</span>';
     document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice">🎙 అమ్మ గొంతు</span>';
+      '<span class="badge-voice" style="background:var(--orange-l);color:var(--orange-d);">'
+      + srcLabel + apiNote + ' — ▶ నొక్కండి</span>';
     btn.disabled = false;
     btn.textContent = '▶';
-
-    // Auto-play — direct call to avoid togglePlay re-triggering generateTTS
-    if(audioEl) {
-      isPlaying = true;
-      btn.textContent = '⏸';
-      document.getElementById('playerArt').className = 'player-art playing';
-      audioEl.play().catch(e => {
-        console.error('Auto-play error:', e);
-        isPlaying = false; btn.textContent = '▶';
-        document.getElementById('playerArt').className = 'player-art';
-      });
-    }
+    btn.style.background = 'linear-gradient(135deg,var(--green),var(--green-d))';
+    setTimeout(() => { btn.style.background = ''; }, 2000);
 
   } catch(e) {
     console.error('generateTTS error full:', e);
