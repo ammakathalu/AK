@@ -1418,7 +1418,6 @@ const I18N = {
     features:['అమ్మ సొంత గొంతులో 500+ కథలు','పిల్లవాడి పేరు కథలో వినపడుతుంది','Internet లేకుండా download','రాత్రి 10 గంటలకు reminder','AI కొత్త కథలు','తెలుగు, తమిళ, కన్నడ, హిందీ'],
     greetings:{morning:'శుభోదయం,',afternoon:'శుభ మధ్యాహ్నం,',evening:'శుభ సంధ్య,',night:'శుభ రాత్రి,'},
     'gen-loading':['కథ రాస్తున్నాను...','పాత్రలు తయారు చేస్తున్నాను...','నీతి అల్లుతున్నాను...','చివరి మెరుగులు...'],
-    'story-prompt':(child,age,type,moral,setting)=>`Write a Telugu bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n450-500 simple Telugu words. Include child's name. Start with "బంగారు ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"నీతి: ..."}`
   },
   ta:{
     days:'நாள் தொடர்',tonight:'⭐ இன்றிரவு கதை',library:'📚 கதை நூலகம்',
@@ -1446,8 +1445,7 @@ const I18N = {
     features:['அம்மா குரலில் 500+ கதைகள்','குழந்தையின் பெயர் கதையில்','இணையம் இல்லாமல் பதிவிறக்கம்','இரவு 10 மணி நினைவூட்டல்','AI புதிய கதைகள்','தமிழ், தெலுங்கு, கன்னடம், இந்தி'],
     greetings:{morning:'காலை வணக்கம்,',afternoon:'மதிய வணக்கம்,',evening:'மாலை வணக்கம்,',night:'இரவு வணக்கம்,'},
     'gen-loading':['கதை எழுதுகிறேன்...','கதாபாத்திரங்கள் தயாரிக்கிறேன்...','நீதி அல்லுகிறேன்...','இறுதி தொடுகைகள்...'],
-    'story-prompt':(child,age,type,moral,setting)=>`Write a Tamil bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n450-500 simple Tamil words. Include child's name. Start with "தங்க ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"நீதி: ..."}`
-  },
+    
   hi:{
     days:'दिन की लकीर',tonight:'⭐ आज रात की कहानी',library:'📚 कहानी संग्रह',
     'ai-section':'✨ AI नई कहानी','ai-btn':'खास कहानी लिखवाएं',
@@ -1474,8 +1472,7 @@ const I18N = {
     features:['माँ की आवाज़ में 500+ कहानियाँ','कहानी में बच्चे का नाम','बिना इंटरनेट डाउनलोड','रात 10 बजे reminder','AI नई कहानियाँ','हिंदी, तेलुगु, तमिल, कन्नड़'],
     greetings:{morning:'सुप्रभात,',afternoon:'नमस्ते,',evening:'शुभ संध्या,',night:'शुभ रात्रि,'},
     'gen-loading':['कहानी लिख रही हूँ...','पात्र तैयार कर रही हूँ...','नैतिकता बुन रही हूँ...','अंतिम स्पर्श...'],
-    'story-prompt':(child,age,type,moral,setting)=>`Write a Hindi bedtime story for a ${age}-year-old child named ${child}.\nStory type: ${type}, Moral: ${moral}, Setting: ${setting}\n450-500 simple Hindi words. Include child's name. Start with "मेरे सोने के ${child},"\nReturn JSON only: {"title":"...","story":"...","moral":"नैतिक शिक्षा: ..."}`
-  }
+    
 };
 // Default Telugu for other languages not fully translated
 // kn, ml, mr — copy Telugu structure then override language-specific strings
@@ -1512,8 +1509,7 @@ I18N.ml = {
   'rec-prompt':'എന്റെ സ്വർണ്ണ കുഞ്ഞേ, നിനക്ക് ഒരു അത്ഭുതമായ കഥ പറയാം. വളരെ മുൻപ്, ഒരു പച്ചക്കാട്ടിൽ ഒരു ബുദ്ധിമാനായ കുറുക്കൻ താമസിച്ചിരുന്നു. ആ കുറുക്കന് അണ്ണാൻ, മുയൽ, മാൻകുട്ടി എല്ലാം സ്നേഹിതരായിരുന്നു. എല്ലാ വൈകുന്നേരവും ഒരു വലിയ ആൽമരത്തിനടിയിൽ ഒത്തുചേർന്നിരുന്നു. ഒരു ദിവസം വലിയ കൊടുങ്കാറ്റ് വന്നു. എല്ലാവരും ഭയന്നു. കുറുക്കൻ ധൈര്യത്തോടെ എല്ലാവർക്കും വഴി കാട്ടി. ഒരുമിച്ചിരിക്കുന്നതിൽ ശക്തിയുണ്ടെന്ന് അവർ പഠിച്ചു. ഇനി ഉറങ്ങൂ, നാളെ ഇനിയൊരു കഥ പറയാം.',
   greetings:{morning:'സുപ്രഭാതം,',afternoon:'ഉച്ചനമസ്കാരം,',evening:'സന്ധ്യ നമസ്കാരം,',night:'ശുഭ രാത്രി,'},
   'gen-loading':['കഥ എഴുതുന്നു...','കഥാപാത്രങ്ങൾ തയ്യാർ...','ധർമ്മം നെയ്യുന്നു...','അന്തിമ സ്പർശം...'],
-  'story-prompt':(child,age,type,moral,setting)=>`Write a Malayalam bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}\n450-500 simple Malayalam words. Start with "എന്റെ ${child},". Return JSON only: {"title":"...","story":"...","moral":"ധർമ്മം: ..."}`
-};
+  
 
 I18N.mr = {
   ...I18N.te,
@@ -1530,8 +1526,7 @@ I18N.mr = {
   'rec-prompt':'माझ्या सोन्या बाळा, तुला एक छान गोष्ट सांगते. खूप पूर्वी, एका जंगलात एक हुशार कोल्हा राहत होता. तो कोल्हा नेहमी आपल्या बुद्धिमत्तेने सर्वांना मदत करत असे.',
   greetings:{morning:'सुप्रभात,',afternoon:'नमस्कार,',evening:'सायंकाळ शुभ,',night:'शुभ रात्री,'},
   'gen-loading':['गोष्ट लिहितोय...','पात्रे तयार...','नीती विणतोय...','अंतिम स्पर्श...'],
-  'story-prompt':(child,age,type,moral,setting)=>`Write a Marathi bedtime story for a ${age}-year-old child named ${child}. Type: ${type}, Moral: ${moral}, Setting: ${setting}\n450-500 simple Marathi words. Start with "माझ्या ${child},". Return JSON only: {"title":"...","story":"...","moral":"नीती: ..."}`
-};
+  
 
 // English I18N
 I18N.en = {
@@ -1564,19 +1559,6 @@ I18N.en = {
     morning:"Good morning,", afternoon:"Good afternoon,",
     evening:"Good evening,", night:"Good night,"
   },
-  "gen-loading":["Writing the story...","Creating characters...","Weaving the moral...","Final touches..."],
-  types:[
-    {k:"animal",e:"🦁",l:"Animal Story"},{k:"folk",e:"👸",l:"Folk Tale"},
-    {k:"tenali",e:"🦊",l:"Tenali Rama"},{k:"moral",e:"⭐",l:"Moral Story"}
-  ],
-  morals:[
-    {k:"honest",e:"💛",l:"Honesty"},{k:"brave",e:"🦁",l:"Courage"},
-    {k:"kind",e:"🌸",l:"Kindness"},{k:"smart",e:"💡",l:"Wisdom"}
-  ],
-  settings_list:[
-    {k:"village",e:"🏡",l:"Village"},{k:"forest",e:"🌳",l:"Forest"},
-    {k:"river",e:"🌊",l:"Riverside"},{k:"kingdom",e:"🏰",l:"Kingdom"}
-  ],
   plans:[
     {id:"monthly",name:"Monthly",desc:"Cancel anytime",price:"₹99",days:30},
     {id:"annual",name:"Annual",desc:"Just ₹2.17/day",price:"₹799",days:365,save:"33% off",featured:true},
@@ -1587,8 +1569,7 @@ I18N.en = {
     "Download without internet","10 PM bedtime reminder",
     "AI new stories","All 7 languages"
   ],
-  "story-prompt":(child,age,type,moral,setting)=>`Write an English bedtime story for a ${age}-year-old child named ${child}. Story type: ${type}, Moral value: ${moral}, Setting: ${setting}\n450-500 simple English words. Include the child's name naturally. Start with "My dear ${child},". Return JSON only: {"title":"...","story":"...","moral":"Moral: ..."}`
-};
+
 // ── STATE ──
 let USER = null, TOKEN = null, LANG = 'te';
 let currentStory = null, isPlaying = false, playSeconds = 0, playInterval = null;
