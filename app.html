@@ -1074,7 +1074,7 @@ body::before {
     </div>
 
     <button class="btn-p" id="genBtn" onclick="generateStory()" style="margin-bottom:16px;">
-      ✨ <span id="genBtnTxt">కథ రాయండి</span>
+      📖 <span id="genBtnTxt">Generate Story</span>
     </button>
   </div>
 
@@ -1341,8 +1341,8 @@ body::before {
 // ══════════════════════════════════════════════
 // REPLACE THESE WITH YOUR SUPABASE VALUES
 // Supabase Dashboard → Settings → API
-const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
-const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const SUPABASE_URL      = 'https://YOUR_PROJECT.supabase.co';
+const SUPABASE_ANON_KEY = 'YOUR_ANON_KEY';
 // ══════════════════════════════════════════════
 const CLAUDE_API_KEY = ''; // Set via Admin → App Config
 const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
@@ -1411,7 +1411,7 @@ const I18N = {
     days:'நாள் தொடர்',tonight:'⭐ இன்றிரவு கதை',library:'📚 கதை நூலகம்',
     'ai-section':'✨ AI புதிய கதை','ai-btn':'சிறப்பு கதை எழுதுங்கள்',
     back:'திரும்பு','rec-title':'உங்கள் குரலை பதிவு செய்யுங்கள்',
-    'rec-sub':'30 வினாடிகள் கீழேயுள்ள வாக்கியங்களை படியுங்கள்','read-now':'இப்போது படியுங்கள்',
+    'rec-sub':'60 வினாடிகள் கீழேயுள்ள வாக்கியங்களை படியுங்கள் (சிறந்த குளோன்)','read-now':'இப்போது படியுங்கள்',
     'not-recorded':'குரல் பதிவாகவில்லை','save-voice':'குரலை சேமியுங்கள்',
     'skip-voice':'இப்போது வேண்டாம்','gen-title':'புதிய கதை உருவாக்குங்கள்',
     'gen-sub':'AI உங்கள் குழந்தைக்கு சிறப்பு கதை எழுதும்',
@@ -1425,7 +1425,7 @@ const I18N = {
     'record-voice':'குரல் பதிவு செய்யுங்கள்',subscription:'சந்தா',bedtime:'இரவு 10 மணி நினைவூட்டல்',
     logout:'🚪 வெளியேறு',child:'குழந்தை',
     'nl-home':'முகப்பு','nl-voice':'குரல்','nl-gen':'புதிய கதை','nl-sub':'Premium','nl-prof':'சுயவிவரம்',
-    'rec-prompt':'என் தங்க குழந்தையே, உனக்கு ஒரு நல்ல கதை சொல்கிறேன். நீண்ட காலத்திற்கு முன்பு, ஒரு காட்டில் ஒரு புத்திசாலி நரி வாழ்ந்தது.',
+    'rec-prompt':'என் தங்க குழந்தையே, உனக்கு ஒரு அற்புதமான கதை சொல்கிறேன். நீண்ட காலத்திற்கு முன்பு, ஒரு பசுமையான காட்டில் ஒரு புத்திசாலி நரி வாழ்ந்தது. அந்த நரிக்கு அணில், முயல், மான்குட்டி எல்லாரும் நண்பர்கள். ஒவ்வொரு மாலையும் ஒரு பெரிய ஆலமரத்தின் கீழ் ஒன்று கூடுவார்கள். நரி கதைகள் சொல்லும். ஒருநாள் பெரிய புயல் வந்தது. எல்லாரும் பயந்தார்கள். நரி தைரியமாக எல்லாருக்கும் வழி காட்டியது. சேர்ந்திருப்பதில் வலிமை இருக்கிறது என்று கற்றுக்கொண்டார்கள். என் கண்ணே இப்போது தூங்கு, நாளை இன்னொரு கதை சொல்கிறேன்.',
     types:[{k:'animal',e:'🦁',l:'விலங்கு கதை'},{k:'folk',e:'👸',l:'நாட்டுப்புற'},{k:'moral',e:'⭐',l:'நீதி கதை'},{k:'tenali',e:'🦊',l:'தெனாலி'}],
     morals:[{k:'honest',e:'💛',l:'நேர்மை'},{k:'brave',e:'🦁',l:'தைரியம்'},{k:'kind',e:'🌸',l:'கருணை'},{k:'smart',e:'💡',l:'புத்திசாலித்தனம்'}],
     settings_list:[{k:'village',e:'🏡',l:'கிராமம்'},{k:'forest',e:'🌳',l:'காடு'},{k:'river',e:'🌊',l:'ஆற்றங்கரை'},{k:'kingdom',e:'🏰',l:'அரசாட்சி'}],
@@ -1439,7 +1439,7 @@ const I18N = {
     days:'दिन की लकीर',tonight:'⭐ आज रात की कहानी',library:'📚 कहानी संग्रह',
     'ai-section':'✨ AI नई कहानी','ai-btn':'खास कहानी लिखवाएं',
     back:'वापस','rec-title':'अपनी आवाज़ रिकॉर्ड करें',
-    'rec-sub':'30 सेकंड नीचे के वाक्य पढ़ें','read-now':'अभी पढ़ें',
+    'rec-sub':'60 सेकंड नीचे के वाक्य पढ़ें (बेहतर आवाज़ क्लोन के लिए)','read-now':'अभी पढ़ें',
     'not-recorded':'आवाज़ रिकॉर्ड नहीं हुई','save-voice':'आवाज़ सेव करें',
     'skip-voice':'अभी नहीं','gen-title':'नई कहानी बनाएं',
     'gen-sub':'AI आपके बच्चे के लिए खास कहानी लिखेगा',
@@ -1453,7 +1453,7 @@ const I18N = {
     'record-voice':'आवाज़ रिकॉर्ड करें',subscription:'सदस्यता',bedtime:'रात 10 बजे reminder',
     logout:'🚪 लॉग आउट',child:'बच्चा',
     'nl-home':'होम','nl-voice':'आवाज़','nl-gen':'नई कहानी','nl-sub':'Premium','nl-prof':'प्रोफ़ाइल',
-    'rec-prompt':'मेरे सोने के बच्चे, मैं तुम्हें एक अच्छी कहानी सुनाती हूँ। बहुत समय पहले, एक जंगल में एक चालाक लोमड़ी रहती थी।',
+    'rec-prompt':'मेरे सोने के बच्चे, मैं तुम्हें एक अच्छी कहानी सुनाती हूँ। बहुत समय पहले, एक हरे-भरे जंगल में एक चालाक लोमड़ी रहती थी। उसके दोस्त थे गिलहरी, खरगोश और हिरन का बच्चा। हर शाम वे सब एक बड़े बरगद के पेड़ के नीचे मिलते थे। लोमड़ी उन्हें कहानियाँ सुनाती थी। एक दिन बड़ा तूफान आया। सब डर गए। लोमड़ी ने हिम्मत से सबको रास्ता दिखाया। साथ रहने में शक्ति है यह सीखा। मेरे लाल अब सो जाओ, कल फिर कहानी सुनाऊँगी।',
     types:[{k:'animal',e:'🦁',l:'जानवर कहानी'},{k:'folk',e:'👸',l:'लोककथा'},{k:'moral',e:'⭐',l:'नैतिक कथा'},{k:'panchatantra',e:'🦊',l:'पंचतंत्र'}],
     morals:[{k:'honest',e:'💛',l:'ईमानदारी'},{k:'brave',e:'🦁',l:'साहस'},{k:'kind',e:'🌸',l:'दयालुता'},{k:'smart',e:'💡',l:'बुद्धिमानी'}],
     settings_list:[{k:'village',e:'🏡',l:'गाँव'},{k:'forest',e:'🌳',l:'जंगल'},{k:'river',e:'🌊',l:'नदी किनारा'},{k:'kingdom',e:'🏰',l:'राज्य'}],
@@ -1608,6 +1608,10 @@ async function init() {
   }
 
   LANG = USER.lang_code || localStorage.getItem('ak_lang') || 'te';
+  // Voice language defaults to user's language (language they recorded in)
+  if(typeof VOICE_LANG === 'undefined' || !VOICE_LANG) {
+    VOICE_LANG = localStorage.getItem('ak_voice_lang') || LANG;
+  }
   if(USER.lang_code && USER.lang_code !== localStorage.getItem('ak_lang')) {
     localStorage.setItem('ak_lang', USER.lang_code);
   }
@@ -1874,15 +1878,26 @@ async function openPlayer(storyId, mode) {
   showScreen('player');
   logPlay(s.id);
 
-  // Priority: admin audio → TTS cache → generate TTS (own voice or default narrator)
-  if(s.audio_url) {
+  // PRIORITY: Mother voice ALWAYS wins over admin audio
+  // Only use admin audio when mother has NOT recorded her voice
+  const hasMotherVoice = !!(USER?.elevenlabs_voice_id);
+
+  if(hasMotherVoice && ttsCache[s.id]) {
+    // Session cache exists with mother's voice
     document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio — Free</span>';
+      '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">⚡ అమ్మ గొంతు — Cache</span>';
+    setupAudio(ttsCache[s.id]);
+  } else if(s.audio_url && !hasMotherVoice) {
+    // Admin pre-generated — only when no mother voice
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio</span>';
     setupAudio(s.audio_url);
   } else if(ttsCache[s.id]) {
+    // Session cache (default narrator)
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">⚡ Cache</span>';
     setupAudio(ttsCache[s.id]);
   } else {
-    // Always generate TTS — use own voice if cloned, else default narrator
     generateTTS(s);
   }
 }
@@ -2087,8 +2102,11 @@ async function generateTTS(story) {
         // - eleven_turbo_v2_5: supports language_code for hi + en only
         // - eleven_multilingual_v2: best for te/ta/kn/ml/mr (auto-detects script)
         // Sending language_code to multilingual_v2 causes 400 error
-        const useHindi = LANG === 'hi';
-        const useEnglish = LANG === 'en';
+        // Use VOICE_LANG (voice recording language) not LANG (content language)
+        // e.g. content=English but voice=Telugu → use Telugu model for cloning
+        const voiceLang = typeof VOICE_LANG !== 'undefined' ? VOICE_LANG : LANG;
+        const useHindi = voiceLang === 'hi';
+        const useEnglish = voiceLang === 'en';
         const useTurbo = useHindi || useEnglish;
         const isClonedVoice = !!(USER?.elevenlabs_voice_id);
         const body = {
@@ -2114,7 +2132,7 @@ async function generateTTS(story) {
         };
         // Only add language_code for turbo model with supported languages
         if(useTurbo) {
-          body.language_code = useHindi ? 'hi' : 'en';
+          body.language_code = useHindi ? 'hi' : 'en'; // voiceLang-based
         }
         return body;
       })())
@@ -2673,19 +2691,19 @@ async function generateStory() {
   const langNames = {te:'Telugu',ta:'Tamil',kn:'Kannada',hi:'Hindi',ml:'Malayalam',mr:'Marathi',en:'English'};
   const langName  = langNames[LANG] || 'Telugu';
 
-  // 300-400 words = 2-3 minutes narration — perfect bedtime length
-  const prompt = `You are a children's storyteller. Create a bedtime story for a ${age}-year-old child named ${child} based on the book or story: "${bookTitle}".
+  // 500-700 words = 4-6 minutes — longer stories for bedtime
+  const prompt = `You are a grandmother storyteller. Create a long bedtime chapter for a ${age}-year-old child named ${child} from: "${bookTitle}".
 
 Rules:
-- Write ONLY in ${langName} language with warm grandmother storytelling tone
-- Length: 300-400 words (2-3 minutes narration, perfect for bedtime)
-- Simple vocabulary suitable for age ${age}
-- Include ${child}'s name naturally
-- Keep the essence of "${bookTitle}" simplified for a child
-- End with a clear moral lesson in ${langName}
+- Write ONLY in ${langName} with warm grandmother narration style
+- Length: 500-700 words (4-6 mins bedtime — longer is better)
+- This is a CHAPTER/EXCERPT — bring it to life, not a summary
+- Vocabulary suitable for age ${age}, include ${child}'s name 2-3 times
+- NOT every story needs a moral — add moral only if story naturally teaches one
+- Adventure/folk/mythology can end without a moral
+- Use dialogue, vivid descriptions, emotions
 
-Return ONLY valid JSON, no markdown:
-{"title":"Story title in ${langName}","story":"Full story text with \n\n between paragraphs","moral":"Moral in ${langName}"}`;
+Return ONLY valid JSON: {"title":"Chapter title in ${langName}","story":"Full chapter text with paragraph breaks","moral":"Lesson if applicable or empty string"}`;
 
   try {
     const apiKey = await getConfig('claude_api_key') || CLAUDE_API_KEY;
@@ -2694,7 +2712,7 @@ Return ONLY valid JSON, no markdown:
     const resp = await fetch('https://api.anthropic.com/v1/messages', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json', 'x-api-key': apiKey },
-      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 1200,
+      body: JSON.stringify({ model: 'claude-sonnet-4-20250514', max_tokens: 2000,
         messages: [{ role: 'user', content: prompt }] })
     });
     clearInterval(ltInt);
@@ -2954,12 +2972,47 @@ function renderProfile() {
   renderLangGrid();
 }
 
+// Separate content language (UI + stories) from voice language (TTS)
+// VOICE_LANG = language of the cloned voice (always stays as recorded)
+// LANG = content/UI language
+let VOICE_LANG = localStorage.getItem('ak_voice_lang') || 'te';
+
 function renderLangGrid() {
-  const langs = [{code:'en',label:'English',script:'En'},{code:'te',label:'తెలుగు',script:'తె'},{code:'ta',label:'தமிழ்',script:'த'},{code:'kn',label:'ಕನ್ನಡ',script:'ಕ'},{code:'hi',label:'हिंदी',script:'हि'},{code:'ml',label:'മലയാളം',script:'മ'},{code:'mr',label:'मराठी',script:'म'}];
-  document.getElementById('langGrid').innerHTML = langs.map(l =>
+  const langs = [
+    {code:'te',label:'తెలుగు',script:'తె'},
+    {code:'ta',label:'தமிழ்',script:'த'},
+    {code:'kn',label:'ಕನ್ನಡ',script:'ಕ'},
+    {code:'hi',label:'हिंदी',script:'हि'},
+    {code:'ml',label:'മലയാളം',script:'മ'},
+    {code:'mr',label:'मराठी',script:'म'},
+    {code:'en',label:'English',script:'En'}
+  ];
+
+  // Content language grid
+  const contentGrid = document.getElementById('langGrid');
+  if(contentGrid) contentGrid.innerHTML = langs.map(l =>
     `<div class="lang-opt ${l.code===LANG?'active':''}" onclick="changeLang('${l.code}',this)">
       <span class="ls">${l.script}</span><span class="ln">${l.label}</span>
     </div>`).join('');
+
+  // Voice language grid (separate — shown only when voice is cloned)
+  const voiceGrid = document.getElementById('voiceLangGrid');
+  if(voiceGrid) voiceGrid.innerHTML = langs.map(l =>
+    `<div class="lang-opt ${l.code===VOICE_LANG?'active':''}" onclick="changeVoiceLang('${l.code}',this)">
+      <span class="ls">${l.script}</span><span class="ln">${l.label}</span>
+    </div>`).join('');
+}
+
+function changeVoiceLang(code, el) {
+  VOICE_LANG = code;
+  localStorage.setItem('ak_voice_lang', code);
+  document.querySelectorAll('#voiceLangGrid .lang-opt').forEach(o=>o.classList.remove('active'));
+  el.classList.add('active');
+  // Clear TTS cache since voice language changed
+  ttsCache = {};
+  configVoiceCache = {};
+  const langNames = {te:'తెలుగు',ta:'தமிழ்',kn:'ಕನ್ನಡ',hi:'हिंदी',ml:'മലയാളം',mr:'मराठी',en:'English'};
+  toast('Voice language: ' + (langNames[code]||code));
 }
 
 async function changeLang(code, el) {
