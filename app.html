@@ -1151,9 +1151,15 @@ body::before{
     </div>
     <div class="prompt-box">
       <span class="prompt-lbl" id="t-read-now">ఇప్పుడు చదవండి</span>
+      <!-- Tips for natural recording — updated by applyLang() per language -->
+      <div id="recTipsBox" style="font-size:11px;color:var(--muted);margin-bottom:8px;line-height:1.6;background:var(--orange-l);border-radius:10px;padding:8px 12px;"></div>
       <p class="prompt-txt" id="voicePrompt">నా బంగారు బాబూ, నీకు ఒక మంచి కథ చెప్తాను. చాలా కాలం క్రితం, ఒక అడవిలో ఒక తెలివైన నక్క నివసించేది. ఆ నక్క ఎప్పుడూ తన తెలివితేటలతో అందరికీ సహాయం చేసేది.</p>
     </div>
     <div class="rec-timer" id="recTimer">0:00</div>
+    <!-- Recording progress bar: green 0-60s, orange 60-80s, red 80-90s -->
+    <div style="height:6px;background:var(--border);border-radius:3px;margin:6px 0 10px;overflow:hidden;">
+      <div id="recProgressBar" style="height:100%;width:0%;background:var(--green);border-radius:3px;transition:width .9s linear,background .3s;"></div>
+    </div>
     <div class="wave" id="waveEl">
       <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
       <div class="wave-bar"></div><div class="wave-bar"></div><div class="wave-bar"></div>
@@ -1558,7 +1564,7 @@ const I18N = {
     days:'రోజుల వరుస',tonight:'⭐ ఈ రాత్రి కథ',library:'📚 కథల సంగ్రహం',
     'ai-section':'✨ AI కొత్త కథ','ai-btn':'ప్రత్యేక కథ రాయించండి',
     back:'వెనక్కి','rec-title':'మీ గొంతు నమోదు చేయండి',
-    'rec-sub':'దిగువ వాక్యాలు చదవండి (60 సెకండ్లు — మంచి clone కోసం)','read-now':'ఇప్పుడు చదవండి',
+    'rec-sub':'దిగువ వాక్యాలు చదవండి (90 సెకండ్లు — ట, డ, ళ, ణ స్పష్టంగా పలకండి)','read-now':'ఇప్పుడు చదవండి',
     'not-recorded':'గొంతు నమోదు కాలేదు','save-voice':'గొంతు సేవ్ చేయండి',
     'skip-voice':'ఇప్పుడు వద్దు','gen-title':'కొత్త కథ తయారు చేయండి',
     'gen-sub':'AI మీ పిల్లవాడికి ప్రత్యేక కథ రాస్తుంది',
@@ -1634,7 +1640,7 @@ I18N.kn = {
   brand:'ಅಮ್ಮಕಥೆ', login:'ಲಾಗಿನ್', register:'ನೋಂದಣಿ',
   days:'ದಿನಗಳ ಸರಣಿ', tonight:'⭐ ಇಂದು ರಾತ್ರಿ ಕಥೆ', library:'📚 ಕಥೆ ಸಂಗ್ರಹ',
   'ai-section':'✨ AI ಹೊಸ ಕಥೆ', 'ai-btn':'ವಿಶೇಷ ಕಥೆ ಬರೆಸಿ',
-  'rec-title':'ನಿಮ್ಮ ಧ್ವನಿ ದಾಖಲಿಸಿ', 'rec-sub':'60 ಸೆಕೆಂಡ್ ಕೆಳಗಿನ ವಾಕ್ಯಗಳನ್ನು ಓದಿ (ಉತ್ತಮ ಧ್ವನಿ ಕ್ಲೋನ್ ಗಾಗಿ)',
+  'rec-title':'ನಿಮ್ಮ ಧ್ವನಿ ದಾಖಲಿಸಿ', 'rec-sub':'90 ಸೆಕೆಂಡ್ ಕೆಳಗಿನ ವಾಕ್ಯಗಳನ್ನು ಓದಿ (ಟ, ಡ, ಣ, ಳ ಸ್ಪಷ್ಟವಾಗಿ ಹೇಳಿ)',
   'not-recorded':'ಧ್ವನಿ ದಾಖಲಾಗಿಲ್ಲ', 'save-voice':'ಧ್ವನಿ ಉಳಿಸಿ', 'skip-voice':'ಈಗ ಬೇಡ',
   'gen-title':'ಹೊಸ ಕಥೆ ತಯಾರಿಸಿ', 'gen-sub':'AI ನಿಮ್ಮ ಮಗುವಿಗೆ ವಿಶೇಷ ಕಥೆ ಬರೆಯುತ್ತದೆ',
   premium:'ಅಮ್ಮಕಥೆ Premium', 'per-month':'/ ತಿಂಗಳಿಗೆ',
@@ -1651,7 +1657,7 @@ I18N.ml = {
   brand:'അമ്മക്കഥ', login:'ലോഗിൻ', register:'രജിസ്ട്രേഷൻ',
   days:'ദിവസ ശ്രേണി', tonight:'⭐ ഇന്നത്തെ രാത്രി കഥ', library:'📚 കഥ ശേഖരം',
   'ai-section':'✨ AI പുതിയ കഥ', 'ai-btn':'പ്രത്യേക കഥ എഴുതിക്കൂ',
-  'rec-title':'നിങ്ങളുടെ ശബ്ദം രേഖപ്പെടുത്തൂ', 'rec-sub':'60 സെക്കൻഡ് ചുവടെ വായിക്കൂ (മികച്ച ക്ലോൺ ഉറപ്പാക്കാൻ)',
+  'rec-title':'നിങ്ങളുടെ ശബ്ദം രേഖപ്പെടുത്തൂ', 'rec-sub':'90 സെക്കൻഡ് ചുവടെ വായിക്കൂ (ൻ ൽ ൾ ൺ ർ ചില്ലുകൾ വ്യക്തമായി)',
   'not-recorded':'ശബ്ദം രേഖപ്പെടുത്തിയിട്ടില്ല', 'save-voice':'ശബ്ദം സേവ് ചെയ്യൂ', 'skip-voice':'ഇപ്പോൾ വേണ്ട',
   'gen-title':'പുതിയ കഥ ഉണ്ടാക്കൂ', 'gen-sub':'AI നിങ്ങളുടെ കുഞ്ഞിന് പ്രത്യേക കഥ എഴുതും',
   premium:'അമ്മക്കഥ Premium', 'per-month':'/ മാസം',
@@ -1814,6 +1820,19 @@ function applyLang(code) {
   const searchPh = {te:'కథలు వెతకండి...',ta:'கதைகள் தேடுங்கள்...',hi:'कहानियां खोजें...',kn:'ಕಥೆಗಳನ್ನು ಹುಡುಕಿ...',ml:'കഥകൾ തിരയുക...',mr:'गोष्टी शोधा...',en:'Search stories...'};
   const si = document.getElementById('storySearch');
   if(si) si.placeholder = searchPh[code] || searchPh.en;
+
+  // Per-language recording tips
+  const recTips = {
+    te: '💡 <strong>మంచి గొంతు కోసం:</strong> పిల్లలకు చెప్పినట్టు సహజంగా చదవండి • మెల్లగా, స్పష్టంగా • మైక్ నుండి 15 cm దూరం • నిశ్శబ్ద గదిలో • ట, డ, ళ, ణ అక్షరాలు స్పష్టంగా పలకండి',
+    kn: '💡 <strong>ಉತ್ತಮ ಧ್ವನಿಗಾಗಿ:</strong> ಮಕ್ಕಳಿಗೆ ಹೇಳುವಂತೆ ಸ್ವಾಭಾವಿಕವಾಗಿ ಓದಿ • ನಿಧಾನವಾಗಿ, ಸ್ಪಷ್ಟವಾಗಿ • ಮೈಕ್‌ನಿಂದ 15 cm ದೂರ • ಶಾಂತ ಕೋಣೆಯಲ್ಲಿ • ಟ, ಡ, ಣ, ಳ ಅಕ್ಷರಗಳನ್ನು ಸ್ಪಷ್ಟವಾಗಿ ಉಚ್ಚರಿಸಿ',
+    ml: '💡 <strong>നല്ല ശബ്ദത്തിനായി:</strong> കുട്ടികളോട് പറയുന്നതുപോലെ സ്വാഭാവികമായി വായിക്കൂ • സ천മാണ്, വ്യക്തമായി • മൈക്കിൽ നിന്ന് 15 cm അകലം • ശാന്തമായ മുറിയിൽ • ൻ, ൽ, ൾ, ൺ, ർ ചില്ലുകൾ വ്യക്തമായി ഉച്ചരിക്കൂ',
+    ta: '💡 <strong>நல்ல குரலுக்கு:</strong> குழந்தைகளிடம் சொல்வது போல் இயல்பாக படியுங்கள் • மெதுவாக, தெளிவாக • மைக்கிலிருந்து 15 cm தூரம் • அமைதியான அறையில்',
+    hi: '💡 <strong>अच्छी आवाज़ के लिए:</strong> बच्चों को सुनाते जैसे स्वाभाविक रूप से पढ़ें • धीरे-धीरे, स्पष्ट रूप से • माइक से 15 cm दूरी • शांत कमरे में',
+    mr: '💡 <strong>चांगल्या आवाजासाठी:</strong> मुलांना सांगतो तसे नैसर्गिकरित्या वाचा • हळू, स्पष्टपणे • माइकपासून 15 cm अंतर • शांत खोलीत',
+    en: '💡 <strong>For best voice quality:</strong> Read naturally like telling a child a story • Speak slowly and clearly • Hold mic 15 cm away • Record in a quiet room',
+  };
+  const tipsBox = document.getElementById('recTipsBox');
+  if(tipsBox) tipsBox.innerHTML = recTips[code] || recTips.en;
   // Update "My Stories" label
   const myLbl = {te:'✨ నా కథలు',ta:'✨ என் கதைகள்',hi:'✨ मेरी कहानियाँ',kn:'✨ ನನ್ನ ಕಥೆಗಳು',ml:'✨ എന്റെ കഥകൾ',mr:'✨ माझ्या गोष्टी',en:'✨ My Stories'};
   const msl = document.getElementById('t-my-stories');
@@ -2226,15 +2245,205 @@ function transliterateTelugu(text) {
   return out.join('');
 }
 
-// Prepare text for ElevenLabs based on language
-// eleven_multilingual_v2 natively reads Telugu, Kannada, Malayalam scripts perfectly.
-// Transliteration was HURTING pronunciation — native Unicode script gives better results.
-// For all languages: send native script as-is (NFC normalized).
+// ── TEXT PREPARATION FOR ELEVENLABS TTS ─────────────────────
+// eleven_multilingual_v2 reads Telugu Unicode natively and well.
+// The key is to HELP the model with natural pause markers and
+// clean punctuation so it breathes correctly between sentences.
+//
+// Telugu-specific improvements:
+//  1. Convert Telugu dandas (।) to ". " so ElevenLabs pauses correctly
+//  2. Add comma after common conjunctions to create natural breath pauses
+//  3. Normalize anusvara (ం) spacing — common source of glottal stops
+//  4. Remove zero-width joiners / non-joiners that confuse the phoneme engine
+//  5. Ensure NFC normalization (critical for correct vowel matra rendering)
+//  6. Break very long sentences so ElevenLabs doesn't rush through them
 function prepareTextForTTS(text, lang) {
-  // Normalize Unicode first (NFC is correct for all Indian scripts)
-  const normalized = text.normalize ? text.normalize('NFC') : text;
-  // Clean markdown artifacts
-  return normalized.replace(/\*\*/g,'').replace(/\*/g,'').replace(/#/g,'').trim();
+  if (!text) return '';
+
+  // Step 1: NFC normalize — critical for Telugu matras to render correctly
+  let t = text.normalize('NFC');
+
+  // Step 2: Remove markdown artifacts
+  t = t.replace(/\*\*/g, '').replace(/\*/g, '').replace(/^#+\s*/gm, '').trim();
+
+  // Step 3: Remove zero-width chars that confuse ElevenLabs phoneme parser
+  // U+200B zero-width space, U+200C ZWNJ, U+200D ZWJ, U+FEFF BOM
+  t = t.replace(/[\u200B\u200C\u200D\uFEFF]/g, '');
+
+  if (lang === 'te') {
+    // Telugu-specific cleanup
+
+    // Step 4: Telugu danda → period with space (natural full stop pause)
+    t = t.replace(/।/g, '. ');
+    t = t.replace(/॥/g, '. ');
+
+    // Step 5: Telugu ellipsis / em-dash → pause punctuation
+    t = t.replace(/…/g, '... ');
+    t = t.replace(/—/g, ', ');
+
+    // Step 6: Insert comma pause after common Telugu conjunctions
+    // This makes the model breathe between clauses naturally
+    // మరియు (and), కానీ (but), అందుకే (so), అయినా (even so), కాబట్టి (therefore)
+    const conjunctions = ['మరియు', 'కానీ', 'కాబట్టి', 'అందుకే', 'అయినా', 'కాని', 'అప్పుడు', 'తర్వాత', 'అందువల్ల'];
+    conjunctions.forEach(c => {
+      // Add a comma before conjunction if not already punctuated
+      t = t.replace(new RegExp('([^\\.\\,\\!\\?])\\s+' + c + '\\s', 'g'), '$1, ' + c + ' ');
+    });
+
+    // Step 7: Anusvara (ం) — ensure it's followed by a space or consonant, never dangling
+    // Dangling anusvara causes a glottal click in ElevenLabs output
+    t = t.replace(/ం([అ-హ])/g, 'ం $1');
+
+    // Step 8: Visarga (ః) → short pause (it IS a breath sound in Telugu)
+    t = t.replace(/ః/g, 'ః ');
+
+    // Step 9: If a "sentence" (split by . or !) is > 180 chars, add a comma
+    // at the nearest space around the midpoint to help ElevenLabs pace itself
+    t = t.split(/(?<=[.!?])\s+/).map(sentence => {
+      if (sentence.length > 180) {
+        const mid = Math.floor(sentence.length / 2);
+        // Find nearest space to midpoint
+        let lo = mid, hi = mid;
+        while (lo > 0 && sentence[lo] !== ' ') lo--;
+        while (hi < sentence.length && sentence[hi] !== ' ') hi++;
+        const split = (mid - lo < hi - mid) ? lo : hi;
+        if (split > 20 && split < sentence.length - 20) {
+          return sentence.slice(0, split) + ', ' + sentence.slice(split + 1);
+        }
+      }
+      return sentence;
+    }).join(' ');
+
+    // Step 10: Collapse multiple spaces / newlines
+    t = t.replace(/\n\n+/g, '. ');
+    t = t.replace(/\n/g, ' ');
+    t = t.replace(/\s{2,}/g, ' ');
+
+    // Step 11: Ensure text ends with punctuation so ElevenLabs closes naturally
+    if (t && !/[.!?]$/.test(t.trim())) t = t.trim() + '.';
+
+    return t.trim();
+  }
+
+  // ── KANNADA ─────────────────────────────────────────────────
+  // Kannada shares the same Dravidian phoneme challenges as Telugu:
+  //  - Retroflex stops: ಟ ಡ ಣ ಳ ಱ  (ElevenLabs tends to dental-ize these)
+  //  - Anusvara (ಂ) dangling → glottal click in output
+  //  - Visarga (ಃ) → breath sound, needs a space after it
+  //  - Conjunct consonants (ಕ್ + ಷ = ಕ್ಷ) — halant (್) must stay attached
+  //  - Long vowels (ಆ ಈ ಊ ಏ ಓ) often clipped short
+  if (lang === 'kn') {
+    // Danda → full stop pause
+    t = t.replace(/।/g, '. ').replace(/॥/g, '. ');
+    t = t.replace(/…/g, '... ').replace(/—/g, ', ').replace(/–/g, ', ');
+
+    // Anusvara (ಂ) spacing — prevent glottal click
+    // If anusvara is followed directly by a consonant, add space so TTS breathes
+    t = t.replace(/ಂ([ಕ-ಹ])/g, 'ಂ $1');
+
+    // Visarga (ಃ) → breath pause
+    t = t.replace(/ಃ/g, 'ಃ ');
+
+    // Halant (್) must NOT get a space — it joins two consonants into a conjunct
+    // Remove any accidental space that crept in around halant
+    t = t.replace(/\s*್\s*/g, '್');
+
+    // Add comma pause after common Kannada conjunctions for natural breath
+    // ಮತ್ತು (and), ಆದರೆ (but), ಆದ್ದರಿಂದ (therefore), ಅದಕ್ಕೆ (so), ನಂತರ (then)
+    // ಆಗ (then), ಆದರೂ (even so), ಏಕೆಂದರೆ (because), ಅಂದರೆ (that is)
+    const knConj = ['ಮತ್ತು','ಆದರೆ','ಆದ್ದರಿಂದ','ಅದಕ್ಕೆ','ನಂತರ','ಆಗ','ಆದರೂ','ಏಕೆಂದರೆ','ಅಂದರೆ','ಅಲ್ಲದೆ'];
+    knConj.forEach(c => {
+      t = t.replace(new RegExp('([^\\.\\,\\!\\?])\\s+' + c + '\\s', 'g'), '$1, ' + c + ' ');
+    });
+
+    // Long sentence splitting (same as Telugu — helps pacing)
+    t = t.split(/(?<=[.!?])\s+/).map(sentence => {
+      if (sentence.length > 180) {
+        const mid = Math.floor(sentence.length / 2);
+        let lo = mid, hi = mid;
+        while (lo > 0 && sentence[lo] !== ' ') lo--;
+        while (hi < sentence.length && sentence[hi] !== ' ') hi++;
+        const split = (mid - lo < hi - mid) ? lo : hi;
+        if (split > 20 && split < sentence.length - 20) {
+          return sentence.slice(0, split) + ', ' + sentence.slice(split + 1);
+        }
+      }
+      return sentence;
+    }).join(' ');
+
+    t = t.replace(/\n\n+/g, '. ').replace(/\n/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    if (!/[.!?]$/.test(t)) t += '.';
+    return t;
+  }
+
+  // ── MALAYALAM ────────────────────────────────────────────────
+  // Malayalam has unique challenges ElevenLabs struggles with:
+  //  - Chillu letters: ൻ ൽ ൾ ൺ ർ (pure consonants, no vowel — often mispronounced)
+  //    e.g. ൻ (n-chillu) should be a clean nasal stop, not "na"
+  //  - Anusvara (ം) dangling → same glottal click issue as Telugu/Kannada
+  //  - Visarga (ഃ) → breath
+  //  - Samvrithokaram (ൾ) — short u vowel on final consonant, often dropped
+  //  - Chandrakkala / virama (്) — halant, same conjunct rules as Kannada
+  //  - Long vowels ആ ഈ ഊ ഏ ഓ should not be clipped
+  //  - Pulli (്) at end of syllable = no vowel — often mispronounced as "a"
+  if (lang === 'ml') {
+    // Danda → full stop pause
+    t = t.replace(/।/g, '. ').replace(/॥/g, '. ');
+    t = t.replace(/…/g, '... ').replace(/—/g, ', ').replace(/–/g, ', ');
+
+    // Anusvara (ം) spacing — prevent glottal click before consonants
+    t = t.replace(/ം([ക-ഹ])/g, 'ം $1');
+
+    // Visarga (ഃ) → breath pause with space
+    t = t.replace(/ഃ/g, 'ഃ ');
+
+    // Chandrakkala / virama (്) — must NOT have surrounding spaces (conjunct protector)
+    t = t.replace(/\s*്\s*/g, '്');
+
+    // Chillu letters spacing — ensure clean stop (no vowel bleed into next word)
+    // ൻ ൽ ൾ ൺ ർ — add a thin space after chillu when followed by vowel-initial word
+    // This prevents ElevenLabs from blending the chillu into the next syllable
+    t = t.replace(/([ൻൽൾൺർ])([അആഇഈഉഊഎഏഐഒഓഔ])/g, '$1 $2');
+
+    // Add comma pause after common Malayalam conjunctions
+    // ഒപ്പം (together/and), പക്ഷേ (but), അതിനാൽ (therefore),
+    // എന്നാൽ (but/however), അതുകൊണ്ട് (so), പിന്നെ (then),
+    // കാരണം (because), അതായത് (that is), എങ്കിലും (even so)
+    const mlConj = ['ഒപ്പം','പക്ഷേ','അതിനാൽ','എന്നാൽ','അതുകൊണ്ട്','പിന്നെ','കാരണം','അതായത്','എങ്കിലും','അല്ലാതെ'];
+    mlConj.forEach(c => {
+      t = t.replace(new RegExp('([^\\.\\,\\!\\?])\\s+' + c + '\\s', 'g'), '$1, ' + c + ' ');
+    });
+
+    // Malayalam specific: ആ vowel at end of words is often short — add emphasis marker
+    // by ensuring no space is eaten before it (already handled by NFC but double-check)
+    // Normalize any split ോ ോ (o + ˉ that got split by encoding issues)
+    t = t.replace(/\u0D4B/g, 'ോ'); // ensure ോ is composed, not split
+
+    // Long sentence splitting
+    t = t.split(/(?<=[.!?])\s+/).map(sentence => {
+      if (sentence.length > 180) {
+        const mid = Math.floor(sentence.length / 2);
+        let lo = mid, hi = mid;
+        while (lo > 0 && sentence[lo] !== ' ') lo--;
+        while (hi < sentence.length && sentence[hi] !== ' ') hi++;
+        const split = (mid - lo < hi - mid) ? lo : hi;
+        if (split > 20 && split < sentence.length - 20) {
+          return sentence.slice(0, split) + ', ' + sentence.slice(split + 1);
+        }
+      }
+      return sentence;
+    }).join(' ');
+
+    t = t.replace(/\n\n+/g, '. ').replace(/\n/g, ' ').replace(/\s{2,}/g, ' ').trim();
+    if (!/[.!?]$/.test(t)) t += '.';
+    return t;
+  }
+
+  // Hindi / Marathi / Tamil / English — basic cleanup
+  t = t.replace(/।/g, '. ').replace(/॥/g, '. ');
+  t = t.replace(/\n\n+/g, '. ').replace(/\n/g, ' ').replace(/\s{2,}/g, ' ').trim();
+  if (!/[.!?]$/.test(t)) t += '.';
+  return t;
 }
 
 async function generateTTS(story) {
@@ -2352,25 +2561,57 @@ async function generateTTS(story) {
         const isDravidian = ['te','kn','ml','ta'].includes(voiceLang);
         const isClonedVoice = !!(USER?.elevenlabs_voice_id);
 
+        // ── PER-LANGUAGE VOICE SETTINGS ─────────────────────────────
+        // Each Dravidian language needs slightly different tuning:
+        //
+        // TELUGU (te):
+        //   stability 0.52 — syllable stress varies a lot in Telugu storytelling
+        //   similarity 0.72 — low enough to let retroflex ట డ ళ ణ ఱ breathe
+        //
+        // KANNADA (kn):
+        //   stability 0.50 — Kannada has more tonal variation than Telugu
+        //   similarity 0.70 — Kannada retroflexes ಟ ಡ ಣ ಳ need even more room
+        //   Kannada vowel length (short/long) is phonemic — lower sim helps
+        //
+        // MALAYALAM (ml):
+        //   stability 0.48 — Malayalam has the most prosodic variation of the 3
+        //   similarity 0.68 — Chillu letters (ൻ ൽ ൾ ൺ ർ) are unique to Malayalam
+        //   and completely absent from any English voice model training data.
+        //   Very low similarity lets the multilingual model's Malayalam knowledge
+        //   handle them instead of the cloned voice's English phoneme bias.
+        //
+        // TAMIL (ta):
+        //   stability 0.54 — similar to Kannada
+        //   similarity 0.73
+
+        const langVoiceSettings = {
+          te: { stability: 0.52, similarity_boost: 0.72 },
+          kn: { stability: 0.50, similarity_boost: 0.70 },
+          ml: { stability: 0.48, similarity_boost: 0.68 },
+          ta: { stability: 0.54, similarity_boost: 0.73 },
+          hi: { stability: 0.72, similarity_boost: 0.88 },
+          mr: { stability: 0.70, similarity_boost: 0.86 },
+          en: { stability: 0.75, similarity_boost: 0.88 },
+        };
+        const vs = langVoiceSettings[voiceLang] || langVoiceSettings.en;
+
         const body = {
           text,
           model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
           output_format: 'mp3_44100_128',
           voice_settings: isClonedVoice ? {
-            // Cloned voice — Dravidian: lower stability allows more natural retroflex sounds
-            // Higher similarity keeps it sounding like the recorded mother's voice
-            stability:        isDravidian ? 0.72 : 0.82,
-            similarity_boost: 0.98,
-            style:            0.0,   // no English-style expressiveness
+            stability:         vs.stability,
+            similarity_boost:  vs.similarity_boost,
+            style:             0.0,          // never inject English expressiveness
             use_speaker_boost: true,
-            speed:            0.85   // gentle bedtime storytelling pace
+            speed:             0.82          // gentle bedtime pace for all languages
           } : {
-            // Default narrator — allow more expressiveness for storytelling
-            stability:        isDravidian ? 0.60 : 0.65,
-            similarity_boost: isDravidian ? 0.85 : 0.80,
-            style:            0.12,
+            // No cloned voice — default narrator, can be slightly more expressive
+            stability:         vs.stability + 0.05,
+            similarity_boost:  vs.similarity_boost + 0.10,
+            style:             isDravidian ? 0.05 : 0.15,
             use_speaker_boost: true,
-            speed:            0.88
+            speed:             0.85
           }
         };
         // Only add language_code for turbo model with supported languages
@@ -2522,7 +2763,16 @@ function startRecord() {
     recSeconds++;
     const m=Math.floor(recSeconds/60), s=recSeconds%60;
     document.getElementById('recTimer').textContent=`${m}:${s.toString().padStart(2,'0')}`;
-    if(recSeconds >= 60) stopRecord(); // 60s for better native clone
+    // Progress bar: 0-60s green, 60-80s orange, 80-90s red → stops at 90
+    const pct = Math.min((recSeconds / 90) * 100, 100);
+    const barEl = document.getElementById('recProgressBar');
+    if(barEl) {
+      barEl.style.width = pct + '%';
+      barEl.style.background = recSeconds < 60
+        ? 'var(--green)'
+        : recSeconds < 80 ? 'var(--orange)' : 'var(--red)';
+    }
+    if(recSeconds >= 90) stopRecord(); // 90s = much better voice clone quality
   }, 1000);
 
   if(navigator.mediaDevices?.getUserMedia) {
