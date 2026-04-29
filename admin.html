@@ -1,0 +1,1945 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>AmmaKatha Admin</title>
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@400;600;700;800&family=Noto+Serif+Telugu:wght@400;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  /* ── WARM PARCHMENT PALETTE — matches AmmaKatha App ── */
+  --bg:        #fef6e9;   /* warm parchment */
+  --surface:   #fffdf8;   /* near-white warm */
+  --surface2:  #fdefd6;   /* deeper parchment */
+  --surface3:  #faefd4;
+
+  --pink:      #e07ba0;   /* dusty rose */
+  --pink-l:    #fce8f0;
+  --pink-d:    #b85080;
+  --orange:    #e8924a;   /* terracotta */
+  --orange-l:  #fdebd9;
+  --orange-d:  #c06830;
+  --purple:    #7c6baa;   /* muted lavender */
+  --purple-l:  #ede8f8;
+  --gold:      #d4a843;   /* antique gold */
+  --gold-l:    #fdf5d0;
+  --green:     #4caf7d;   /* sage green */
+  --green-l:   #e8f5ee;
+  --green-d:   #2e7d52;
+  --sky:       #5b9bd5;
+  --sky-l:     #e3eef8;
+  --red:       #e05050;
+  --red-l:     #fde8e8;
+
+  --text:      #3a2f1e;   /* warm dark brown */
+  --text2:     #5a4a35;
+  --muted:     #8c7a65;
+  --dim:       #c4b49e;
+  --border:    #ead9c4;
+  --border2:   #d4c0a8;
+  --radius:    14px;
+  --font:      'Baloo 2', sans-serif;
+  --shadow:    0 3px 16px rgba(58,47,30,.08);
+  --shadow-lg: 0 8px 32px rgba(58,47,30,.12);
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{
+  background:var(--bg);color:var(--text);
+  font-family:var(--font);font-size:13px;min-height:100vh;display:flex;
+}
+
+/* ── SIDEBAR ── */
+.sidebar{
+  width:230px;
+  background:linear-gradient(180deg,var(--purple) 0%,var(--pink-d) 60%,var(--orange-d) 100%);
+  display:flex;flex-direction:column;position:fixed;height:100vh;z-index:50;
+  box-shadow:4px 0 20px rgba(124,107,170,.2);
+}
+.sidebar-brand{padding:22px 18px 16px;border-bottom:1px solid rgba(255,255,255,.15);}
+.sb-logo{font-size:22px;font-weight:800;color:#fff;letter-spacing:-.02em;}
+.sb-sub{font-size:10px;color:rgba(255,255,255,.7);margin-top:3px;font-weight:600;letter-spacing:.06em;text-transform:uppercase;}
+.sidebar-nav{flex:1;padding:12px 10px;overflow-y:auto;}
+.nav-group-title{font-size:10px;color:rgba(255,255,255,.5);letter-spacing:.08em;
+  padding:14px 8px 5px;text-transform:uppercase;font-weight:700;}
+.nav-item{display:flex;align-items:center;gap:10px;padding:9px 12px;border-radius:10px;
+  cursor:pointer;color:rgba(255,255,255,.75);transition:all .15s;margin-bottom:2px;text-decoration:none;font-weight:600;}
+.nav-item:hover{background:rgba(255,255,255,.15);color:#fff;}
+.nav-item.active{background:rgba(255,255,255,.22);color:#fff;box-shadow:0 2px 10px rgba(0,0,0,.15);}
+.nav-icon{font-size:15px;width:20px;text-align:center;}
+.sidebar-footer{padding:12px;border-top:1px solid rgba(255,255,255,.15);}
+.admin-chip{display:flex;align-items:center;gap:8px;padding:10px 12px;
+  background:rgba(255,255,255,.15);border-radius:10px;}
+.admin-dot{width:8px;height:8px;border-radius:50%;background:var(--green);box-shadow:0 0 6px var(--green);}
+.admin-name{font-size:12px;color:#fff;font-weight:600;}
+
+/* ── MAIN ── */
+.main{margin-left:230px;flex:1;min-height:100vh;}
+.topbar{padding:14px 24px;border-bottom:2px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;
+  background:var(--surface);position:sticky;top:0;z-index:40;
+  box-shadow:var(--shadow);}
+.topbar-title{font-size:17px;font-weight:800;color:var(--text);}
+.topbar-right{display:flex;gap:8px;align-items:center;}
+.content{padding:24px;}
+
+/* ── STATS GRID ── */
+.stats-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:24px;}
+.stat-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:18px;
+  box-shadow:var(--shadow);
+}
+.stat-label{font-size:10px;color:var(--muted);letter-spacing:.07em;text-transform:uppercase;margin-bottom:6px;font-weight:700;}
+.stat-val{font-size:28px;font-weight:800;color:var(--text);line-height:1;}
+.stat-sub{font-size:11px;color:var(--muted);margin-top:4px;font-weight:600;}
+.stat-card.gold{border-color:rgba(212,168,67,.35);}
+.stat-card.gold .stat-val{color:var(--gold);}
+.stat-card.green{border-color:rgba(76,175,125,.25);}
+.stat-card.green .stat-val{color:var(--green-d);}
+.stat-card.red{border-color:rgba(224,80,80,.2);}
+.stat-card.red .stat-val{color:var(--red);}
+.stat-card.purple{border-color:rgba(124,107,170,.25);}
+.stat-card.purple .stat-val{color:var(--purple);}
+
+/* ── SECTIONS ── */
+.section{display:none;}
+.section.active{display:block;}
+.section-title{
+  font-size:17px;font-weight:800;color:var(--text);
+  margin-bottom:18px;
+  display:flex;justify-content:space-between;align-items:center;
+  padding-bottom:12px;border-bottom:2px solid var(--border);
+}
+
+/* ── TABLE ── */
+.table-wrap{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);overflow:hidden;margin-bottom:20px;
+  box-shadow:var(--shadow);
+}
+.table-header{
+  padding:12px 16px;border-bottom:2px solid var(--border);
+  display:flex;justify-content:space-between;align-items:center;gap:10px;
+  background:var(--surface2);
+}
+.search-inp{
+  background:var(--surface);border:2px solid var(--border);border-radius:10px;
+  padding:8px 14px;color:var(--text);font-family:var(--font);font-size:13px;
+  outline:none;width:240px;font-weight:600;transition:border-color .2s;
+}
+.search-inp:focus{border-color:var(--purple);}
+table{width:100%;border-collapse:collapse;}
+th{text-align:left;padding:11px 16px;font-size:10px;color:var(--muted);letter-spacing:.07em;
+  text-transform:uppercase;border-bottom:2px solid var(--border);font-weight:700;
+  background:var(--surface2);}
+td{padding:12px 16px;border-bottom:1px solid var(--border);font-size:13px;vertical-align:middle;}
+tr:last-child td{border:none;}
+tr:hover td{background:var(--orange-l);}
+
+/* ── BADGES ── */
+.badge{display:inline-flex;align-items:center;gap:4px;padding:3px 10px;border-radius:20px;font-size:11px;font-weight:700;}
+.badge-green{background:var(--green-l);color:var(--green-d);border:1px solid rgba(76,175,125,.3);}
+.badge-red{background:var(--red-l);color:var(--red);border:1px solid rgba(224,80,80,.3);}
+.badge-amber{background:var(--gold-l);color:var(--orange-d);border:1px solid rgba(212,168,67,.3);}
+.badge-blue{background:var(--sky-l);color:var(--sky);border:1px solid rgba(91,155,213,.3);}
+.badge-gray{background:var(--surface2);color:var(--muted);border:1px solid var(--border);}
+.badge-purple{background:var(--purple-l);color:var(--purple);border:1px solid rgba(124,107,170,.3);}
+
+/* ── BUTTONS ── */
+.btn{
+  padding:8px 16px;border-radius:50px;font-family:var(--font);font-size:13px;
+  cursor:pointer;border:none;transition:all .15s;font-weight:700;
+}
+.btn-primary{
+  background:linear-gradient(135deg,var(--pink),var(--orange));
+  color:#fff;box-shadow:0 4px 12px rgba(224,123,160,.3);
+}
+.btn-primary:hover{box-shadow:0 6px 18px rgba(224,123,160,.45);transform:translateY(-1px);}
+.btn-danger{background:var(--red-l);color:var(--red);border:2px solid rgba(224,80,80,.3);}
+.btn-ghost{background:transparent;color:var(--muted);border:2px solid var(--border);}
+.btn-ghost:hover{background:var(--surface2);color:var(--text);}
+.btn-sm{padding:5px 12px;font-size:11px;}
+.btn-success{background:var(--green-l);color:var(--green-d);border:2px solid rgba(76,175,125,.3);}
+.btn-success:hover{background:var(--green);color:#fff;}
+.btn-purple{background:var(--purple-l);color:var(--purple);border:2px solid rgba(124,107,170,.3);}
+.btn-gold{background:var(--gold-l);color:var(--orange-d);border:2px solid rgba(212,168,67,.3);}
+
+/* ── MODAL ── */
+.modal-overlay{
+  position:fixed;inset:0;background:rgba(58,47,30,.5);backdrop-filter:blur(6px);
+  z-index:200;display:none;align-items:center;justify-content:center;
+}
+.modal-overlay.open{display:flex;}
+.modal{
+  background:var(--surface);border:2px solid var(--border);border-radius:24px;
+  padding:28px;width:100%;max-width:500px;max-height:88vh;overflow-y:auto;
+  animation:modalIn .22s ease;box-shadow:var(--shadow-lg);
+}
+@keyframes modalIn{from{opacity:0;transform:scale(.95)translateY(12px)}to{opacity:1;transform:none}}
+.modal-title{
+  font-size:17px;font-weight:800;margin-bottom:20px;color:var(--text);
+  display:flex;justify-content:space-between;align-items:center;
+}
+.close-btn{
+  background:var(--surface2);border:2px solid var(--border);
+  color:var(--muted);width:32px;height:32px;border-radius:50%;
+  font-size:16px;cursor:pointer;line-height:1;
+  display:flex;align-items:center;justify-content:center;
+}
+.close-btn:hover{background:var(--border);color:var(--text);}
+
+/* ── PIN SUCCESS MODAL ── */
+.pin-display{
+  background:linear-gradient(135deg,var(--purple-l),var(--pink-l));
+  border:3px dashed var(--pink);border-radius:20px;
+  padding:24px;text-align:center;margin:16px 0;
+}
+.pin-number{
+  font-size:48px;font-weight:800;color:var(--purple);
+  letter-spacing:12px;margin-bottom:8px;
+  font-family:'Courier New',monospace;
+}
+.pin-copy-btn{
+  background:linear-gradient(135deg,var(--pink),var(--orange));
+  color:#fff;border:none;border-radius:50px;padding:10px 24px;
+  font-family:var(--font);font-size:13px;font-weight:700;cursor:pointer;
+  box-shadow:0 4px 12px rgba(224,123,160,.3);margin-top:8px;
+}
+
+/* ── FORM ── */
+.form-group{margin-bottom:14px;}
+.form-label{font-size:11px;color:var(--muted);letter-spacing:.05em;margin-bottom:5px;display:block;text-transform:uppercase;font-weight:700;}
+.form-inp{
+  width:100%;background:var(--surface2);border:2px solid var(--border);border-radius:12px;
+  padding:10px 14px;color:var(--text);font-family:var(--font);font-size:13px;
+  outline:none;transition:border-color .2s;font-weight:600;
+}
+.form-inp:focus{border-color:var(--purple);}
+.form-inp::placeholder{color:var(--dim);font-weight:400;}
+select.form-inp{cursor:pointer;}
+.form-row{display:grid;grid-template-columns:1fr 1fr;gap:12px;}
+.form-help{font-size:11px;color:var(--muted);margin-top:4px;line-height:1.5;}
+
+/* ── QR UPLOAD ── */
+.qr-upload-area{
+  border:3px dashed var(--border2);border-radius:16px;padding:32px;
+  text-align:center;cursor:pointer;transition:all .2s;background:var(--surface2);
+}
+.qr-upload-area:hover{border-color:var(--pink);background:var(--pink-l);}
+.qr-preview{max-width:200px;max-height:200px;border-radius:12px;margin:12px auto 0;display:none;}
+.qr-active-card{
+  background:var(--surface);border:2px solid var(--border);
+  border-radius:var(--radius);padding:16px;display:flex;gap:16px;align-items:center;
+  margin-bottom:12px;box-shadow:var(--shadow);transition:box-shadow .18s;
+}
+.qr-active-card:hover{box-shadow:var(--shadow-lg);}
+.qr-active-img{width:80px;height:80px;border-radius:10px;object-fit:contain;background:white;padding:4px;border:2px solid var(--border);}
+.qr-active-info{flex:1;}
+.qr-active-name{font-size:14px;font-weight:800;margin-bottom:3px;color:var(--text);}
+.qr-active-upi{font-size:12px;color:var(--orange-d);font-weight:700;}
+
+/* ── TOAST ── */
+.toast{
+  position:fixed;bottom:24px;right:24px;
+  background:var(--text);color:#fff;border-radius:50px;
+  padding:12px 20px;font-size:13px;font-weight:700;
+  z-index:300;opacity:0;transform:translateY(8px);
+  transition:all .25s;pointer-events:none;max-width:340px;
+  box-shadow:0 8px 24px rgba(58,47,30,.25);
+}
+.toast.show{opacity:1;transform:translateY(0);}
+.toast.success{background:linear-gradient(135deg,var(--green-d),var(--green));}
+.toast.error{background:linear-gradient(135deg,#c0392b,var(--red));}
+
+.pill-stat{display:flex;gap:3px;align-items:center;}
+.mini-dot{width:6px;height:6px;border-radius:50%;}
+.empty-state{text-align:center;padding:40px;color:var(--muted);font-weight:600;}
+.avatar{
+  width:30px;height:30px;border-radius:50%;
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  display:flex;align-items:center;justify-content:center;
+  font-size:12px;color:#fff;font-weight:800;flex-shrink:0;
+}
+
+/* ── SECTION HEADERS ── */
+.card-header{
+  background:linear-gradient(135deg,var(--purple),var(--pink));
+  color:#fff;padding:14px 18px;border-radius:var(--radius) var(--radius) 0 0;
+  font-size:13px;font-weight:700;
+}
+
+/* ── PROGRESS BAR ── */
+.prog-bar-wrap{height:8px;background:var(--surface2);border-radius:4px;overflow:hidden;}
+.prog-bar-fill{height:100%;background:linear-gradient(90deg,var(--purple),var(--pink));border-radius:4px;transition:width .4s;}
+</style>
+</head>
+<body>
+
+<!-- SIDEBAR -->
+<nav class="sidebar">
+  <div class="sidebar-brand">
+    <div class="sb-logo">AmmaKatha</div>
+    <div class="sb-sub">Admin Dashboard</div>
+  </div>
+  <div class="sidebar-nav">
+    <div class="nav-group-title">Overview</div>
+    <a class="nav-item active" onclick="showSection('dashboard')"><span class="nav-icon">📊</span>Dashboard</a>
+
+    <div class="nav-group-title">Users</div>
+    <a class="nav-item" onclick="showSection('users')"><span class="nav-icon">👥</span>All Users</a>
+    <a class="nav-item" onclick="showSection('create-user')"><span class="nav-icon">➕</span>Create User</a>
+
+    <div class="nav-group-title">Payments</div>
+    <a class="nav-item" onclick="showSection('payments')"><span class="nav-icon">💳</span>Pending Payments</a>
+    <a class="nav-item" onclick="showSection('qr-codes')"><span class="nav-icon">📱</span>QR Codes</a>
+
+    <div class="nav-group-title">Content</div>
+    <a class="nav-item" onclick="showSection('stories')"><span class="nav-icon">📚</span>Stories</a>
+    <a class="nav-item" onclick="showSection('user-stories')"><span class="nav-icon">✨</span>User Stories</a>
+    <a class="nav-item" onclick="showSection('add-story')"><span class="nav-icon">✍️</span>Add Story</a>
+    <a class="nav-item" onclick="showSection('gen-audio')"><span class="nav-icon">🔊</span>Generate Audio</a>
+
+    <div class="nav-group-title">Settings</div>
+    <a class="nav-item" onclick="showSection('config')"><span class="nav-icon">⚙️</span>App Config</a>
+  </div>
+  <div class="sidebar-footer">
+    <div class="admin-chip">
+      <div class="admin-dot"></div>
+      <div class="admin-name" id="adminName">Admin</div>
+      <button class="btn btn-ghost btn-sm" style="margin-left:auto;" onclick="logout()">Out</button>
+    </div>
+  </div>
+</nav>
+
+<!-- MAIN -->
+<div class="main">
+  <div class="topbar">
+    <div class="topbar-title" id="topbarTitle">Dashboard</div>
+    <div class="topbar-right">
+      <span style="color:var(--muted);font-size:11px;" id="topbarTime"></span>
+      <button class="btn btn-ghost btn-sm" onclick="refreshAll()">↺ Refresh</button>
+    </div>
+  </div>
+
+  <div class="content">
+
+    <!-- ═══ DASHBOARD ═══ -->
+    <div class="section active" id="sec-dashboard">
+      <div class="stats-grid" id="statsGrid">
+        <div class="stat-card"><div class="stat-label">Total Users</div><div class="stat-val" id="st-total">—</div><div class="stat-sub">All registered</div></div>
+        <div class="stat-card green"><div class="stat-label">Paying Users</div><div class="stat-val" id="st-paying">—</div><div class="stat-sub">Active subscriptions</div></div>
+        <div class="stat-card gold"><div class="stat-label">Revenue (Month)</div><div class="stat-val" id="st-revenue">—</div><div class="stat-sub">Verified payments</div></div>
+        <div class="stat-card red"><div class="stat-label">Pending</div><div class="stat-val" id="st-pending">—</div><div class="stat-sub">Awaiting verification</div></div>
+        <div class="stat-card"><div class="stat-label">New (7 days)</div><div class="stat-val" id="st-new">—</div><div class="stat-sub">Recent signups</div></div>
+        <div class="stat-card"><div class="stat-label">Plays Today</div><div class="stat-val" id="st-plays">—</div><div class="stat-sub">Story plays</div></div>
+      </div>
+
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
+        <!-- Language breakdown -->
+        <div class="table-wrap">
+          <div class="table-header"><span>Users by Language</span></div>
+          <table><thead><tr><th>Language</th><th>Users</th><th>Paying</th></tr></thead>
+          <tbody id="langTable"><tr><td colspan="3" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+        <!-- Recent payments -->
+        <div class="table-wrap">
+          <div class="table-header"><span>Recent Payments</span>
+            <button class="btn btn-ghost btn-sm" onclick="showSection('payments')">View All</button>
+          </div>
+          <table><thead><tr><th>User</th><th>Plan</th><th>Status</th></tr></thead>
+          <tbody id="recentPayments"><tr><td colspan="3" class="empty-state">Loading...</td></tr></tbody></table>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ USERS ═══ -->
+    <div class="section" id="sec-users">
+      <div class="section-title">All Users
+        <button class="btn btn-primary" onclick="showSection('create-user')">+ Create User</button>
+      </div>
+      <div class="table-wrap">
+        <div class="table-header">
+          <input class="search-inp" id="userSearch" placeholder="Search name, phone..." oninput="filterUsers()">
+          <select class="form-inp" id="userFilter" style="width:140px;" onchange="filterUsers()">
+            <option value="">All Status</option>
+            <option value="free">Free</option>
+            <option value="trial">Trial</option>
+            <option value="active">Active</option>
+            <option value="expired">Expired</option>
+          </select>
+        </div>
+        <table>
+          <thead><tr><th>User</th><th>Phone</th><th>Language</th><th>Child</th><th>Status</th><th>Joined</th><th>Actions</th></tr></thead>
+          <tbody id="usersTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ CREATE USER ═══ -->
+    <div class="section" id="sec-create-user">
+      <div class="section-title">Create New User</div>
+      <div style="max-width:520px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Mother's Name *</label>
+              <input class="form-inp" id="cu-mother" placeholder="e.g. Lakshmi">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Child's Name *</label>
+              <input class="form-inp" id="cu-child" placeholder="e.g. Rahul">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Phone Number *</label>
+              <input class="form-inp" id="cu-phone" placeholder="+919876543210" type="tel">
+            </div>
+            <div class="form-group">
+              <label class="form-label">6-Digit PIN *</label>
+              <input class="form-inp" id="cu-pin" placeholder="123456" maxlength="6" type="password">
+              <div class="form-help">User will login with this PIN</div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Child's Age</label>
+              <select class="form-inp" id="cu-age">
+                <option value="3">3 years</option><option value="4">4 years</option>
+                <option value="5" selected>5 years</option><option value="6">6 years</option>
+                <option value="7">7 years</option><option value="8">8 years</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Language</label>
+              <select class="form-inp" id="cu-lang">
+                <option value="te">Telugu</option><option value="ta">Tamil</option>
+                <option value="kn">Kannada</option><option value="hi">Hindi</option>
+                <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Subscription Plan</label>
+              <select class="form-inp" id="cu-plan">
+                <option value="">Free (no plan)</option>
+                <option value="monthly">Monthly (₹99)</option>
+                <option value="annual">Annual (₹799)</option>
+                <option value="family">Family (₹149)</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Subscription End Date</label>
+              <input class="form-inp" id="cu-sub-end" type="date">
+            </div>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:8px;">
+            <button class="btn btn-primary" onclick="createUser()" id="createUserBtn">Create User</button>
+            <button class="btn btn-ghost" onclick="showSection('users')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ PAYMENTS ═══ -->
+    <div class="section" id="sec-payments">
+      <div class="section-title">Payment Verification
+        <div style="display:flex;gap:8px;">
+          <select class="form-inp" id="payFilter" style="width:150px;" onchange="loadPayments()">
+            <option value="screenshot_uploaded">Pending Review</option>
+            <option value="verified">Verified</option>
+            <option value="rejected">Rejected</option>
+            <option value="">All</option>
+          </select>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>User</th><th>Plan</th><th>Amount</th><th>Date</th><th>Screenshot</th><th>Status</th><th>Actions</th></tr></thead>
+          <tbody id="paymentsTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ QR CODES ═══ -->
+    <div class="section" id="sec-qr-codes">
+      <div class="section-title">Payment QR Codes
+        <button class="btn btn-primary" onclick="openQRModal()">+ Add QR Code</button>
+      </div>
+      <div id="qrList">
+        <div class="empty-state">Loading QR codes...</div>
+      </div>
+    </div>
+
+    <!-- ═══ STORIES ═══ -->
+    <div class="section" id="sec-stories">
+      <div class="section-title">Story Library
+        <div style="display:flex;gap:8px;">
+          <select class="form-inp" id="storyLangFilter" style="width:140px;" onchange="loadStories()">
+            <option value="">All Languages</option>
+            <option value="te">Telugu</option><option value="ta">Tamil</option>
+            <option value="kn">Kannada</option><option value="hi">Hindi</option>
+            <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+            <option value="en">English</option>
+          </select>
+          <button class="btn btn-primary" onclick="showSection('add-story')">+ Add Story</button>
+        </div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>Language</th><th>Category</th><th>Duration</th><th>Premium</th><th>Published</th><th>Actions</th></tr></thead>
+          <tbody id="storiesTable"><tr><td colspan="7" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ ADD STORY ═══ -->
+    <div class="section" id="sec-add-story">
+      <div class="section-title">Add New Story</div>
+      <div style="max-width:640px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Title *</label>
+              <input class="form-inp" id="as-title" placeholder="Story title">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Language *</label>
+              <select class="form-inp" id="as-lang">
+                <option value="te">Telugu</option><option value="ta">Tamil</option>
+                <option value="kn">Kannada</option><option value="hi">Hindi</option>
+                <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+                <option value="en">English</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Category</label>
+              <select class="form-inp" id="as-cat">
+                <option value="panchatantra">Panchatantra</option>
+                <option value="tenali">Tenali Rama</option>
+                <option value="ramayana">Ramayana</option>
+                <option value="mahabharat">Mahabharata</option>
+                <option value="folk">Folk Tale</option>
+                <option value="grandma">Grandma's Tales</option>
+                <option value="moral">Moral Story</option>
+                <option value="jataka">Jataka Tales</option>
+                <option value="festival">Festival</option>
+                <option value="lullaby">Lullaby</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label class="form-label">Emoji</label>
+              <input class="form-inp" id="as-emoji" placeholder="🦁" maxlength="4">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Age Min</label>
+              <input class="form-inp" id="as-age-min" type="number" value="3" min="2" max="10">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Age Max</label>
+              <input class="form-inp" id="as-age-max" type="number" value="8" min="3" max="12">
+            </div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Story Text * (in regional language)</label>
+            <textarea class="form-inp" id="as-text" rows="6" placeholder="Full story text here..."></textarea>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Moral / Ending</label>
+            <input class="form-inp" id="as-moral" placeholder="నీతి: ...">
+          </div>
+          <div class="form-group">
+            <label class="form-label">Tags (comma separated)</label>
+            <input class="form-inp" id="as-tags" placeholder="ధైర్యం,నీతి,జంతువులు">
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label class="form-label">Audio URL (optional)</label>
+              <input class="form-inp" id="as-audio" placeholder="https://...">
+            </div>
+            <div class="form-group">
+              <label class="form-label">Duration (seconds)</label>
+              <input class="form-inp" id="as-dur" type="number" placeholder="300">
+            </div>
+          </div>
+          <div style="display:flex;gap:12px;margin-top:4px;">
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="as-premium"> Premium only
+            </label>
+            <label style="display:flex;align-items:center;gap:6px;cursor:pointer;font-size:12px;color:var(--muted);">
+              <input type="checkbox" id="as-published" checked> Published
+            </label>
+          </div>
+          <div style="display:flex;gap:10px;margin-top:16px;">
+            <button class="btn btn-primary" onclick="addStory()">Add Story</button>
+            <button class="btn btn-ghost" onclick="showSection('stories')">Cancel</button>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ═══ GENERATE AUDIO ═══ -->
+    <div class="section" id="sec-gen-audio">
+      <div class="section-title">Batch Audio Generation
+        <span style="font-size:11px;color:var(--muted);font-weight:400;">Generate mother's-voice audio for all stories using ElevenLabs</span>
+      </div>
+
+      <!-- Status cards -->
+      <div style="display:grid;grid-template-columns:repeat(3,1fr);gap:12px;margin-bottom:20px;">
+        <div class="stat-card"><div class="stat-label">Total Stories</div><div class="stat-val" id="ga-total">—</div></div>
+        <div class="stat-card green"><div class="stat-label">Has Audio</div><div class="stat-val" id="ga-has-audio">—</div></div>
+        <div class="stat-card red"><div class="stat-label">No Audio</div><div class="stat-val" id="ga-no-audio">—</div></div>
+      </div>
+
+      <!-- Controls -->
+      <div class="table-wrap" style="padding:20px;margin-bottom:16px;">
+        <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
+          <div class="form-group" style="margin:0;flex:1;min-width:180px;">
+            <label class="form-label">ElevenLabs Voice ID</label>
+            <input class="form-inp" id="ga-voice-id" placeholder="Use a specific voice ID (optional)">
+            <div class="form-help">Leave blank to use the narrator default voice. Or paste any ElevenLabs voice ID.</div>
+          </div>
+          <div class="form-group" style="margin:0;width:140px;">
+            <label class="form-label">Language Filter</label>
+            <select class="form-inp" id="ga-lang-filter">
+              <option value="">All Languages</option>
+              <option value="te">Telugu</option>
+              <option value="ta">Tamil</option>
+              <option value="kn">Kannada</option>
+              <option value="hi">Hindi</option>
+              <option value="ml">Malayalam</option>
+              <option value="mr">Marathi</option>
+            </select>
+          </div>
+          <div style="display:flex;gap:8px;">
+            <button class="btn btn-ghost" onclick="loadAudioStatus()">↺ Refresh</button>
+            <button class="btn btn-primary" id="ga-start-btn" onclick="startBatchGeneration()">
+              🔊 Generate All Missing Audio
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Progress -->
+      <div id="ga-progress-wrap" style="display:none;margin-bottom:16px;">
+        <div class="table-wrap" style="padding:16px;">
+          <div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:10px;">
+            <span style="font-size:13px;color:var(--text);" id="ga-progress-label">Generating...</span>
+            <span style="font-size:12px;color:var(--muted);" id="ga-progress-count">0 / 0</span>
+          </div>
+          <div style="height:6px;background:var(--surface2);border-radius:3px;overflow:hidden;">
+            <div id="ga-progress-bar" style="height:100%;background:linear-gradient(90deg,#f4c842,#e8873a);border-radius:3px;width:0%;transition:width .4s;"></div>
+          </div>
+          <button class="btn btn-ghost btn-sm" onclick="stopBatchGeneration()" style="margin-top:10px;">⏹ Stop</button>
+        </div>
+      </div>
+
+      <!-- Story list with audio status -->
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Story</th><th>Language</th><th>Audio Status</th><th>Duration</th><th>Actions</th></tr></thead>
+          <tbody id="ga-stories-table"><tr><td colspan="5" class="empty-state">Click Refresh to load stories</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ USER STORIES (AI-Generated) ═══ -->
+    <div class="section" id="sec-user-stories">
+      <div class="section-title">User Stories (AI-Generated)
+        <div style="display:flex;gap:8px;">
+          <input class="search-inp" id="usStorySearch" placeholder="Search by user or title..." oninput="filterUserStories()" style="width:220px;">
+          <select class="form-inp" id="usLangFilter" style="width:140px;" onchange="loadUserStories()">
+            <option value="">All Languages</option>
+            <option value="te">Telugu</option><option value="ta">Tamil</option>
+            <option value="kn">Kannada</option><option value="hi">Hindi</option>
+            <option value="ml">Malayalam</option><option value="mr">Marathi</option>
+            <option value="en">English</option>
+          </select>
+        </div>
+      </div>
+      <!-- Stats row -->
+      <div class="stats-grid" style="grid-template-columns:repeat(3,1fr);margin-bottom:16px;">
+        <div class="stat-card purple"><div class="stat-label">Total AI Stories</div><div class="stat-val" id="us-total">—</div><div class="stat-sub">Across all users</div></div>
+        <div class="stat-card green"><div class="stat-label">Unique Users</div><div class="stat-val" id="us-users">—</div><div class="stat-sub">Who generated stories</div></div>
+        <div class="stat-card gold"><div class="stat-label">This Week</div><div class="stat-val" id="us-week">—</div><div class="stat-sub">New AI stories</div></div>
+      </div>
+      <div class="table-wrap">
+        <table>
+          <thead><tr><th>Title</th><th>User</th><th>Language</th><th>Words</th><th>Saved On</th><th>Actions</th></tr></thead>
+          <tbody id="userStoriesTable"><tr><td colspan="6" class="empty-state">Loading...</td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- ═══ CONFIG ═══ -->
+    <div class="section" id="sec-config">
+      <div class="section-title">App Configuration</div>
+      <div style="max-width:520px;">
+        <div class="table-wrap" style="padding:20px;">
+          <div id="configForm">Loading...</div>
+          <button class="btn btn-primary" onclick="saveConfig()" style="margin-top:16px;">Save Config</button>
+        </div>
+      </div>
+    </div>
+
+  </div><!-- content -->
+</div><!-- main -->
+
+<!-- QR Modal -->
+<div class="modal-overlay" id="qrModal">
+  <div class="modal">
+    <div class="modal-title">Add QR Code
+      <button class="close-btn" onclick="closeModal('qrModal')">×</button>
+    </div>
+    <div class="form-group">
+      <label class="form-label">Label</label>
+      <input class="form-inp" id="qr-label" placeholder="e.g. PhonePe Main">
+    </div>
+    <div class="form-group">
+      <label class="form-label">UPI ID (for display)</label>
+      <input class="form-inp" id="qr-upi" placeholder="yourname@phonepe">
+    </div>
+    <div class="form-group">
+      <label class="form-label">QR Code Image *</label>
+      <div class="qr-upload-area" onclick="document.getElementById('qrFileInput').click()">
+        <div style="font-size:32px;margin-bottom:8px;">📱</div>
+        <div style="color:var(--muted);font-size:12px;">Click to upload QR code image</div>
+        <div style="color:var(--dim);font-size:11px;margin-top:4px;">PNG, JPG — max 2MB</div>
+        <input type="file" id="qrFileInput" accept="image/*" style="display:none" onchange="previewQR(this)">
+      </div>
+      <img id="qrPreview" class="qr-preview">
+    </div>
+    <div style="display:flex;gap:10px;">
+      <button class="btn btn-primary" onclick="uploadQR()" id="uploadQRBtn">Upload QR</button>
+      <button class="btn btn-ghost" onclick="closeModal('qrModal')">Cancel</button>
+    </div>
+  </div>
+</div>
+
+<!-- Payment View Modal -->
+<div class="modal-overlay" id="payModal">
+  <div class="modal">
+    <div class="modal-title">Payment Details
+      <button class="close-btn" onclick="closeModal('payModal')">×</button>
+    </div>
+    <div id="payModalContent"></div>
+    <div style="display:flex;gap:8px;margin-top:16px;" id="payModalActions"></div>
+  </div>
+</div>
+
+<!-- User Edit Modal -->
+<div class="modal-overlay" id="userModal">
+  <div class="modal">
+    <div class="modal-title">Edit User
+      <button class="close-btn" onclick="closeModal('userModal')">×</button>
+    </div>
+    <div id="userModalContent"></div>
+  </div>
+</div>
+
+<!-- PIN Created Modal -->
+<div class="modal-overlay" id="pinModal">
+  <div class="modal" style="max-width:420px;text-align:center;">
+    <div class="modal-title" style="justify-content:center;border-bottom:2px solid var(--border);padding-bottom:16px;margin-bottom:0;">
+      🎉 User Created!
+    </div>
+    <div style="padding:20px 0 8px;">
+      <div style="font-size:13px;color:var(--muted);margin-bottom:4px;font-weight:600;">Share this login PIN with the user</div>
+      <div id="pinModalName" style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:16px;"></div>
+      <div class="pin-display">
+        <div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Login PIN</div>
+        <div class="pin-number" id="pinDisplayNum">——</div>
+        <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">User will enter this PIN to login on the app</div>
+        <button class="pin-copy-btn" onclick="copyPIN()">📋 Copy PIN</button>
+      </div>
+      <div style="background:var(--orange-l);border-radius:12px;padding:12px;font-size:12px;color:var(--orange-d);font-weight:600;margin-top:12px;text-align:left;">
+        ⚠️ Save this PIN now — it cannot be recovered later.<br>
+        You can reset the PIN anytime from Users → Edit → Reset PIN.
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:20px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="closeModal('pinModal');showSection('users');">✓ Done — Go to Users</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('pinModal');showSection('create-user');">+ Create Another</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toastEl"></div>
+
+<script>
+// ── CONFIG ──
+const SUPABASE_URL     = 'https://vbcsailtwziiggixqmqc.supabase.co';
+const SUPABASE_ANON_KEY= 'sb_publishable_HQsKIR8DVk2-LJSr1pymzQ_lr9BXIII';
+const { createClient } = supabase;
+const sb = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+
+// ── AUTH CHECK ──
+// Supports two modes:
+//   1. LIVE — Supabase Auth session (email/password via admin-login.html)
+//   2. DEMO — sessionStorage token set by admin-login.html demo mode
+const IS_DEMO = SUPABASE_URL.includes('YOUR_PROJECT');
+
+async function checkAuth() {
+  // DEMO MODE: check sessionStorage
+  if(IS_DEMO) {
+    const demo = sessionStorage.getItem('ak_admin');
+    if(!demo) { window.location.href = 'admin-login.html'; return; }
+    const admin = JSON.parse(demo);
+    document.getElementById('adminName').textContent = admin.name || admin.email || 'Admin';
+    return;
+  }
+
+  // LIVE MODE: check Supabase Auth session
+  try {
+    const { data: { session } } = await sb.auth.getSession();
+    if(!session) { window.location.href = 'admin-login.html'; return; }
+
+    // Double-check via RPC (bypasses RLS — direct table SELECT would return null)
+    const { data: adminRow } = await sb.rpc('get_admin_by_email', {
+      p_email: session.user.email
+    });
+
+    if(!adminRow) {
+      await sb.auth.signOut();
+      window.location.href = 'admin-login.html';
+      return;
+    }
+    document.getElementById('adminName').textContent = adminRow.name || session.user.email?.split('@')[0] || 'Admin';
+  } catch(e) {
+    // If anything throws in live mode, redirect to login
+    window.location.href = 'admin-login.html';
+  }
+}
+
+// ── INIT ──
+async function init() {
+  await checkAuth();   // checkAuth handles redirect itself — no .catch swallow
+  updateClock();
+  setInterval(updateClock, 1000);
+  await loadDashboard();
+}
+
+function updateClock() {
+  document.getElementById('topbarTime').textContent = new Date().toLocaleString('en-IN');
+}
+
+// ── SECTIONS ──
+function showSection(id) {
+  document.querySelectorAll('.section').forEach(s=>s.classList.remove('active'));
+  document.getElementById('sec-'+id)?.classList.add('active');
+  document.querySelectorAll('.nav-item').forEach(n=>n.classList.remove('active'));
+  document.querySelector(`[onclick="showSection('${id}')"]`)?.classList.add('active');
+  const titles = {dashboard:'Dashboard',users:'All Users','create-user':'Create User',
+    payments:'Payments','qr-codes':'QR Codes',stories:'Stories','user-stories':'User Stories (AI)',
+    'add-story':'Add Story',config:'App Config','gen-audio':'Generate Audio'};
+  document.getElementById('topbarTitle').textContent = titles[id] || id;
+
+  if(id==='dashboard') loadDashboard();
+  else if(id==='users') loadUsers();
+  else if(id==='payments') loadPayments();
+  else if(id==='qr-codes') loadQRCodes();
+  else if(id==='stories') loadStories();
+  else if(id==='user-stories') loadUserStories();
+  else if(id==='config') loadConfig();
+  else if(id==='gen-audio') loadAudioStatus();
+}
+
+async function refreshAll() { showSection('dashboard'); }
+
+// ── DASHBOARD ──
+async function loadDashboard() {
+  // Stats via RPC
+  try {
+    const { data, error } = await sb.rpc('admin_get_stats');
+    if(error) throw error;
+    document.getElementById('st-total').textContent   = data.total_users?.toLocaleString()        || '0';
+    document.getElementById('st-paying').textContent  = data.paying_users?.toLocaleString()       || '0';
+    document.getElementById('st-revenue').textContent = '₹'+(data.revenue_this_month?.toLocaleString()||'0');
+    document.getElementById('st-pending').textContent = data.pending_payments                      || '0';
+    document.getElementById('st-new').textContent     = data.new_users_week                        || '0';
+    document.getElementById('st-plays').textContent   = data.plays_today?.toLocaleString()        || '0';
+  } catch(e) { console.error('Stats error:', e); }
+
+  // Language stats via RPC
+  try {
+    const { data, error } = await sb.rpc('admin_get_lang_stats');
+    if(error) throw error;
+    document.getElementById('langTable').innerHTML = (data||[]).map(r=>
+      `<tr>
+        <td>${r.name_native} <span style="color:var(--muted);font-size:11px;">${r.name_en}</span></td>
+        <td>${r.user_count?.toLocaleString()||0}</td>
+        <td><span class="badge badge-green">${r.paying_count||0}</span></td>
+      </tr>`
+    ).join('') || '<tr><td colspan="3" class="empty-state">No data</td></tr>';
+  } catch(e) { console.error('Lang stats error:', e); }
+
+  // Recent payments via RPC
+  try {
+    const { data, error } = await sb.rpc('admin_get_recent_payments', { p_limit: 5 });
+    if(error) throw error;
+    renderRecentPayments(data||[]);
+  } catch(e) { console.error('Recent payments error:', e); renderRecentPayments([]); }
+}
+
+function demoLangStats() {
+  return [{name_native:'తెలుగు',name_en:'Telugu',user_count:891,paying_count:234},
+    {name_native:'தமிழ்',name_en:'Tamil',user_count:187,paying_count:45},
+    {name_native:'हिंदी',name_en:'Hindi',user_count:124,paying_count:28},
+    {name_native:'ಕನ್ನಡ',name_en:'Kannada',user_count:45,paying_count:5}];
+}
+
+function renderRecentPayments(data) {
+  document.getElementById('recentPayments').innerHTML = data.length ? data.map(p=>
+    `<tr>
+      <td>${p.mother_name||p.users?.mother_name||'Unknown'}</td>
+      <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
+      <td><span class="badge ${p.status==='verified'?'badge-green':p.status==='rejected'?'badge-red':'badge-amber'}">${p.status||'—'}</span></td>
+    </tr>`
+  ).join('') : '<tr><td colspan="3" class="empty-state">No payments yet</td></tr>';
+}
+
+// ── USERS ──
+let allUsers = [];
+async function loadUsers() {
+  document.getElementById('usersTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    const { data, error } = await sb.rpc('admin_get_users', { p_limit: 100, p_offset: 0 });
+    if(error) throw error;
+    allUsers = data || [];
+  } catch(e) {
+    console.error('loadUsers error:', e);
+    allUsers = [];
+    document.getElementById('usersTable').innerHTML =
+      `<tr><td colspan="7" class="empty-state" style="color:var(--red);">
+        Error: ${e.message} — Run fix_admin_users_rls.sql
+      </td></tr>`;
+    return;
+  }
+  renderUsersTable(allUsers);
+}
+
+function demoUsers() {
+  return [
+    {id:'u1',mother_name:'Lakshmi',phone:'+919876543210',lang_code:'te',child_name:'Rahul',child_age:5,subscription_status:'active',created_at:new Date().toISOString()},
+    {id:'u2',mother_name:'Priya',phone:'+919876543211',lang_code:'ta',child_name:'Karthik',child_age:4,subscription_status:'free',created_at:new Date().toISOString()},
+    {id:'u3',mother_name:'Sunita',phone:'+919876543212',lang_code:'hi',child_name:'Arjun',child_age:6,subscription_status:'trial',created_at:new Date().toISOString()},
+  ];
+}
+
+function filterUsers() {
+  const q = document.getElementById('userSearch').value.toLowerCase();
+  const status = document.getElementById('userFilter').value;
+  const filtered = allUsers.filter(u =>
+    (!q || (u.mother_name||'').toLowerCase().includes(q) || (u.phone||'').includes(q)) &&
+    (!status || u.subscription_status === status)
+  );
+  renderUsersTable(filtered);
+}
+
+function renderUsersTable(users) {
+  document.getElementById('usersTable').innerHTML = users.length ? users.map(u => {
+    const statusBadge = {active:'badge-green',trial:'badge-blue',free:'badge-gray',expired:'badge-red'}[u.subscription_status]||'badge-gray';
+    return `<tr>
+      <td><div style="display:flex;gap:8px;align-items:center;"><div class="avatar">${(u.mother_name||'?')[0]}</div>${u.mother_name||'—'}</div></td>
+      <td style="font-family:monospace;">${u.phone||'—'}</td>
+      <td><span class="badge badge-gray">${u.lang_code||'—'}</span></td>
+      <td>${u.child_name||'—'} (${u.child_age||'?'}y)</td>
+      <td><span class="badge ${statusBadge}">${u.subscription_status||'—'}</span></td>
+      <td style="color:var(--muted);">${u.created_at?new Date(u.created_at).toLocaleDateString('en-IN'):'—'}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">Edit</button>
+        <button class="btn btn-success btn-sm" onclick="grantPremium('${u.id}')">✓ Premium</button>
+        <button class="btn btn-danger btn-sm" onclick="quickResetPin('${u.id}','${u.mother_name||''}')">🔑</button>
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
+}
+
+async function createUser() {
+  const btn = document.getElementById('createUserBtn');
+  const phone = document.getElementById('cu-phone').value.trim();
+  const pin = document.getElementById('cu-pin').value.trim();
+  const motherName = document.getElementById('cu-mother').value.trim();
+  const childName = document.getElementById('cu-child').value.trim();
+
+  if(!phone||!pin||!motherName||!childName) { toast('Fill all required fields','error'); return; }
+  if(pin.length !== 6 || !/^\d+$/.test(pin)) { toast('PIN must be 6 digits','error'); return; }
+
+  btn.disabled=true; btn.textContent='Creating...';
+
+  try {
+    const normalizedPhone = phone.startsWith('+') ? phone : '+91'+phone;
+    const plan  = document.getElementById('cu-plan').value || null;
+    const subEnd = document.getElementById('cu-sub-end').value || null;
+
+    // Step 1: Create user with PIN via RPC
+    const { data, error } = await sb.rpc('register_user', {
+      p_phone:       normalizedPhone,
+      p_pin:         pin,
+      p_mother_name: motherName,
+      p_child_name:  childName,
+      p_child_age:   parseInt(document.getElementById('cu-age').value) || 5,
+      p_lang_code:   document.getElementById('cu-lang').value || 'te'
+    });
+
+    if(error) throw new Error(error.message);
+    if(data?.error) throw new Error(data.error);
+
+    const userId = data?.id;
+
+    // Step 2: If plan selected, grant premium
+    if(plan && userId) {
+      const daysMap = {monthly:30, annual:365, family:30};
+      await sb.rpc('admin_grant_premium', {
+        p_user_id: userId,
+        p_plan:    plan,
+        p_days:    daysMap[plan] || 30
+      });
+      // Override sub_end if admin specified a date
+      if(subEnd) {
+        await sb.rpc('admin_update_user', {
+          p_user_id: userId,
+          p_mother:  motherName,
+          p_child:   childName,
+          p_status:  'active',
+          p_sub_end: subEnd
+        });
+      }
+    }
+
+    toast('✓ User created successfully','success');
+
+    // Show PIN in a dedicated modal — admin must note and share with user
+    const createdPin = document.getElementById('cu-pin').value.trim();
+    document.getElementById('pinDisplayNum').textContent = createdPin;
+    document.getElementById('pinModalName').textContent = motherName + ' / ' + childName;
+    window._lastCreatedPin = createdPin;
+    ['cu-mother','cu-child','cu-phone','cu-pin'].forEach(id=>{document.getElementById(id).value='';});
+    document.getElementById('pinModal').classList.add('open');
+  } catch(e) {
+    console.error('createUser error:', e);
+    toast('Error: ' + e.message, 'error');
+  }
+  btn.disabled=false; btn.textContent='Create User';
+}
+
+async function grantPremium(userId) {
+  try {
+    const { error } = await sb.rpc('admin_grant_premium', {
+      p_user_id: userId, p_plan: 'monthly', p_days: 30
+    });
+    if(error) throw error;
+    toast('✓ Premium granted for 30 days','success');
+    loadUsers();
+  } catch(e) { console.error('grantPremium error:', e); toast('Error: '+e.message,'error'); }
+}
+
+function editUser(userId) {
+  const u = allUsers.find(x=>x.id===userId);
+  if(!u) return;
+  document.getElementById('userModalContent').innerHTML = `
+    <div style="background:var(--surface2);border-radius:8px;padding:10px 12px;margin-bottom:16px;font-size:11px;color:var(--muted);">
+      📱 ${u.phone||'—'} &nbsp;•&nbsp; Joined ${u.created_at?new Date(u.created_at).toLocaleDateString('en-IN'):'—'}
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Mother's Name</label>
+        <input class="form-inp" id="eu-mother" value="${u.mother_name||''}">
+      </div>
+      <div class="form-group">
+        <label class="form-label">Child's Name</label>
+        <input class="form-inp" id="eu-child" value="${u.child_name||''}">
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Child's Age</label>
+        <select class="form-inp" id="eu-age">
+          ${[3,4,5,6,7,8,9,10].map(a=>`<option value="${a}" ${u.child_age==a?'selected':''}>${a} years</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Language</label>
+        <select class="form-inp" id="eu-lang">
+          ${[['te','Telugu'],['ta','Tamil'],['kn','Kannada'],['hi','Hindi'],['ml','Malayalam'],['mr','Marathi']].map(([code,name])=>`<option value="${code}" ${u.lang_code===code?'selected':''}>${name}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div style="display:grid;grid-template-columns:1fr 1fr;gap:12px;">
+      <div class="form-group">
+        <label class="form-label">Subscription Status</label>
+        <select class="form-inp" id="eu-status">
+          ${['free','trial','active','expired','cancelled'].map(s=>`<option value="${s}" ${u.subscription_status===s?'selected':''}>${s}</option>`).join('')}
+        </select>
+      </div>
+      <div class="form-group">
+        <label class="form-label">Subscription Plan</label>
+        <select class="form-inp" id="eu-plan">
+          <option value="">None</option>
+          ${['monthly','annual','family'].map(p=>`<option value="${p}" ${u.subscription_plan===p?'selected':''}>${p}</option>`).join('')}
+        </select>
+      </div>
+    </div>
+
+    <div class="form-group">
+      <label class="form-label">Subscription End Date</label>
+      <input class="form-inp" type="date" id="eu-sub-end" value="${u.subscription_end?u.subscription_end.split('T')[0]:''}">
+    </div>
+
+    <div style="display:flex;gap:8px;margin-top:4px;">
+      <button class="btn btn-primary" style="flex:2;" onclick="saveUser('${userId}')">Save Changes</button>
+      <button class="btn btn-ghost" onclick="closeModal('userModal')">Cancel</button>
+    </div>
+
+    <div style="margin-top:16px;padding-top:14px;border-top:1px solid var(--border);">
+      <div style="font-size:11px;color:var(--muted);letter-spacing:.06em;text-transform:uppercase;margin-bottom:10px;">Reset PIN</div>
+      <div style="display:flex;gap:8px;align-items:flex-end;">
+        <div class="form-group" style="margin:0;flex:1;">
+          <label class="form-label">New 6-Digit PIN</label>
+          <input class="form-inp" id="eu-new-pin" type="password" maxlength="6"
+            placeholder="Enter new PIN" oninput="this.value=this.value.replace(/\D/g,'').slice(0,6)">
+        </div>
+        <button class="btn btn-success" onclick="resetUserPin('${userId}')" style="white-space:nowrap;">
+          🔑 Reset PIN
+        </button>
+      </div>
+      <div style="font-size:11px;color:var(--muted);margin-top:4px;">
+        User will login with this new PIN. Old PIN stops working immediately.
+      </div>
+    </div>`;
+
+  document.getElementById('userModal').classList.add('open');
+}
+
+async function saveUser(userId) {
+  try {
+    const { error } = await sb.rpc('admin_update_user_full', {
+      p_user_id:  userId,
+      p_mother:   document.getElementById('eu-mother').value.trim(),
+      p_child:    document.getElementById('eu-child').value.trim(),
+      p_age:      parseInt(document.getElementById('eu-age').value) || 5,
+      p_lang:     document.getElementById('eu-lang').value,
+      p_status:   document.getElementById('eu-status').value,
+      p_plan:     document.getElementById('eu-plan').value || null,
+      p_sub_end:  document.getElementById('eu-sub-end').value || null
+    });
+    if(error) throw error;
+    toast('✓ User updated','success');
+    closeModal('userModal'); loadUsers();
+  } catch(e) { console.error('saveUser error:', e); toast('Error: '+e.message,'error'); }
+}
+
+async function resetUserPin(userId) {
+  const newPin = document.getElementById('eu-new-pin').value.trim();
+  if(newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+    toast('PIN must be exactly 6 digits','error'); return;
+  }
+  if(!confirm('Reset PIN for this user? They will need to use the new PIN to login.')) return;
+  try {
+    const { data, error } = await sb.rpc('admin_reset_pin', {
+      p_user_id: userId,
+      p_new_pin: newPin
+    });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    document.getElementById('eu-new-pin').value = '';
+    toast('✓ PIN reset successfully','success');
+  } catch(e) { console.error('resetPin error:', e); toast('Error: '+e.message,'error'); }
+}
+
+// Quick PIN reset from user table row (no modal)
+async function quickResetPin(userId, name) {
+  const newPin = prompt(`Reset PIN for ${name}
+Enter new 6-digit PIN:`);
+  if(!newPin) return;
+  if(newPin.length !== 6 || !/^\d+$/.test(newPin)) {
+    toast('PIN must be exactly 6 digits','error'); return;
+  }
+  try {
+    const { data, error } = await sb.rpc('admin_reset_pin', {
+      p_user_id: userId, p_new_pin: newPin
+    });
+    if(error) throw error;
+    if(data?.error) throw new Error(data.error);
+    toast(`✓ PIN reset for ${name}`,'success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+function copyPIN() {
+  const pin = window._lastCreatedPin || document.getElementById('pinDisplayNum').textContent;
+  if(navigator.clipboard) {
+    navigator.clipboard.writeText(pin).then(() => toast('✓ PIN copied to clipboard','success'));
+  } else {
+    // Fallback
+    const ta = document.createElement('textarea');
+    ta.value = pin; document.body.appendChild(ta);
+    ta.select(); document.execCommand('copy'); document.body.removeChild(ta);
+    toast('✓ PIN copied','success');
+  }
+}
+
+// ── USER STORIES (AI-Generated) ──
+let allUserStories = [];
+
+async function loadUserStories() {
+  document.getElementById('userStoriesTable').innerHTML =
+    '<tr><td colspan="6" class="empty-state">Loading...</td></tr>';
+  const lang = document.getElementById('usLangFilter')?.value || '';
+  try {
+    const { data, error } = await sb.rpc('admin_get_user_stories', {
+      p_lang: lang || null,
+      p_limit: 200
+    });
+    if(error) throw error;
+    allUserStories = data || [];
+    renderUserStoriesStats(allUserStories);
+    renderUserStoriesTable(allUserStories);
+  } catch(e) {
+    console.error('loadUserStories:', e);
+    document.getElementById('userStoriesTable').innerHTML =
+      `<tr><td colspan="6" class="empty-state" style="color:var(--red);">
+        Error: ${e.message}<br><small>Ensure get_user_stories RPC exists — see SQL script</small>
+      </td></tr>`;
+  }
+}
+
+function renderUserStoriesStats(data) {
+  document.getElementById('us-total').textContent = data.length;
+  const uniqueUsers = new Set(data.map(s => s.user_id)).size;
+  document.getElementById('us-users').textContent = uniqueUsers;
+  const oneWeekAgo = new Date(Date.now() - 7*24*60*60*1000);
+  const thisWeek = data.filter(s => s.created_at && new Date(s.created_at) > oneWeekAgo).length;
+  document.getElementById('us-week').textContent = thisWeek;
+}
+
+function filterUserStories() {
+  const q = (document.getElementById('usStorySearch')?.value || '').toLowerCase();
+  const filtered = allUserStories.filter(s =>
+    !q || (s.title||'').toLowerCase().includes(q) ||
+          (s.mother_name||'').toLowerCase().includes(q) ||
+          (s.child_name||'').toLowerCase().includes(q)
+  );
+  renderUserStoriesTable(filtered);
+}
+
+function renderUserStoriesTable(data) {
+  document.getElementById('userStoriesTable').innerHTML = data.length
+    ? data.map(s => {
+        const wordCount = (s.story_text||'').split(/\s+/).filter(Boolean).length;
+        const langBadge = {te:'badge-purple',ta:'badge-blue',hi:'badge-amber',kn:'badge-green',ml:'badge-gray',mr:'badge-gray',en:'badge-gray'}[s.lang_code]||'badge-gray';
+        return `<tr>
+          <td style="max-width:220px;">
+            <div style="font-weight:700;color:var(--text);white-space:nowrap;overflow:hidden;text-overflow:ellipsis;">
+              ${s.title||'Untitled'}
+            </div>
+            <div style="font-size:11px;color:var(--muted);margin-top:2px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap;">
+              ${(s.story_text||'').slice(0,60)}...
+            </div>
+          </td>
+          <td>
+            <div style="font-weight:700;">${s.mother_name||'—'}</div>
+            <div style="font-size:11px;color:var(--muted);">${s.child_name||''} ${s.child_age?'('+s.child_age+'y)':''}</div>
+          </td>
+          <td><span class="badge ${langBadge}">${s.lang_code||'—'}</span></td>
+          <td style="color:var(--muted);">${wordCount} words</td>
+          <td style="color:var(--muted);">${s.created_at?new Date(s.created_at).toLocaleDateString('en-IN'):'—'}</td>
+          <td><div style="display:flex;gap:4px;">
+            <button class="btn btn-ghost btn-sm" onclick="viewUserStory('${s.id}')">View</button>
+            <button class="btn btn-success btn-sm" onclick="promoteToLibrary('${s.id}')">📚 Promote</button>
+            <button class="btn btn-danger btn-sm" onclick="deleteUserStory('${s.id}')">Delete</button>
+          </div></td>
+        </tr>`;
+      }).join('')
+    : '<tr><td colspan="6" class="empty-state">No user-generated stories found</td></tr>';
+}
+
+async function viewUserStory(id) {
+  const s = allUserStories.find(x => x.id === id);
+  if(!s) return;
+  document.getElementById('payModalContent').innerHTML = `
+    <div style="font-size:15px;font-weight:800;color:var(--text);margin-bottom:8px;">${s.title||'Untitled'}</div>
+    <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">
+      By: ${s.mother_name||'—'} for ${s.child_name||'—'} • ${s.lang_code} • ${new Date(s.created_at||Date.now()).toLocaleDateString('en-IN')}
+    </div>
+    <div style="background:var(--surface2);border-radius:12px;padding:16px;font-size:13px;line-height:1.8;max-height:320px;overflow-y:auto;color:var(--text);">
+      ${(s.story_text||'No text').replace(/\n/g,'<br>')}
+    </div>`;
+  document.getElementById('payModalActions').innerHTML = `
+    <button class="btn btn-success" onclick="promoteToLibrary('${s.id}');closeModal('payModal');">📚 Promote to Library</button>
+    <button class="btn btn-ghost" onclick="closeModal('payModal')">Close</button>`;
+  document.getElementById('payModal').classList.add('open');
+}
+
+async function promoteToLibrary(id) {
+  const s = allUserStories.find(x => x.id === id);
+  if(!s) return;
+  if(!confirm(`Promote "${s.title}" to the main story library?`)) return;
+  try {
+    const { error } = await sb.rpc('admin_add_story', {
+      p_title:       s.title,
+      p_lang:        s.lang_code,
+      p_category:    'custom',
+      p_emoji:       '✨',
+      p_age_min:     3,
+      p_age_max:     10,
+      p_story_text:  s.story_text,
+      p_moral_text:  s.moral_text || '',
+      p_tags:        [],
+      p_audio_url:   '',
+      p_duration:    Math.round(((s.story_text||'').split(/\s+/).length / 130) * 60),
+      p_is_premium:  false,
+      p_is_published:true,
+      p_slug:        'usr-' + id
+    });
+    if(error) throw error;
+    toast('✓ Story promoted to library!','success');
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+async function deleteUserStory(id) {
+  if(!confirm('Delete this user story permanently?')) return;
+  try {
+    const { error } = await sb.rpc('admin_delete_user_story', { p_id: id });
+    if(error) throw error;
+    toast('Deleted','success');
+    loadUserStories();
+  } catch(e) { toast('Error: '+e.message,'error'); }
+}
+
+// ── PAYMENTS ──
+async function loadPayments() {
+  const status = document.getElementById('payFilter').value;
+  document.getElementById('paymentsTable').innerHTML = '<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    const { data, error } = await sb.rpc('admin_get_payments', { p_status: status || null });
+    if(error) throw error;
+    renderPaymentsTable(data||[]);
+  } catch(e) { console.error('loadPayments error:', e); renderPaymentsTable([]); }
+}
+
+function renderPaymentsTable(data) {
+  document.getElementById('paymentsTable').innerHTML = data.length ? data.map(p=>{
+    const sb_class = {verified:'badge-green',rejected:'badge-red',screenshot_uploaded:'badge-amber',pending:'badge-gray'}[p.status]||'badge-gray';
+    return `<tr>
+      <td>${p.mother_name||p.users?.mother_name||'Unknown'} <span style="color:var(--muted);font-size:11px;">${p.phone||p.users?.phone||''}</span></td>
+      <td><span class="badge badge-amber">${p.plan_id||'—'}</span></td>
+      <td style="color:var(--gold);">₹${p.amount_inr||0}</td>
+      <td style="color:var(--muted);">${p.created_at?new Date(p.created_at).toLocaleDateString('en-IN'):'—'}</td>
+      <td>${p.screenshot_url?`<a href="${p.screenshot_url}" target="_blank" class="btn btn-ghost btn-sm">View 📎</a>`:'<span style="color:var(--muted);">None</span>'}</td>
+      <td><span class="badge ${sb_class}">${p.status||'—'}</span></td>
+      <td><div style="display:flex;gap:4px;">
+        ${p.status==='screenshot_uploaded'?`
+          <button class="btn btn-success btn-sm" onclick="verifyPayment('${p.id}','${p.user_id}','${p.plan_id||''}',${p.amount_inr||0})">✓ Verify</button>
+          <button class="btn btn-danger btn-sm" onclick="rejectPayment('${p.id}')">✗ Reject</button>`:
+        '<span style="color:var(--muted);">—</span>'}
+      </div></td>
+    </tr>`;
+  }).join('') : '<tr><td colspan="7" class="empty-state">No payments found</td></tr>';
+}
+
+async function verifyPayment(payId, userId, planId, amount) {
+  if(!confirm('Verify this payment and activate subscription?')) return;
+  const daysMap = {monthly:30, annual:365, family:30};
+  try {
+    const { error } = await sb.rpc('admin_verify_payment', {
+      p_payment_id: payId,
+      p_user_id:    userId,
+      p_plan_id:    planId,
+      p_days:       daysMap[planId] || 30
+    });
+    if(error) throw error;
+    toast('✓ Payment verified & subscription activated','success');
+    loadPayments();
+  } catch(e) { console.error('verifyPayment error:', e); toast('Error: '+e.message,'error'); }
+}
+
+async function rejectPayment(payId) {
+  const reason = prompt('Reason for rejection:');
+  if(!reason) return;
+  try {
+    const { error } = await sb.rpc('admin_reject_payment', {
+      p_payment_id: payId, p_reason: reason
+    });
+    if(error) throw error;
+    toast('Payment rejected','error');
+    loadPayments();
+  } catch(e) { console.error('rejectPayment error:', e); toast('Error: '+e.message,'error'); }
+}
+
+// ── QR CODES ──
+async function loadQRCodes() {
+  // Show cached immediately
+  const cached = sessionStorage.getItem('ak_admin_qr_list');
+  if(cached) {
+    try { renderQRList(JSON.parse(cached)); } catch(e){}
+  } else {
+    document.getElementById('qrList').innerHTML = '<div class="empty-state">Loading...</div>';
+  }
+  // Always fetch fresh
+  try {
+    const { data, error } = await sb.rpc('get_all_qr_codes');
+    if(error) throw error;
+    const list = data || [];
+    sessionStorage.setItem('ak_admin_qr_list', JSON.stringify(list));
+    renderQRList(list);
+  } catch(e) {
+    console.error('loadQRCodes error:', e);
+    if(!cached) {
+      document.getElementById('qrList').innerHTML =
+        `<div class="empty-state" style="color:var(--red);">
+          Error loading QR codes: ${e.message}<br>
+          <small>Run run_this_all_rpc_fixes.sql in Supabase SQL Editor</small>
+        </div>`;
+    }
+  }
+}
+
+function renderQRList(list) {
+  document.getElementById('qrList').innerHTML = list.length ? list.map(q=>`
+    <div class="qr-active-card">
+      <img class="qr-active-img" src="${q.qr_image_url}"
+        alt="QR" onerror="this.src='';this.style.background='#333';this.style.display='flex';">
+      <div class="qr-active-info">
+        <div class="qr-active-name">${q.label}
+          ${q.is_active
+            ? '<span class="badge badge-green" style="margin-left:6px;">Active</span>'
+            : '<span class="badge badge-gray"  style="margin-left:6px;">Inactive</span>'}
+        </div>
+        <div class="qr-active-upi">${q.upi_id||'No UPI ID set'}</div>
+        <div style="color:var(--muted);font-size:11px;margin-top:4px;">
+          Added ${new Date(q.created_at).toLocaleDateString('en-IN')}
+        </div>
+      </div>
+      <div style="display:flex;flex-direction:column;gap:6px;">
+        <button class="btn btn-${q.is_active?'danger':'success'} btn-sm"
+          onclick="toggleQR('${q.id}',${q.is_active})">
+          ${q.is_active?'Deactivate':'Activate'}
+        </button>
+        <button class="btn btn-ghost btn-sm" onclick="deleteQR('${q.id}')">Delete</button>
+      </div>
+    </div>`).join('')
+  : '<div class="empty-state">No QR codes yet. Click "+ Add QR Code" to upload one.</div>';
+}
+
+function openQRModal() {
+  // Reset modal fields
+  document.getElementById('qr-label').value = '';
+  document.getElementById('qr-upi').value = '';
+  document.getElementById('qrFileInput').value = '';
+  document.getElementById('qrPreview').style.display = 'none';
+  document.getElementById('uploadQRBtn').disabled = false;
+  document.getElementById('uploadQRBtn').textContent = 'Upload QR';
+  document.getElementById('qrModal').classList.add('open');
+}
+
+function previewQR(input) {
+  const file = input.files[0];
+  if(!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    const img = document.getElementById('qrPreview');
+    img.src = e.target.result;
+    img.style.display = 'block';
+  };
+  reader.readAsDataURL(file);
+}
+
+async function uploadQR() {
+  const label = document.getElementById('qr-label').value.trim();
+  const upi   = document.getElementById('qr-upi').value.trim();
+  const file  = document.getElementById('qrFileInput').files[0];
+
+  if(!label) { toast('Label is required','error'); return; }
+  if(!file)  { toast('Please select a QR image','error'); return; }
+
+  const btn = document.getElementById('uploadQRBtn');
+  btn.disabled = true;
+  btn.textContent = 'Uploading image...';
+
+  try {
+    // Step 1: Upload image to storage
+    const ext  = file.name.split('.').pop();
+    const path = `qr/${Date.now()}.${ext}`;
+    const { error: uploadError } = await sb.storage
+      .from('payment-qr')
+      .upload(path, file, { contentType: file.type, upsert: true });
+
+    if(uploadError) {
+      toast('Storage error: ' + uploadError.message, 'error');
+      console.error('Storage upload error:', uploadError);
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    // Step 2: Get public URL
+    const { data: urlData } = sb.storage.from('payment-qr').getPublicUrl(path);
+    const publicUrl = urlData?.publicUrl;
+    if(!publicUrl) {
+      toast('Could not get image URL. Check bucket is set to Public.', 'error');
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    btn.textContent = 'Saving to database...';
+
+    // Step 3: Save to payment_qr_codes table via RPC
+    const { data: rpcData, error: rpcError } = await sb.rpc('insert_qr_code', {
+      p_label:        label,
+      p_upi_id:       upi,
+      p_qr_image_url: publicUrl
+    });
+
+    if(rpcError) {
+      toast('DB error: ' + rpcError.message, 'error');
+      console.error('insert_qr_code RPC error:', rpcError);
+      btn.disabled = false; btn.textContent = 'Upload QR';
+      return;
+    }
+
+    sessionStorage.removeItem('ak_admin_qr_list'); // clear cache so fresh data loads
+    toast('✓ QR Code uploaded and activated', 'success');
+    closeModal('qrModal');
+    loadQRCodes();
+
+  } catch(e) {
+    console.error('uploadQR unexpected error:', e);
+    toast('Unexpected error: ' + e.message, 'error');
+  }
+
+  btn.disabled = false;
+  btn.textContent = 'Upload QR';
+}
+
+async function toggleQR(id, current) {
+  try {
+    const { error } = await sb.rpc('toggle_qr_code', {
+      p_id: id, p_active: !current
+    });
+    if(error) throw error;
+    toast(`QR ${current ? 'deactivated' : 'activated'}`, 'success');
+    loadQRCodes();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+async function deleteQR(id) {
+  if(!confirm('Delete this QR code permanently?')) return;
+  try {
+    const { error } = await sb.rpc('delete_qr_code', { p_id: id });
+    if(error) throw error;
+    toast('QR deleted', 'success');
+    loadQRCodes();
+  } catch(e) {
+    toast('Error: ' + e.message, 'error');
+  }
+}
+
+// ── STORIES ──
+async function loadStories() {
+  const lang = document.getElementById('storyLangFilter')?.value || '';
+  document.getElementById('storiesTable').innerHTML='<tr><td colspan="7" class="empty-state">Loading...</td></tr>';
+  try {
+    const { data, error } = await sb.rpc('admin_get_stories', { p_lang: lang || null });
+    if(error) throw error;
+    renderStoriesTable(data || []);
+  } catch(e) {
+    console.error('loadStories:', e);
+    document.getElementById('storiesTable').innerHTML =
+      `<tr><td colspan="7" class="empty-state" style="color:var(--red)">Error: ${e.message} — run fix_stories_and_audio.sql</td></tr>`;
+  }
+}
+
+function renderStoriesTable(data) {
+  document.getElementById('storiesTable').innerHTML = data.length ? data.map(s=>`
+    <tr>
+      <td>${s.emoji||'📖'} ${s.title}</td>
+      <td><span class="badge badge-gray">${s.lang_code}</span></td>
+      <td>${s.category}</td>
+      <td style="color:var(--muted);">${s.duration_secs ? Math.round(s.duration_secs/60)+'m' : '—'}</td>
+      <td>${s.is_premium ? '<span class="badge badge-amber">👑 Yes</span>' : '<span class="badge badge-gray">Free</span>'}</td>
+      <td>${s.is_published ? '<span class="badge badge-green">✓</span>' : '<span class="badge badge-red">✗</span>'}</td>
+      <td><div style="display:flex;gap:4px;">
+        <button class="btn btn-ghost btn-sm" onclick="togglePublish('${s.id}',${s.is_published})">
+          ${s.is_published ? 'Unpublish' : 'Publish'}</button>
+        <button class="btn btn-danger btn-sm" onclick="deleteStory('${s.id}')">Delete</button>
+      </div></td>
+    </tr>`).join('') : '<tr><td colspan="7" class="empty-state">No stories yet. Add one →</td></tr>';
+}
+
+async function addStory() {
+  const title = document.getElementById('as-title').value.trim();
+  const text  = document.getElementById('as-text').value.trim();
+  if(!title||!text) { toast('Title and text required','error'); return; }
+  const slug  = title.toLowerCase().replace(/\s+/g,'-').replace(/[^a-z0-9-]/g,'') + '-' + Date.now();
+  try {
+    const { data, error } = await sb.rpc('admin_add_story', {
+      p_title:       title,
+      p_lang:        document.getElementById('as-lang').value,
+      p_category:    document.getElementById('as-cat').value,
+      p_emoji:       document.getElementById('as-emoji').value || '📖',
+      p_age_min:     parseInt(document.getElementById('as-age-min').value) || 3,
+      p_age_max:     parseInt(document.getElementById('as-age-max').value) || 8,
+      p_story_text:  text,
+      p_moral_text:  document.getElementById('as-moral').value,
+      p_tags:        document.getElementById('as-tags').value.split(',').map(t=>t.trim()).filter(Boolean),
+      p_audio_url:   document.getElementById('as-audio').value || '',
+      p_duration:    parseInt(document.getElementById('as-dur').value) || 300,
+      p_is_premium:  document.getElementById('as-premium').checked,
+      p_is_published:document.getElementById('as-published').checked,
+      p_slug:        slug
+    });
+    if(error) throw error;
+    toast('✓ Story added','success');
+    showSection('stories');
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function togglePublish(id, current) {
+  try {
+    const { error } = await sb.rpc('admin_toggle_story_publish', { p_id: id, p_published: !current });
+    if(error) throw error;
+    toast('Updated', 'success');
+    loadStories();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+async function deleteStory(id) {
+  if(!confirm('Delete this story permanently?')) return;
+  try {
+    const { error } = await sb.rpc('admin_delete_story', { p_id: id });
+    if(error) throw error;
+    toast('Deleted', 'success');
+    loadStories();
+  } catch(e) { toast('Error: ' + e.message, 'error'); }
+}
+
+// ── BATCH AUDIO GENERATION ──
+let gaStories  = [];   // all stories loaded for audio gen
+let gaRunning  = false;
+let gaStop     = false;
+
+async function loadAudioStatus() {
+  document.getElementById('ga-stories-table').innerHTML =
+    '<tr><td colspan="5" class="empty-state">Loading...</td></tr>';
+  try {
+    const lang = document.getElementById('ga-lang-filter')?.value || '';
+    const { data, error } = await sb.rpc('admin_get_stories', { p_lang: lang || null });
+    if(error) throw error;
+    gaStories = data || [];
+    const hasAudio  = gaStories.filter(s => s.audio_url).length;
+    const noAudio   = gaStories.filter(s => !s.audio_url).length;
+    document.getElementById('ga-total').textContent     = gaStories.length;
+    document.getElementById('ga-has-audio').textContent = hasAudio;
+    document.getElementById('ga-no-audio').textContent  = noAudio;
+    renderAudioTable(gaStories);
+  } catch(e) {
+    toast('Error loading stories: ' + e.message, 'error');
+  }
+}
+
+function renderAudioTable(stories) {
+  document.getElementById('ga-stories-table').innerHTML = stories.length
+    ? stories.map(s => `
+      <tr id="ga-row-${s.id}">
+        <td>${s.emoji||'📖'} ${s.title}</td>
+        <td><span class="badge badge-gray">${s.lang_code}</span></td>
+        <td id="ga-status-${s.id}">
+          ${s.audio_url
+            ? '<span class="badge badge-green">✓ Has Audio</span>'
+            : '<span class="badge badge-red">✗ No Audio</span>'}
+        </td>
+        <td style="color:var(--muted);">${s.duration_secs ? Math.round(s.duration_secs/60)+'m' : '—'}</td>
+        <td>
+          ${s.audio_url
+            ? `<div style="display:flex;gap:4px;">
+                <a href="${s.audio_url}" target="_blank" class="btn btn-ghost btn-sm">▶ Preview</a>
+                <button class="btn btn-ghost btn-sm" onclick="generateSingleAudio('${s.id}')">↺ Regen</button>
+               </div>`
+            : `<button class="btn btn-primary btn-sm" onclick="generateSingleAudio('${s.id}')">🔊 Generate</button>`
+          }
+        </td>
+      </tr>`).join('')
+    : '<tr><td colspan="5" class="empty-state">No stories found</td></tr>';
+}
+
+async function startBatchGeneration() {
+  if(gaRunning) return;
+  const missing = gaStories.filter(s => !s.audio_url);
+  if(missing.length === 0) { toast('All stories already have audio!', 'success'); return; }
+
+  const elKey = await getElevenLabsKey();
+  if(!elKey) { toast('Add ElevenLabs API key in App Config first', 'error'); return; }
+
+  gaRunning = true; gaStop = false;
+  document.getElementById('ga-progress-wrap').style.display = 'block';
+  document.getElementById('ga-start-btn').disabled = true;
+
+  let done = 0;
+  for(const story of missing) {
+    if(gaStop) break;
+    document.getElementById('ga-progress-label').textContent = `Generating: ${story.title}`;
+    document.getElementById('ga-progress-count').textContent = `${done} / ${missing.length}`;
+    document.getElementById('ga-status-'+story.id).innerHTML =
+      '<span class="badge badge-amber">⏳ Generating...</span>';
+
+    const ok = await generateAndSaveAudio(story, elKey);
+
+    document.getElementById('ga-status-'+story.id).innerHTML = ok
+      ? '<span class="badge badge-green">✓ Done</span>'
+      : '<span class="badge badge-red">✗ Failed</span>';
+
+    done++;
+    const pct = (done / missing.length) * 100;
+    document.getElementById('ga-progress-bar').style.width = pct + '%';
+
+    // Small delay to avoid ElevenLabs rate limits
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  gaRunning = false;
+  document.getElementById('ga-start-btn').disabled = false;
+  document.getElementById('ga-progress-label').textContent =
+    gaStop ? `Stopped at ${done}/${missing.length}` : `✓ Complete — ${done} stories generated`;
+  toast(gaStop ? 'Stopped' : `✓ ${done} audio files generated`, 'success');
+  loadAudioStatus();
+}
+
+function stopBatchGeneration() {
+  gaStop = true;
+  toast('Stopping after current story...', 'success');
+}
+
+async function generateSingleAudio(storyId) {
+  const story = gaStories.find(s => s.id === storyId);
+  if(!story) return;
+  const elKey = await getElevenLabsKey();
+  if(!elKey) { toast('Add ElevenLabs API key in App Config first', 'error'); return; }
+
+  document.getElementById('ga-status-'+storyId).innerHTML =
+    '<span class="badge badge-amber">⏳ Generating...</span>';
+
+  const ok = await generateAndSaveAudio(story, elKey);
+  document.getElementById('ga-status-'+storyId).innerHTML = ok
+    ? '<span class="badge badge-green">✓ Done</span>'
+    : '<span class="badge badge-red">✗ Failed — check console</span>';
+
+  if(ok) toast('✓ Audio generated for: ' + story.title, 'success');
+  else   toast('Failed to generate audio. Check ElevenLabs key.', 'error');
+}
+
+async function generateAndSaveAudio(story, elKey) {
+  try {
+    const voiceId = document.getElementById('ga-voice-id').value.trim()
+      || {te:'jsCqWAovK2LkecY7zXl4',ta:'jsCqWAovK2LkecY7zXl4',kn:'jsCqWAovK2LkecY7zXl4',
+          ml:'jsCqWAovK2LkecY7zXl4',hi:'cgSgspJ2msm6clMCkdW9',mr:'cgSgspJ2msm6clMCkdW9',
+          en:'EXAVITQu4vr4xnSDxMaL'}[story.lang_code]
+      || 'EXAVITQu4vr4xnSDxMaL'; // Priya/Sarah fallback narrator voice
+
+    const text = ((story.story_text || '') + ' ' + (story.moral_text || '')).trim().substring(0, 2500);
+
+    // ── DRAVIDIAN-AWARE VOICE SETTINGS ──
+    // eleven_multilingual_v2 natively reads Telugu/Kannada/Malayalam Unicode script
+    // Lower stability for Dravidian = better retroflex consonant rendering
+    const isDravidian = ['te','kn','ml','ta'].includes(story.lang_code);
+    const useHindi    = ['hi','mr'].includes(story.lang_code);
+
+    // Call ElevenLabs TTS — send native Unicode script (NO transliteration)
+    const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
+      method: 'POST',
+      headers: {
+        'xi-api-key':   elKey,
+        'Content-Type': 'application/json',
+        'Accept':       'audio/mpeg'
+      },
+      body: JSON.stringify({
+        text,
+        model_id: useHindi ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
+        ...(useHindi ? { language_code: story.lang_code === 'hi' ? 'hi' : 'hi' } : {}),
+        voice_settings: {
+          stability:        isDravidian ? 0.62 : 0.68,
+          similarity_boost: isDravidian ? 0.88 : 0.85,
+          style:            isDravidian ? 0.10 : 0.20,
+          use_speaker_boost: true,
+          speed:            0.88  // natural storytelling pace
+        }
+      })
+    });
+
+    if(!res.ok) {
+      console.error('ElevenLabs error for', story.title, await res.text());
+      return false;
+    }
+
+    const blob = await res.blob();
+
+    // Upload to Supabase story-audio bucket
+    const path = `stories/${story.lang_code}/${story.id}.mp3`;
+    const { error: upErr } = await sb.storage
+      .from('story-audio')
+      .upload(path, blob, { contentType: 'audio/mpeg', upsert: true });
+
+    if(upErr) { console.error('Storage error:', upErr); return false; }
+
+    // Get public URL
+    const { data: urlData } = sb.storage.from('story-audio').getPublicUrl(path);
+    const audioUrl = urlData?.publicUrl;
+    if(!audioUrl) return false;
+
+    // Estimate duration (rough: 150 words/min avg for Indian languages)
+    const wordCount   = text.split(/\s+/).length;
+    const durationSec = Math.round((wordCount / 130) * 60);
+
+    // Save audio URL to stories table
+    const { error: saveErr } = await sb.rpc('admin_save_story_audio', {
+      p_id:       story.id,
+      p_audio_url: audioUrl,
+      p_duration: durationSec
+    });
+
+    if(saveErr) { console.error('Save error:', saveErr); return false; }
+
+    // Update local data
+    story.audio_url    = audioUrl;
+    story.duration_secs = durationSec;
+    return true;
+
+  } catch(e) {
+    console.error('generateAndSaveAudio error:', e);
+    return false;
+  }
+}
+
+async function getElevenLabsKey() {
+  try {
+    const { data } = await sb.rpc('get_config_value', { p_key: 'elevenlabs_api_key' });
+    return data || null;
+  } catch(e) { return null; }
+}
+
+// ── CONFIG ──
+// These are the known config keys with labels and descriptions.
+// Always rendered — DB values fill in if available.
+const CONFIG_KEYS = [
+  { key:'claude_api_key',        label:'Claude API Key',          desc:'Anthropic Claude API key — get from console.anthropic.com', secret:true  },
+  { key:'elevenlabs_api_key',    label:'ElevenLabs API Key',      desc:'ElevenLabs API key — get from elevenlabs.io/app/profile',   secret:true  },
+  { key:'support_whatsapp',      label:'Support WhatsApp Number', desc:'Without + sign. E.g. 919876543210',                          secret:false },
+  { key:'free_stories_per_day',  label:'Free Stories Per Day',    desc:'How many stories free users can play daily',                 secret:false },
+  { key:'free_ai_stories',       label:'Free AI Stories/Month',   desc:'AI stories free users can generate per month',               secret:false },
+  { key:'trial_days',            label:'Trial Period (days)',      desc:'Days of free trial after signup',                            secret:false },
+  { key:'app_name',              label:'App Name',                 desc:'Display name of the app',                                    secret:false },
+  { key:'maintenance_mode',      label:'Maintenance Mode',         desc:'Set to true to show maintenance page',                       secret:false },
+  // ── DEFAULT NARRATOR VOICE IDs ──
+  // eleven_multilingual_v2 model natively reads all Indian scripts — no transliteration needed.
+  // For Dravidian (te/kn/ml): use Priya (jsCqWAovK2LkecY7zXl4) — warm Indian female, best for retroflex sounds.
+  // For Hindi/Marathi: use Aria (cgSgspJ2msm6clMCkdW9) — expressive Devanagari narration.
+  // Browse more: elevenlabs.io/voice-library → Female, Narration, Indian
+  { key:'default_voice_te', label:'Default Voice — Telugu 🎙',   desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (warm Indian female, best for ట/డ/ణ retroflex)', secret:false },
+  { key:'default_voice_ta', label:'Default Voice — Tamil 🎙',    desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (Dravidian-optimised)', secret:false },
+  { key:'default_voice_kn', label:'Default Voice — Kannada 🎙',  desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (handles ಟ/ಡ/ಣ well)', secret:false },
+  { key:'default_voice_ml', label:'Default Voice — Malayalam 🎙',desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (handles ട/ഡ/ണ well)', secret:false },
+  { key:'default_voice_hi', label:'Default Voice — Hindi 🎙',    desc:'Aria recommended: cgSgspJ2msm6clMCkdW9  (expressive Hindi/Devanagari)', secret:false },
+  { key:'default_voice_mr', label:'Default Voice — Marathi 🎙',  desc:'Aria recommended: cgSgspJ2msm6clMCkdW9  (Marathi/Devanagari narration)', secret:false },
+  { key:'default_voice_en', label:'Default Voice — English 🎙',  desc:'Sarah recommended: EXAVITQu4vr4xnSDxMaL  (warm storytelling)', secret:false },
+];
+
+async function loadConfig() {
+  const form = document.getElementById('configForm');
+
+  // Always render the form immediately with empty values
+  renderConfigForm({});
+
+  // Then try to load saved values from DB and fill them in
+  try {
+    const { data, error } = await sb.from('app_config').select('key,value');
+    if(error) throw error;
+    const map = {};
+    (data||[]).forEach(r => map[r.key] = r.value);
+    renderConfigForm(map);
+  } catch(e) {
+    // DB read failed (RLS or network) — form is still usable, just empty
+    const note = document.getElementById('config-db-note');
+    if(note) note.textContent = '⚠ Could not load saved values — enter and save to update DB.';
+  }
+}
+
+function renderConfigForm(valueMap) {
+  const form = document.getElementById('configForm');
+  form.innerHTML = `
+    <div id="config-db-note" style="font-size:11px;color:var(--muted);margin-bottom:16px;"></div>
+    ${CONFIG_KEYS.map(cfg => `
+      <div class="form-group">
+        <label class="form-label">${cfg.label}</label>
+        <div style="position:relative;">
+          <input
+            class="form-inp config-inp"
+            id="cfg-${cfg.key}"
+            data-key="${cfg.key}"
+            type="${cfg.secret ? 'password' : 'text'}"
+            value="${valueMap[cfg.key] || ''}"
+            placeholder="${cfg.desc}"
+            autocomplete="off"
+          >
+          ${cfg.secret ? `<button onclick="toggleCfgPw('cfg-${cfg.key}',this)"
+            style="position:absolute;right:10px;top:50%;transform:translateY(-50%);
+            background:none;border:none;color:var(--muted);cursor:pointer;font-size:13px;">👁</button>` : ''}
+        </div>
+        <div class="form-help">${cfg.desc}</div>
+      </div>`).join('')}`;
+}
+
+function toggleCfgPw(inputId, btn) {
+  const inp = document.getElementById(inputId);
+  inp.type = inp.type === 'password' ? 'text' : 'password';
+  btn.textContent = inp.type === 'password' ? '👁' : '🙈';
+}
+
+async function saveConfig() {
+  const inputs = document.querySelectorAll('.config-inp');
+  let saved = 0, failed = 0;
+  for(const inp of inputs) {
+    try {
+      // Use SECURITY DEFINER RPC — bypasses RLS completely
+      const { error } = await sb.rpc('save_app_config', {
+        p_key:   inp.dataset.key,
+        p_value: inp.value
+      });
+      if(error) throw error;
+      saved++;
+    } catch(e) {
+      console.error('Failed to save', inp.dataset.key, e);
+      failed++;
+    }
+  }
+  if(failed === 0) toast(`✓ All ${saved} settings saved`, 'success');
+  else if(saved > 0) toast(`✓ ${saved} saved, ${failed} failed`, 'success');
+  else toast('RPC not found — run fix_config_save.sql in Supabase SQL Editor', 'error');
+}
+
+// ── UTILS ──
+function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
+function logout() {
+  sessionStorage.removeItem('ak_admin');
+  if(!IS_DEMO) sb.auth.signOut();
+  window.location.href = 'admin-login.html';
+}
+
+function toast(msg, type='') {
+  const el=document.getElementById('toastEl');
+  el.textContent=msg; el.className=`toast show${type?' '+type:''}`;
+  setTimeout(()=>el.className='toast',3000);
+}
+
+init();
+</script>
+</body>
+</html>
