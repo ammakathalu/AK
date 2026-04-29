@@ -2132,32 +2132,37 @@ async function openPlayer(storyId, mode) {
   }).join('');
   document.getElementById('playerText').innerHTML = bookHtml;
 
-  const voiceId = await getVoiceId();
-
   showScreen('player');
   logPlay(s.id);
 
   // ── AUDIO PRIORITY RULES ──────────────────────────────────────
-  // Rule 1: Mother's cloned voice (ANY language recorded) → ALWAYS used
-  // Rule 2: Admin pre-generated audio → ONLY if mother has NO voice at all
-  // Rule 3: Default narrator → ONLY if mother has NO voice at all
-  // One recorded voice covers ALL languages — no exceptions
+  // Rule 1: Session cache → always fastest, use immediately (no API call)
+  // Rule 2: Mother has cloned voice → always call generateTTS (which
+  //         checks DB cache first; only hits ElevenLabs API if no cache)
+  // Rule 3: No mother voice + story has admin audio_url → play directly (no API call)
+  // Rule 4: No mother voice + no audio_url → generateTTS with default narrator
+  //
+  // ElevenLabs /text-to-speech API is called ONLY inside generateTTS,
+  // and ONLY after session cache + DB cache both miss.
+  // ElevenLabs /voices/add is called ONLY once inside uploadVoice() during cloning.
   // ────────────────────────────────────────────────────────────────
   const hasMotherVoice = !!(USER?.elevenlabs_voice_id);
 
   if(ttsCache[s.id]) {
-    // Session cache — fastest, always use regardless of source
+    // ✅ Rule 1: Session cache hit — zero API calls
     const src = hasMotherVoice ? '⚡ అమ్మ గొంతు' : '⚡ కథకుడు';
     document.getElementById('playerMeta').innerHTML =
       '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">' + src + ' — Cache</span>';
     setupAudio(ttsCache[s.id]);
-  } else if(s.audio_url && !hasMotherVoice) {
-    // Admin pre-generated audio — ONLY when mother has recorded NO voice at all
+  } else if(!hasMotherVoice && s.audio_url) {
+    // ✅ Rule 3: No mother voice → play admin pre-generated audio directly (no API call)
     document.getElementById('playerMeta').innerHTML =
       '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio</span>';
     setupAudio(s.audio_url);
   } else {
-    // Generate with mother's voice OR default narrator (getVoiceId handles the choice)
+    // ✅ Rule 2 / Rule 4: generateTTS handles all remaining cases:
+    //   — If DB cache exists → serves from storage (no ElevenLabs call)
+    //   — If no DB cache → calls ElevenLabs API exactly once, then saves to cache
     generateTTS(s);
   }
 }
@@ -2460,16 +2465,17 @@ async function generateTTS(story) {
     if(!voiceId) throw new Error('No voice available. Check ElevenLabs config.');
 
     // ── COST OPTIMISATION: Check persistent cache FIRST ──────────────
-    // Priority: session cache → DB cache → storage URL → generate new
-    // This ensures ElevenLabs is called at most ONCE per story per voice
+    // Priority: session cache → DB cache → ElevenLabs API (charged)
+    // ElevenLabs /text-to-speech is called at most ONCE per (story, voiceId) pair.
+    // All subsequent plays are served from session cache or DB/storage cache.
 
-    // 1. Session cache (same page visit)
+    // 1. Session cache (same page visit) — zero API calls
     if(ttsCache[story.id]) {
       setupAudio(ttsCache[story.id]);
+      const isMotherVoice = !!(USER?.elevenlabs_voice_id);
       document.getElementById('playerMeta').innerHTML =
-        '<span class="badge-voice">🎙 అమ్మ గొంతు</span>';
-      btn.disabled = false; btn.textContent = '▶';
-      // Auto-play from cache
+        '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">'
+        + (isMotherVoice ? '⚡ అమ్మ గొంతు' : '⚡ కథకుడు') + ' — Cache</span>';
       btn.disabled = false; btn.textContent = '▶';
       btn.style.background = 'linear-gradient(135deg,var(--green),var(--green-d))';
       setTimeout(() => { btn.style.background = ''; }, 2000);
@@ -2540,87 +2546,79 @@ async function generateTTS(story) {
                 LANG==='te' ? ('→ romanized: ' + text.substring(0,30)) : '');
 
     // Use with-timestamps endpoint for better quality rendering
-    const ttsEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?optimize_streaming_latency=0`;
+    const ttsEndpoint = `https://api.elevenlabs.io/v1/text-to-speech/${voiceId}?output_format=mp3_44100_128`;
     const res = await fetch(ttsEndpoint, {
       method: 'POST',
       headers: { 'xi-api-key': elKey, 'Content-Type':'application/json', 'Accept':'audio/mpeg' },
       body: JSON.stringify((() => {
         // ── MODEL SELECTION PER LANGUAGE ──
-        // eleven_v3               = best for ALL Indian languages — Telugu, Kannada,
-        //                           Malayalam, Tamil, Hindi, Marathi are first-class
-        //                           citizens with native script training. Supports
-        //                           inline emotion tags [whispers] [excited] etc.
-        //                           Audiobook-optimised; ideal for bedtime stories.
-        // eleven_turbo_v2_5       = fallback for English only (lower latency)
-        //
-        // Do NOT send language_code to eleven_v3 — it auto-detects from Unicode script.
+        // eleven_v3        = all Indian languages (te/kn/ml/ta/hi/mr) — native script, first-class
+        // eleven_turbo_v2_5 = English only (lower latency)
+        // Do NOT send language_code to eleven_v3 — it auto-detects from Unicode script
         const voiceLang = typeof VOICE_LANG !== 'undefined' ? VOICE_LANG : LANG;
         const useEnglish = voiceLang === 'en';
-        const useTurbo   = useEnglish;   // only English uses turbo; all Indian → v3
+        const useTurbo   = useEnglish;
 
-        // For Dravidian languages (te/kn/ml/ta): boost similarity + lower stability
-        // eleven_v3 has native training for retroflex consonants and chillu letters
-        // so we can afford slightly higher stability vs multilingual_v2 workarounds
         const isDravidian = ['te','kn','ml','ta'].includes(voiceLang);
         const isClonedVoice = !!(USER?.elevenlabs_voice_id);
 
-        // ── PER-LANGUAGE VOICE SETTINGS for eleven_v3 ───────────────
-        // v3 has dedicated Indian language training, so similarity can be
-        // slightly higher than multilingual_v2 without English phoneme bleed.
+        // ── PER-LANGUAGE VOICE SETTINGS ─────────────────────────────
+        // Each Dravidian language needs slightly different tuning:
         //
         // TELUGU (te):
-        //   stability 0.55 — v3 handles syllable stress natively; slight boost
-        //   similarity 0.75 — retroflex ట డ ళ ణ ఱ are trained; safe to raise
+        //   stability 0.52 — syllable stress varies a lot in Telugu storytelling
+        //   similarity 0.72 — low enough to let retroflex ట డ ళ ణ ఱ breathe
         //
         // KANNADA (kn):
-        //   stability 0.52 — vowel length phonemic contrast handled by v3
-        //   similarity 0.73 — retroflexes ಟ ಡ ಣ ಳ well-covered in v3 training
+        //   stability 0.50 — Kannada has more tonal variation than Telugu
+        //   similarity 0.70 — Kannada retroflexes ಟ ಡ ಣ ಳ need even more room
+        //   Kannada vowel length (short/long) is phonemic — lower sim helps
         //
         // MALAYALAM (ml):
-        //   stability 0.50 — richest prosody of the three; keep some room
-        //   similarity 0.72 — chillu letters ൻ ൽ ൾ ൺ ർ are v3 first-class
+        //   stability 0.48 — Malayalam has the most prosodic variation of the 3
+        //   similarity 0.68 — Chillu letters (ൻ ൽ ൾ ൺ ർ) are unique to Malayalam
+        //   and completely absent from any English voice model training data.
+        //   Very low similarity lets the multilingual model's Malayalam knowledge
+        //   handle them instead of the cloned voice's English phoneme bias.
         //
         // TAMIL (ta):
-        //   stability 0.56 — Tamil was in multilingual_v2 too; v3 improves it
-        //   similarity 0.75
-        //
-        // HINDI / MARATHI (hi/mr):
-        //   Devanagari was already strong; v3 further improves prosody
-        //
-        // ENGLISH (en):
-        //   Uses turbo model — settings unchanged
+        //   stability 0.54 — similar to Kannada
+        //   similarity 0.73
 
         const langVoiceSettings = {
-          te: { stability: 0.55, similarity_boost: 0.75 },
-          kn: { stability: 0.52, similarity_boost: 0.73 },
-          ml: { stability: 0.50, similarity_boost: 0.72 },
-          ta: { stability: 0.56, similarity_boost: 0.75 },
-          hi: { stability: 0.74, similarity_boost: 0.88 },
-          mr: { stability: 0.72, similarity_boost: 0.87 },
+          te: { stability: 0.52, similarity_boost: 0.72 },
+          kn: { stability: 0.50, similarity_boost: 0.70 },
+          ml: { stability: 0.48, similarity_boost: 0.68 },
+          ta: { stability: 0.54, similarity_boost: 0.73 },
+          hi: { stability: 0.72, similarity_boost: 0.88 },
+          mr: { stability: 0.70, similarity_boost: 0.86 },
           en: { stability: 0.75, similarity_boost: 0.88 },
         };
         const vs = langVoiceSettings[voiceLang] || langVoiceSettings.en;
 
+        // speed is a TOP-LEVEL param — NOT inside voice_settings (causes 400 if nested)
+        // output_format goes as query param on the URL, not in body
+        const speed = isClonedVoice ? 0.82 : 0.85; // gentle bedtime pace
+
         const body = {
           text,
           model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_v3',
-          output_format: 'mp3_44100_128',
           voice_settings: isClonedVoice ? {
             stability:         vs.stability,
             similarity_boost:  vs.similarity_boost,
-            style:             0.0,          // never inject English expressiveness
-            use_speaker_boost: true,
-            speed:             0.82          // gentle bedtime pace for all languages
+            style:             0.0, // never inject English expressiveness on cloned voice
+            use_speaker_boost: true
           } : {
-            // No cloned voice — default narrator, slightly more expressive
+            // Default narrator — slightly more expressive
             stability:         vs.stability + 0.05,
             similarity_boost:  vs.similarity_boost + 0.08,
             style:             isDravidian ? 0.08 : 0.15,
-            use_speaker_boost: true,
-            speed:             0.85
-          }
+            use_speaker_boost: true
+          },
+          // speed is top-level per ElevenLabs v1 API spec (0.7–1.2 range)
+          speed
         };
-        // Only add language_code for turbo/English — eleven_v3 auto-detects script
+        // Only add language_code for English turbo path — eleven_v3 auto-detects script
         if(useTurbo) {
           body.language_code = 'en';
         }
@@ -2703,11 +2701,14 @@ function togglePlay() {
 
   if(!audioEl) {
     if(ttsGenerating) return; // already generating — wait
-    if(currentStory?.audio_url) {
+    const hasMotherVoice = !!(USER?.elevenlabs_voice_id);
+    if(!hasMotherVoice && currentStory?.audio_url) {
+      // ✅ No mother voice: serve admin pre-generated audio directly — no ElevenLabs call
       setupAudio(currentStory.audio_url);
       setTimeout(togglePlay, 100);
     } else if(currentStory) {
-      // Always try TTS — uses own voice or default narrator
+      // ✅ Mother has voice (or no audio_url): generateTTS handles cache check + API call
+      //    ElevenLabs is only called if session cache + DB cache both miss
       generateTTS(currentStory);
     } else {
       toast('కథ ఎంచుకోండి');
