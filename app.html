@@ -1871,7 +1871,7 @@ function updateHome() {
 // ── STORIES ──
 // ── DEFAULT FEMALE NARRATOR VOICES ──────────────────────────
 // Best ElevenLabs voices for Indian language storytelling.
-// All use eleven_multilingual_v2 model which natively renders Devanagari,
+// All use eleven_v3 model which natively renders Devanagari,
 // Telugu, Tamil, Kannada, Malayalam scripts.
 //
 // ══ RECOMMENDED VOICE IDs BY LANGUAGE (from ElevenLabs Voice Library) ══
@@ -2246,7 +2246,7 @@ function transliterateTelugu(text) {
 }
 
 // ── TEXT PREPARATION FOR ELEVENLABS TTS ─────────────────────
-// eleven_multilingual_v2 reads Telugu Unicode natively and well.
+// eleven_v3 reads Telugu Unicode natively and well.
 // The key is to HELP the model with natural pause markers and
 // clean punctuation so it breathes correctly between sentences.
 //
@@ -2546,58 +2546,64 @@ async function generateTTS(story) {
       headers: { 'xi-api-key': elKey, 'Content-Type':'application/json', 'Accept':'audio/mpeg' },
       body: JSON.stringify((() => {
         // ── MODEL SELECTION PER LANGUAGE ──
-        // eleven_multilingual_v2  = best for te/ta/kn/ml/mr native script rendering
-        // eleven_turbo_v2_5       = supports language_code param for hi/en only
+        // eleven_v3               = best for ALL Indian languages — Telugu, Kannada,
+        //                           Malayalam, Tamil, Hindi, Marathi are first-class
+        //                           citizens with native script training. Supports
+        //                           inline emotion tags [whispers] [excited] etc.
+        //                           Audiobook-optimised; ideal for bedtime stories.
+        // eleven_turbo_v2_5       = fallback for English only (lower latency)
         //
-        // For te/kn/ml: use multilingual_v2 with native script + high similarity
-        // Do NOT send language_code to multilingual_v2 — causes 400 error
+        // Do NOT send language_code to eleven_v3 — it auto-detects from Unicode script.
         const voiceLang = typeof VOICE_LANG !== 'undefined' ? VOICE_LANG : LANG;
-        const useHindi  = voiceLang === 'hi';
         const useEnglish = voiceLang === 'en';
-        const useTurbo  = useHindi || useEnglish;
+        const useTurbo   = useEnglish;   // only English uses turbo; all Indian → v3
 
         // For Dravidian languages (te/kn/ml/ta): boost similarity + lower stability
-        // for better phoneme rendering of retroflex consonants (ట,డ,ణ / ಟ,ಡ,ಣ / ട,ഡ,ണ)
+        // eleven_v3 has native training for retroflex consonants and chillu letters
+        // so we can afford slightly higher stability vs multilingual_v2 workarounds
         const isDravidian = ['te','kn','ml','ta'].includes(voiceLang);
         const isClonedVoice = !!(USER?.elevenlabs_voice_id);
 
-        // ── PER-LANGUAGE VOICE SETTINGS ─────────────────────────────
-        // Each Dravidian language needs slightly different tuning:
+        // ── PER-LANGUAGE VOICE SETTINGS for eleven_v3 ───────────────
+        // v3 has dedicated Indian language training, so similarity can be
+        // slightly higher than multilingual_v2 without English phoneme bleed.
         //
         // TELUGU (te):
-        //   stability 0.52 — syllable stress varies a lot in Telugu storytelling
-        //   similarity 0.72 — low enough to let retroflex ట డ ళ ణ ఱ breathe
+        //   stability 0.55 — v3 handles syllable stress natively; slight boost
+        //   similarity 0.75 — retroflex ట డ ళ ణ ఱ are trained; safe to raise
         //
         // KANNADA (kn):
-        //   stability 0.50 — Kannada has more tonal variation than Telugu
-        //   similarity 0.70 — Kannada retroflexes ಟ ಡ ಣ ಳ need even more room
-        //   Kannada vowel length (short/long) is phonemic — lower sim helps
+        //   stability 0.52 — vowel length phonemic contrast handled by v3
+        //   similarity 0.73 — retroflexes ಟ ಡ ಣ ಳ well-covered in v3 training
         //
         // MALAYALAM (ml):
-        //   stability 0.48 — Malayalam has the most prosodic variation of the 3
-        //   similarity 0.68 — Chillu letters (ൻ ൽ ൾ ൺ ർ) are unique to Malayalam
-        //   and completely absent from any English voice model training data.
-        //   Very low similarity lets the multilingual model's Malayalam knowledge
-        //   handle them instead of the cloned voice's English phoneme bias.
+        //   stability 0.50 — richest prosody of the three; keep some room
+        //   similarity 0.72 — chillu letters ൻ ൽ ൾ ൺ ർ are v3 first-class
         //
         // TAMIL (ta):
-        //   stability 0.54 — similar to Kannada
-        //   similarity 0.73
+        //   stability 0.56 — Tamil was in multilingual_v2 too; v3 improves it
+        //   similarity 0.75
+        //
+        // HINDI / MARATHI (hi/mr):
+        //   Devanagari was already strong; v3 further improves prosody
+        //
+        // ENGLISH (en):
+        //   Uses turbo model — settings unchanged
 
         const langVoiceSettings = {
-          te: { stability: 0.52, similarity_boost: 0.72 },
-          kn: { stability: 0.50, similarity_boost: 0.70 },
-          ml: { stability: 0.48, similarity_boost: 0.68 },
-          ta: { stability: 0.54, similarity_boost: 0.73 },
-          hi: { stability: 0.72, similarity_boost: 0.88 },
-          mr: { stability: 0.70, similarity_boost: 0.86 },
+          te: { stability: 0.55, similarity_boost: 0.75 },
+          kn: { stability: 0.52, similarity_boost: 0.73 },
+          ml: { stability: 0.50, similarity_boost: 0.72 },
+          ta: { stability: 0.56, similarity_boost: 0.75 },
+          hi: { stability: 0.74, similarity_boost: 0.88 },
+          mr: { stability: 0.72, similarity_boost: 0.87 },
           en: { stability: 0.75, similarity_boost: 0.88 },
         };
         const vs = langVoiceSettings[voiceLang] || langVoiceSettings.en;
 
         const body = {
           text,
-          model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
+          model_id: useTurbo ? 'eleven_turbo_v2_5' : 'eleven_v3',
           output_format: 'mp3_44100_128',
           voice_settings: isClonedVoice ? {
             stability:         vs.stability,
@@ -2606,17 +2612,17 @@ async function generateTTS(story) {
             use_speaker_boost: true,
             speed:             0.82          // gentle bedtime pace for all languages
           } : {
-            // No cloned voice — default narrator, can be slightly more expressive
+            // No cloned voice — default narrator, slightly more expressive
             stability:         vs.stability + 0.05,
-            similarity_boost:  vs.similarity_boost + 0.10,
-            style:             isDravidian ? 0.05 : 0.15,
+            similarity_boost:  vs.similarity_boost + 0.08,
+            style:             isDravidian ? 0.08 : 0.15,
             use_speaker_boost: true,
             speed:             0.85
           }
         };
-        // Only add language_code for turbo model with supported languages
+        // Only add language_code for turbo/English — eleven_v3 auto-detects script
         if(useTurbo) {
-          body.language_code = useHindi ? 'hi' : 'en';
+          body.language_code = 'en';
         }
         return body;
       })())

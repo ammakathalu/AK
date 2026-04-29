@@ -770,6 +770,52 @@ select.form-inp{cursor:pointer;}
   </div>
 </div>
 
+<!-- View User PIN Modal -->
+<div class="modal-overlay" id="viewPinModal">
+  <div class="modal" style="max-width:400px;text-align:center;">
+    <div class="modal-title" style="justify-content:center;border-bottom:2px solid var(--border);padding-bottom:16px;margin-bottom:0;">
+      🔐 User Login PIN
+    </div>
+    <div style="padding:20px 0 8px;">
+      <div id="viewPinUserInfo" style="font-size:14px;font-weight:700;color:var(--text);margin-bottom:4px;"></div>
+      <div id="viewPinPhone" style="font-size:12px;color:var(--muted);margin-bottom:18px;font-family:monospace;"></div>
+
+      <!-- Loading state -->
+      <div id="viewPinLoading" style="padding:20px 0;">
+        <div style="font-size:28px;margin-bottom:8px;">⏳</div>
+        <div style="font-size:13px;color:var(--muted);">Fetching PIN...</div>
+      </div>
+
+      <!-- PIN display (shown after fetch) -->
+      <div id="viewPinDisplay" style="display:none;">
+        <div class="pin-display">
+          <div style="font-size:11px;font-weight:700;color:var(--purple);letter-spacing:.08em;text-transform:uppercase;margin-bottom:8px;">Current Login PIN</div>
+          <div class="pin-number" id="viewPinNumber" style="letter-spacing:8px;">——</div>
+          <div style="font-size:11px;color:var(--muted);margin-bottom:12px;">User enters this 6-digit PIN to login</div>
+          <button class="pin-copy-btn" onclick="copyViewedPIN()">📋 Copy PIN</button>
+        </div>
+        <div style="background:var(--surface2);border-radius:10px;padding:10px 14px;margin-top:12px;font-size:11px;color:var(--muted);text-align:left;line-height:1.6;">
+          ⚠️ Keep this confidential. Only share with the user directly.<br>
+          To change the PIN use <strong>Edit &rarr; Reset PIN</strong>.
+        </div>
+      </div>
+
+      <!-- Error state -->
+      <div id="viewPinError" style="display:none;padding:16px 0;">
+        <div style="font-size:28px;margin-bottom:8px;">❌</div>
+        <div id="viewPinErrorMsg" style="font-size:13px;color:var(--red);"></div>
+        <div style="font-size:11px;color:var(--muted);margin-top:8px;">
+          Make sure the <code style="background:var(--surface2);padding:2px 5px;border-radius:4px;">admin_get_user_pin</code> RPC exists in Supabase.
+        </div>
+      </div>
+    </div>
+    <div style="display:flex;gap:10px;margin-top:16px;">
+      <button class="btn btn-primary" style="flex:1;" onclick="closeModal('viewPinModal')">Done</button>
+      <button class="btn btn-ghost" style="flex:1;" onclick="closeModal('viewPinModal');editUser(window._viewPinUserId);">Edit User</button>
+    </div>
+  </div>
+</div>
+
 <div class="toast" id="toastEl"></div>
 
 <script>
@@ -956,6 +1002,7 @@ function renderUsersTable(users) {
         <button class="btn btn-ghost btn-sm" onclick="editUser('${u.id}')">Edit</button>
         <button class="btn btn-success btn-sm" onclick="grantPremium('${u.id}')">✓ Premium</button>
         <button class="btn btn-danger btn-sm" onclick="quickResetPin('${u.id}','${u.mother_name||''}')">🔑</button>
+        <button class="btn btn-ghost btn-sm" onclick="viewUserPin('${u.id}','${u.mother_name||''}','${u.phone||''}')" title="View current PIN" style="background:var(--purple-l);color:var(--purple);">👁 PIN</button>
       </div></td>
     </tr>`;
   }).join('') : '<tr><td colspan="7" class="empty-state">No users found</td></tr>';
@@ -1154,6 +1201,57 @@ async function resetUserPin(userId) {
     document.getElementById('eu-new-pin').value = '';
     toast('✓ PIN reset successfully','success');
   } catch(e) { console.error('resetPin error:', e); toast('Error: '+e.message,'error'); }
+}
+
+// ── VIEW USER PIN ──
+// Shows the current PIN for a user by calling admin_get_user_pin RPC.
+// Requires the PIN to be stored in plaintext (pin_plain column) alongside
+// the hash. Run this SQL migration if not already done:
+//
+//   ALTER TABLE users ADD COLUMN IF NOT EXISTS pin_plain TEXT;
+//
+//   CREATE OR REPLACE FUNCTION admin_get_user_pin(p_user_id UUID)
+//   RETURNS TEXT LANGUAGE plpgsql SECURITY DEFINER AS $$
+//   BEGIN
+//     RETURN (SELECT pin_plain FROM users WHERE id = p_user_id);
+//   END;
+//   $$;
+//
+//   -- Also update create_user_with_pin to save pin_plain:
+//   -- Inside the function, after hashing, add:
+//   --   UPDATE users SET pin_plain = p_pin WHERE id = new_user_id;
+//
+async function viewUserPin(userId, name, phone) {
+  window._viewPinUserId = userId;
+
+  // Show modal in loading state
+  document.getElementById('viewPinUserInfo').textContent = name || 'User';
+  document.getElementById('viewPinPhone').textContent = phone || '';
+  document.getElementById('viewPinLoading').style.display = 'block';
+  document.getElementById('viewPinDisplay').style.display  = 'none';
+  document.getElementById('viewPinError').style.display   = 'none';
+  document.getElementById('viewPinNumber').textContent = '——';
+  document.getElementById('viewPinModal').classList.add('open');
+
+  try {
+    const { data, error } = await sb.rpc('admin_get_user_pin', { p_user_id: userId });
+    if(error) throw error;
+    if(!data) throw new Error('PIN not found — pin_plain column may be empty for older users.');
+
+    document.getElementById('viewPinNumber').textContent = data;
+    document.getElementById('viewPinLoading').style.display = 'none';
+    document.getElementById('viewPinDisplay').style.display  = 'block';
+  } catch(e) {
+    document.getElementById('viewPinLoading').style.display = 'none';
+    document.getElementById('viewPinErrorMsg').textContent  = e.message;
+    document.getElementById('viewPinError').style.display   = 'block';
+  }
+}
+
+function copyViewedPIN() {
+  const pin = document.getElementById('viewPinNumber').textContent.trim();
+  if(!pin || pin === '——') return;
+  navigator.clipboard.writeText(pin).then(() => toast('PIN copied!', 'success'));
 }
 
 // Quick PIN reset from user table row (no modal)
@@ -1747,11 +1845,24 @@ async function generateAndSaveAudio(story, elKey) {
 
     const text = ((story.story_text || '') + ' ' + (story.moral_text || '')).trim().substring(0, 2500);
 
-    // ── DRAVIDIAN-AWARE VOICE SETTINGS ──
-    // eleven_multilingual_v2 natively reads Telugu/Kannada/Malayalam Unicode script
-    // Lower stability for Dravidian = better retroflex consonant rendering
+    // ── DRAVIDIAN-AWARE VOICE SETTINGS for eleven_v3 ──
+    // eleven_v3 has first-class training for Telugu/Kannada/Malayalam/Tamil Unicode.
+    // Retroflex consonants and chillu letters are natively handled — no workarounds needed.
+    // English uses turbo for speed; all Indian languages use v3 for quality.
     const isDravidian = ['te','kn','ml','ta'].includes(story.lang_code);
-    const useHindi    = ['hi','mr'].includes(story.lang_code);
+    const useEnglish  = story.lang_code === 'en';
+
+    // Per-language settings tuned for eleven_v3
+    const langVoiceSettings = {
+      te: { stability: 0.55, similarity_boost: 0.75, style: 0.08 },
+      kn: { stability: 0.52, similarity_boost: 0.73, style: 0.08 },
+      ml: { stability: 0.50, similarity_boost: 0.72, style: 0.08 },
+      ta: { stability: 0.56, similarity_boost: 0.75, style: 0.10 },
+      hi: { stability: 0.74, similarity_boost: 0.88, style: 0.18 },
+      mr: { stability: 0.72, similarity_boost: 0.87, style: 0.16 },
+      en: { stability: 0.75, similarity_boost: 0.88, style: 0.20 },
+    };
+    const vs = langVoiceSettings[story.lang_code] || langVoiceSettings.en;
 
     // Call ElevenLabs TTS — send native Unicode script (NO transliteration)
     const res = await fetch(`https://api.elevenlabs.io/v1/text-to-speech/${voiceId}`, {
@@ -1763,14 +1874,14 @@ async function generateAndSaveAudio(story, elKey) {
       },
       body: JSON.stringify({
         text,
-        model_id: useHindi ? 'eleven_turbo_v2_5' : 'eleven_multilingual_v2',
-        ...(useHindi ? { language_code: story.lang_code === 'hi' ? 'hi' : 'hi' } : {}),
+        model_id: useEnglish ? 'eleven_turbo_v2_5' : 'eleven_v3',
+        ...(useEnglish ? { language_code: 'en' } : {}),
         voice_settings: {
-          stability:        isDravidian ? 0.62 : 0.68,
-          similarity_boost: isDravidian ? 0.88 : 0.85,
-          style:            isDravidian ? 0.10 : 0.20,
+          stability:         vs.stability,
+          similarity_boost:  vs.similarity_boost,
+          style:             vs.style,
           use_speaker_boost: true,
-          speed:            0.88  // natural storytelling pace
+          speed:             0.88  // natural storytelling pace
         }
       })
     });
@@ -1839,7 +1950,7 @@ const CONFIG_KEYS = [
   { key:'app_name',              label:'App Name',                 desc:'Display name of the app',                                    secret:false },
   { key:'maintenance_mode',      label:'Maintenance Mode',         desc:'Set to true to show maintenance page',                       secret:false },
   // ── DEFAULT NARRATOR VOICE IDs ──
-  // eleven_multilingual_v2 model natively reads all Indian scripts — no transliteration needed.
+  // eleven_v3 model natively reads all Indian scripts — no transliteration needed.
   // For Dravidian (te/kn/ml): use Priya (jsCqWAovK2LkecY7zXl4) — warm Indian female, best for retroflex sounds.
   // For Hindi/Marathi: use Aria (cgSgspJ2msm6clMCkdW9) — expressive Devanagari narration.
   // Browse more: elevenlabs.io/voice-library → Female, Narration, Indian
