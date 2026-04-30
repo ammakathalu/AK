@@ -952,14 +952,26 @@ async function loadDashboard() {
   } catch(e) { console.error('Online users error:', e); document.getElementById('st-online').textContent = '—'; }
 
   // ── Users with cloned (custom) voice ──
+  // Fetches all elevenlabs_voice_id values and counts client-side to handle
+  // NULL, empty string, whitespace-only, or literal "null" stored as text.
   try {
-    const { count, error } = await sb
+    const { data: voiceRows, error } = await sb
       .from('users')
-      .select('id', { count: 'exact', head: true })
-      .not('elevenlabs_voice_id', 'is', null)
-      .neq('elevenlabs_voice_id', '');
+      .select('elevenlabs_voice_id');
     if(error) throw error;
-    document.getElementById('st-cloned').textContent = (count ?? 0).toLocaleString();
+
+    // Log a sample so you can inspect exactly what is stored
+    const sample = (voiceRows || []).slice(0, 20).map(r => r.elevenlabs_voice_id);
+    console.log('[Cloned Voice] Sample elevenlabs_voice_id values:', sample);
+    console.log('[Cloned Voice] Total rows fetched:', (voiceRows || []).length);
+
+    const clonedCount = (voiceRows || []).filter(r => {
+      const v = r.elevenlabs_voice_id;
+      return v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'null';
+    }).length;
+
+    console.log('[Cloned Voice] Count after filtering:', clonedCount);
+    document.getElementById('st-cloned').textContent = clonedCount.toLocaleString();
     clonedOk = true;
   } catch(e) { console.error('Cloned voice error:', e); document.getElementById('st-cloned').textContent = '—'; }
 
