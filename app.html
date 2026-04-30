@@ -2031,7 +2031,7 @@ function renderStories(query) {
 
 // ── LOAD & RENDER USER (AI-GENERATED) STORIES ──
 async function loadUserStories() {
-  // ── STEP 1: Show localStorage stories instantly (no waiting) ──
+  // STEP 1: Show localStorage stories immediately — no network wait
   try {
     const cached = JSON.parse(localStorage.getItem('ak_user_stories') || '[]');
     if(cached.length > 0) {
@@ -2040,9 +2040,9 @@ async function loadUserStories() {
     }
   } catch(_) {}
 
-  // ── STEP 2: Load from DB across ALL languages and merge ──
+  // STEP 2: Fetch from DB — try each language individually (most reliable)
   const mapRow = s => ({
-    id: s.id || ('usr-' + Date.now() + '-' + Math.floor(Math.random()*9999)),
+    id: s.id || ('usr-' + Date.now() + '-' + Math.floor(Math.random()*99999)),
     emoji: s.emoji || '✨',
     title: s.title || 'కథ',
     category: 'custom',
@@ -2054,53 +2054,40 @@ async function loadUserStories() {
     created_at: s.created_at || new Date().toISOString()
   });
 
-  const ALL_LANGS = ['te','ta','hi','kn','ml','mr','en'];
   let dbStories = [];
-
-  // Try fetching all languages at once (null lang) first
-  try {
-    const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: null });
-    if(!error && data && data.length > 0) {
-      dbStories = data.map(mapRow);
-    }
-  } catch(_) {}
-
-  // If null-lang fetch got nothing, fetch each language individually
-  if(dbStories.length === 0) {
-    for(const lang of ALL_LANGS) {
-      try {
-        const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: lang });
-        if(!error && data && data.length > 0) {
-          dbStories.push(...data.map(mapRow));
-        }
-      } catch(_) {}
-    }
+  const ALL_LANGS = ['te','ta','hi','kn','ml','mr','en'];
+  for(const lang of ALL_LANGS) {
+    try {
+      const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: lang });
+      if(!error && data && data.length > 0) {
+        dbStories.push(...data.map(mapRow));
+      }
+    } catch(_) {}
   }
 
-  // ── STEP 3: Merge DB results with localStorage (no duplicates) ──
+  // STEP 3: Merge — DB wins for duplicates, keep localStorage-only entries too
   if(dbStories.length > 0) {
-    const dbIds = new Set(dbStories.map(s => s.id));
-    // Keep any localStorage-only entries (e.g. saved offline, not yet in DB)
-    const localOnly = USER_STORIES.filter(s => !dbIds.has(s.id));
+    const seenIds  = new Set(dbStories.map(s => s.id));
+    const localOnly = USER_STORIES.filter(s => !seenIds.has(s.id));
     USER_STORIES = [...dbStories, ...localOnly];
   }
 
-  // Also deduplicate by title (keep newest)
-  const seen = new Set();
+  // Deduplicate by title (keep first = newest from DB)
+  const seenTitles = new Set();
   USER_STORIES = USER_STORIES.filter(s => {
-    const key = (s.title||'').trim().toLowerCase();
-    if(seen.has(key)) return false;
-    seen.add(key);
+    const k = (s.title||'').trim().toLowerCase();
+    if(seenTitles.has(k)) return false;
+    seenTitles.add(k);
     return true;
   });
 
   // Sort newest first
   USER_STORIES.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
 
-  // Persist merged list to localStorage
+  // Persist full merged list
   try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES.slice(0,100))); } catch(_) {}
 
-  // Re-render with complete merged list
+  // Always re-render after DB load
   renderUserStories();
 }
 
@@ -3324,15 +3311,20 @@ function playGenerated() {
     is_premium: false,
     audio_url: null,
     story_text: (generatedStory.story || '') + (generatedStory.moral ? '\n\n' + generatedStory.moral : ''),
-    category: 'custom'
+    category: 'custom',
+    created_at: new Date().toISOString()
   };
-  // Add to USER_STORIES so openPlayer can find it
+  // Add to USER_STORIES (deduplicate by title first)
+  USER_STORIES = USER_STORIES.filter(s => (s.title||'') !== (fake.title||''));
   USER_STORIES.unshift(fake);
+  // Persist so it survives page reload
+  try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES.slice(0,100))); } catch(_) {}
   openPlayer(fakeId);
 }
 
 async function saveGenerated() {
   if(!generatedStory) return;
+  // Save to DB
   try {
     await sb.rpc('save_user_story', {
       p_user_id:    USER.id,
@@ -3344,8 +3336,10 @@ async function saveGenerated() {
       p_setting:    '',
       p_moral_val:  ''
     });
-    toast('💾 Story saved to your library!');
-  } catch(e) { toast('Save failed: ' + e.message); }
+  } catch(e) { console.warn('saveGenerated DB:', e.message); }
+  // Always save to USER_STORIES + localStorage so it shows on Home immediately
+  await saveUserStory(generatedStory);
+  toast('💾 కథ Home లో సేవ్ అయింది!');
 }
 
 // ── SUBSCRIBE / QR ──
