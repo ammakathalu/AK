@@ -2031,10 +2031,20 @@ function renderStories(query) {
 
 // ── LOAD & RENDER USER (AI-GENERATED) STORIES ──
 async function loadUserStories() {
+  // Step 1: Load from localStorage immediately so stories show instantly
   try {
-    const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: LANG });
+    const cached = JSON.parse(localStorage.getItem('ak_user_stories') || '[]');
+    if(cached.length) {
+      USER_STORIES = cached;
+      renderUserStories(); // show cached stories right away
+    }
+  } catch(_){}
+
+  // Step 2: Load ALL languages from DB (not just current LANG)
+  try {
+    const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: null });
     if(!error && data && data.length > 0) {
-      USER_STORIES = data.map(s => ({
+      const dbStories = data.map(s => ({
         id: s.id || ('usr-' + Date.now() + Math.random()),
         emoji: s.emoji || '✨',
         title: s.title || 'కథ',
@@ -2046,15 +2056,18 @@ async function loadUserStories() {
         story_text: (s.story_text || '') + (s.moral_text ? '\n\n' + s.moral_text : ''),
         created_at: s.created_at || null
       }));
-      // Persist to localStorage for offline use
-      try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES)); } catch(_){}
+      // Merge: DB is source of truth; supplement with any localStorage-only entries
+      const dbIds = new Set(dbStories.map(s => s.id));
+      const localOnly = USER_STORIES.filter(s => !dbIds.has(s.id));
+      USER_STORIES = [...dbStories, ...localOnly];
+      // Sort newest first
+      USER_STORIES.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+      // Persist merged list
+      try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES.slice(0,100))); } catch(_){}
     }
   } catch(e) {
-    try {
-      const cached = JSON.parse(localStorage.getItem('ak_user_stories') || '[]');
-      if(cached.length) USER_STORIES = cached;
-    } catch(_){}
-    console.warn('loadUserStories:', e.message);
+    console.warn('loadUserStories DB failed, using cache:', e.message);
+    // Already loaded from localStorage in Step 1 — nothing more to do
   }
 }
 
