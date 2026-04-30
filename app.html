@@ -2031,44 +2031,77 @@ function renderStories(query) {
 
 // ── LOAD & RENDER USER (AI-GENERATED) STORIES ──
 async function loadUserStories() {
-  // Step 1: Load from localStorage immediately so stories show instantly
+  // ── STEP 1: Show localStorage stories instantly (no waiting) ──
   try {
     const cached = JSON.parse(localStorage.getItem('ak_user_stories') || '[]');
-    if(cached.length) {
+    if(cached.length > 0) {
       USER_STORIES = cached;
-      renderUserStories(); // show cached stories right away
+      renderUserStories();
     }
-  } catch(_){}
+  } catch(_) {}
 
-  // Step 2: Load ALL languages from DB (not just current LANG)
+  // ── STEP 2: Load from DB across ALL languages and merge ──
+  const mapRow = s => ({
+    id: s.id || ('usr-' + Date.now() + '-' + Math.floor(Math.random()*9999)),
+    emoji: s.emoji || '✨',
+    title: s.title || 'కథ',
+    category: 'custom',
+    duration_secs: s.duration_secs || null,
+    tags: s.tags || [],
+    is_premium: false,
+    audio_url: s.audio_url || null,
+    story_text: (s.story_text || '') + (s.moral_text ? '\n\n' + s.moral_text : ''),
+    created_at: s.created_at || new Date().toISOString()
+  });
+
+  const ALL_LANGS = ['te','ta','hi','kn','ml','mr','en'];
+  let dbStories = [];
+
+  // Try fetching all languages at once (null lang) first
   try {
     const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: null });
     if(!error && data && data.length > 0) {
-      const dbStories = data.map(s => ({
-        id: s.id || ('usr-' + Date.now() + Math.random()),
-        emoji: s.emoji || '✨',
-        title: s.title || 'కథ',
-        category: 'custom',
-        duration_secs: s.duration_secs || null,
-        tags: s.tags || [],
-        is_premium: false,
-        audio_url: s.audio_url || null,
-        story_text: (s.story_text || '') + (s.moral_text ? '\n\n' + s.moral_text : ''),
-        created_at: s.created_at || null
-      }));
-      // Merge: DB is source of truth; supplement with any localStorage-only entries
-      const dbIds = new Set(dbStories.map(s => s.id));
-      const localOnly = USER_STORIES.filter(s => !dbIds.has(s.id));
-      USER_STORIES = [...dbStories, ...localOnly];
-      // Sort newest first
-      USER_STORIES.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
-      // Persist merged list
-      try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES.slice(0,100))); } catch(_){}
+      dbStories = data.map(mapRow);
     }
-  } catch(e) {
-    console.warn('loadUserStories DB failed, using cache:', e.message);
-    // Already loaded from localStorage in Step 1 — nothing more to do
+  } catch(_) {}
+
+  // If null-lang fetch got nothing, fetch each language individually
+  if(dbStories.length === 0) {
+    for(const lang of ALL_LANGS) {
+      try {
+        const { data, error } = await sb.rpc('get_user_stories', { p_user_id: USER.id, p_lang: lang });
+        if(!error && data && data.length > 0) {
+          dbStories.push(...data.map(mapRow));
+        }
+      } catch(_) {}
+    }
   }
+
+  // ── STEP 3: Merge DB results with localStorage (no duplicates) ──
+  if(dbStories.length > 0) {
+    const dbIds = new Set(dbStories.map(s => s.id));
+    // Keep any localStorage-only entries (e.g. saved offline, not yet in DB)
+    const localOnly = USER_STORIES.filter(s => !dbIds.has(s.id));
+    USER_STORIES = [...dbStories, ...localOnly];
+  }
+
+  // Also deduplicate by title (keep newest)
+  const seen = new Set();
+  USER_STORIES = USER_STORIES.filter(s => {
+    const key = (s.title||'').trim().toLowerCase();
+    if(seen.has(key)) return false;
+    seen.add(key);
+    return true;
+  });
+
+  // Sort newest first
+  USER_STORIES.sort((a,b) => new Date(b.created_at||0) - new Date(a.created_at||0));
+
+  // Persist merged list to localStorage
+  try { localStorage.setItem('ak_user_stories', JSON.stringify(USER_STORIES.slice(0,100))); } catch(_) {}
+
+  // Re-render with complete merged list
+  renderUserStories();
 }
 
 function renderUserStories(query) {
