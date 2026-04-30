@@ -870,7 +870,14 @@ async function checkAuth() {
   // LIVE MODE: check Supabase Auth session
   try {
     const { data: { session } } = await sb.auth.getSession();
-    if(!session) { window.location.href = 'admin-login.html'; return; }
+    if(!session) {
+      // No session — clear any stale localStorage keys and redirect
+      Object.keys(localStorage).forEach(k => {
+        if(k.startsWith('sb-') || k.includes('supabase')) localStorage.removeItem(k);
+      });
+      window.location.href = 'admin-login.html';
+      return;
+    }
 
     // Double-check via RPC (bypasses RLS — direct table SELECT would return null)
     const { data: adminRow } = await sb.rpc('get_admin_by_email', {
@@ -879,6 +886,9 @@ async function checkAuth() {
 
     if(!adminRow) {
       await sb.auth.signOut();
+      Object.keys(localStorage).forEach(k => {
+        if(k.startsWith('sb-') || k.includes('supabase')) localStorage.removeItem(k);
+      });
       window.location.href = 'admin-login.html';
       return;
     }
@@ -952,25 +962,16 @@ async function loadDashboard() {
   } catch(e) { console.error('Online users error:', e); document.getElementById('st-online').textContent = '—'; }
 
   // ── Users with cloned (custom) voice ──
-  // Fetches all elevenlabs_voice_id values and counts client-side to handle
-  // NULL, empty string, whitespace-only, or literal "null" stored as text.
+  // Uses admin_get_users RPC (SECURITY DEFINER — bypasses RLS) to count
+  // users where elevenlabs_voice_id is set. Direct table queries return 0
+  // because the anon key is blocked by RLS.
   try {
-    const { data: voiceRows, error } = await sb
-      .from('users')
-      .select('elevenlabs_voice_id');
+    const { data: allUsers, error } = await sb.rpc('admin_get_users', { p_limit: 5000, p_offset: 0 });
     if(error) throw error;
-
-    // Log a sample so you can inspect exactly what is stored
-    const sample = (voiceRows || []).slice(0, 20).map(r => r.elevenlabs_voice_id);
-    console.log('[Cloned Voice] Sample elevenlabs_voice_id values:', sample);
-    console.log('[Cloned Voice] Total rows fetched:', (voiceRows || []).length);
-
-    const clonedCount = (voiceRows || []).filter(r => {
-      const v = r.elevenlabs_voice_id;
+    const clonedCount = (allUsers || []).filter(u => {
+      const v = u.elevenlabs_voice_id;
       return v !== null && v !== undefined && String(v).trim() !== '' && String(v).trim().toLowerCase() !== 'null';
     }).length;
-
-    console.log('[Cloned Voice] Count after filtering:', clonedCount);
     document.getElementById('st-cloned').textContent = clonedCount.toLocaleString();
     clonedOk = true;
   } catch(e) { console.error('Cloned voice error:', e); document.getElementById('st-cloned').textContent = '—'; }
@@ -2125,9 +2126,16 @@ function dismissStatsBanner() {
   sessionStorage.setItem('ak_stats_banner_dismissed', '1');
 }
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
-function logout() {
+async function logout() {
   sessionStorage.removeItem('ak_admin');
-  if(!IS_DEMO) sb.auth.signOut();
+  sessionStorage.removeItem('ak_stats_banner_dismissed');
+  if(!IS_DEMO) {
+    try { await sb.auth.signOut(); } catch(e) { console.warn('signOut error', e); }
+  }
+  // Clear any cached Supabase session from localStorage
+  Object.keys(localStorage).forEach(k => {
+    if(k.startsWith('sb-') || k.includes('supabase')) localStorage.removeItem(k);
+  });
   window.location.href = 'admin-login.html';
 }
 
