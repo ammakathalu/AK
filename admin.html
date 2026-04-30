@@ -1236,7 +1236,18 @@ async function viewUserPin(userId, name, phone) {
   try {
     const { data, error } = await sb.rpc('admin_get_user_pin', { p_user_id: userId });
     if(error) throw error;
-    if(!data) throw new Error('PIN not found — pin_plain column may be empty for older users.');
+    if(!data) {
+      // Older user — pin_plain was never saved. Show inline reset prompt.
+      document.getElementById('viewPinLoading').style.display = 'none';
+      document.getElementById('viewPinErrorMsg').innerHTML =
+        `PIN not stored for this user (created before pin_plain was added).<br>
+         <button class="btn btn-success btn-sm" style="margin-top:10px;"
+           onclick="closeModal('viewPinModal');editUser(window._viewPinUserId);">
+           🔑 Reset PIN for this user
+         </button>`;
+      document.getElementById('viewPinError').style.display = 'block';
+      return;
+    }
 
     document.getElementById('viewPinNumber').textContent = data;
     document.getElementById('viewPinLoading').style.display = 'none';
