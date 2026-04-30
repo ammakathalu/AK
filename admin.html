@@ -177,6 +177,7 @@ tr:hover td{background:var(--orange-l);}
   animation:modalIn .22s ease;box-shadow:var(--shadow-lg);
 }
 @keyframes modalIn{from{opacity:0;transform:scale(.95)translateY(12px)}to{opacity:1;transform:none}}
+@keyframes pulse-dot{0%,100%{opacity:1;transform:scale(1);}50%{opacity:.5;transform:scale(1.4);}}
 .modal-title{
   font-size:17px;font-weight:800;margin-bottom:20px;color:var(--text);
   display:flex;justify-content:space-between;align-items:center;
@@ -333,6 +334,32 @@ select.form-inp{cursor:pointer;}
         <div class="stat-card red"><div class="stat-label">Pending</div><div class="stat-val" id="st-pending">—</div><div class="stat-sub">Awaiting verification</div></div>
         <div class="stat-card"><div class="stat-label">New (7 days)</div><div class="stat-val" id="st-new">—</div><div class="stat-sub">Recent signups</div></div>
         <div class="stat-card"><div class="stat-label">Plays Today</div><div class="stat-val" id="st-plays">—</div><div class="stat-sub">Story plays</div></div>
+        <!-- ── NEW: Online Users ── -->
+        <div class="stat-card" style="border-color:rgba(76,175,125,.4);background:linear-gradient(135deg,#f0faf5,#fffdf8);">
+          <div class="stat-label" style="display:flex;align-items:center;gap:5px;">
+            <span style="width:7px;height:7px;border-radius:50%;background:#4caf7d;box-shadow:0 0 6px #4caf7d;display:inline-block;animation:pulse-dot 1.6s ease-in-out infinite;"></span>
+            Users Online
+          </div>
+          <div class="stat-val" id="st-online" style="color:#2e7d52;">—</div>
+          <div class="stat-sub">Active last 5 min</div>
+        </div>
+        <!-- ── NEW: Cloned Voices ── -->
+        <div class="stat-card" style="border-color:rgba(124,107,170,.4);background:linear-gradient(135deg,#f5f2fc,#fffdf8);">
+          <div class="stat-label">🎙 Cloned Voices</div>
+          <div class="stat-val" id="st-cloned" style="color:#7c6baa;">—</div>
+          <div class="stat-sub">Users with custom voice</div>
+        </div>
+      </div>
+
+      </div>
+
+      <!-- ── SQL setup note for new stats ── -->
+      <div id="new-stats-note" style="background:var(--gold-l);border:2px solid rgba(212,168,67,.35);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:11px;color:var(--orange-d);line-height:1.7;">
+        <strong>📋 New dashboard stats require two columns in your <code>users</code> table:</strong><br>
+        <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;</code><br>
+        <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS voice_id TEXT;</code><br>
+        Update <code>last_seen_at</code> each time a user makes a request (e.g. app heartbeat). Set <code>voice_id</code> when a user clones their mother's voice via ElevenLabs.
+        <button onclick="document.getElementById('new-stats-note').style.display='none'" style="float:right;background:none;border:none;cursor:pointer;color:var(--orange-d);font-size:15px;">✕</button>
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -911,6 +938,26 @@ async function loadDashboard() {
     document.getElementById('st-new').textContent     = data.new_users_week                        || '0';
     document.getElementById('st-plays').textContent   = data.plays_today?.toLocaleString()        || '0';
   } catch(e) { console.error('Stats error:', e); }
+
+  // ── Online users (active in last 5 minutes via last_seen_at) ──
+  try {
+    const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
+    const { count, error } = await sb
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .gte('last_seen_at', fiveMinAgo);
+    document.getElementById('st-online').textContent = error ? '—' : (count ?? 0).toLocaleString();
+  } catch(e) { console.error('Online users error:', e); document.getElementById('st-online').textContent = '—'; }
+
+  // ── Users with cloned (custom) voice ──
+  try {
+    const { count, error } = await sb
+      .from('users')
+      .select('id', { count: 'exact', head: true })
+      .not('voice_id', 'is', null)
+      .neq('voice_id', '');
+    document.getElementById('st-cloned').textContent = error ? '—' : (count ?? 0).toLocaleString();
+  } catch(e) { console.error('Cloned voice error:', e); document.getElementById('st-cloned').textContent = '—'; }
 
   // Language stats via RPC
   try {
