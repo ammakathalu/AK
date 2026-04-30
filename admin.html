@@ -353,13 +353,13 @@ select.form-inp{cursor:pointer;}
 
       </div>
 
-      <!-- ── SQL setup note for new stats ── -->
-      <div id="new-stats-note" style="background:var(--gold-l);border:2px solid rgba(212,168,67,.35);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:11px;color:var(--orange-d);line-height:1.7;">
-        <strong>📋 New dashboard stats require two columns in your <code>users</code> table:</strong><br>
+      <!-- ── SQL setup note (hidden once columns exist or user dismisses) ── -->
+      <div id="new-stats-note" style="display:none;background:var(--gold-l);border:2px solid rgba(212,168,67,.35);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:11px;color:var(--orange-d);line-height:1.7;">
+        <button onclick="dismissStatsBanner()" style="float:right;background:none;border:none;cursor:pointer;color:var(--orange-d);font-size:15px;margin-left:8px;">✕</button>
+        <strong>📋 One-time setup — add these columns to your <code>users</code> table:</strong><br>
         <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;</code><br>
         <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS voice_id TEXT;</code><br>
-        Update <code>last_seen_at</code> each time a user makes a request (e.g. app heartbeat). Set <code>voice_id</code> when a user clones their mother's voice via ElevenLabs.
-        <button onclick="document.getElementById('new-stats-note').style.display='none'" style="float:right;background:none;border:none;cursor:pointer;color:var(--orange-d);font-size:15px;">✕</button>
+        This banner disappears automatically once the columns exist.
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -940,13 +940,16 @@ async function loadDashboard() {
   } catch(e) { console.error('Stats error:', e); }
 
   // ── Online users (active in last 5 minutes via last_seen_at) ──
+  let onlineOk = false, clonedOk = false;
   try {
     const fiveMinAgo = new Date(Date.now() - 5 * 60 * 1000).toISOString();
     const { count, error } = await sb
       .from('users')
       .select('id', { count: 'exact', head: true })
       .gte('last_seen_at', fiveMinAgo);
-    document.getElementById('st-online').textContent = error ? '—' : (count ?? 0).toLocaleString();
+    if(error) throw error;
+    document.getElementById('st-online').textContent = (count ?? 0).toLocaleString();
+    onlineOk = true;
   } catch(e) { console.error('Online users error:', e); document.getElementById('st-online').textContent = '—'; }
 
   // ── Users with cloned (custom) voice ──
@@ -956,8 +959,19 @@ async function loadDashboard() {
       .select('id', { count: 'exact', head: true })
       .not('voice_id', 'is', null)
       .neq('voice_id', '');
-    document.getElementById('st-cloned').textContent = error ? '—' : (count ?? 0).toLocaleString();
+    if(error) throw error;
+    document.getElementById('st-cloned').textContent = (count ?? 0).toLocaleString();
+    clonedOk = true;
   } catch(e) { console.error('Cloned voice error:', e); document.getElementById('st-cloned').textContent = '—'; }
+
+  // Show banner only if columns are missing AND user hasn't dismissed it this session
+  const note = document.getElementById('new-stats-note');
+  if(onlineOk && clonedOk) {
+    note.style.display = 'none';
+    sessionStorage.setItem('ak_stats_banner_dismissed', '1');
+  } else if(!sessionStorage.getItem('ak_stats_banner_dismissed')) {
+    note.style.display = 'block';
+  }
 
   // Language stats via RPC
   try {
@@ -2095,6 +2109,10 @@ async function saveConfig() {
 }
 
 // ── UTILS ──
+function dismissStatsBanner() {
+  document.getElementById('new-stats-note').style.display = 'none';
+  sessionStorage.setItem('ak_stats_banner_dismissed', '1');
+}
 function closeModal(id) { document.getElementById(id)?.classList.remove('open'); }
 function logout() {
   sessionStorage.removeItem('ak_admin');
