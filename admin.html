@@ -356,10 +356,9 @@ select.form-inp{cursor:pointer;}
       <!-- ── SQL setup note (hidden once columns exist or user dismisses) ── -->
       <div id="new-stats-note" style="display:none;background:var(--gold-l);border:2px solid rgba(212,168,67,.35);border-radius:12px;padding:12px 16px;margin-bottom:20px;font-size:11px;color:var(--orange-d);line-height:1.7;">
         <button onclick="dismissStatsBanner()" style="float:right;background:none;border:none;cursor:pointer;color:var(--orange-d);font-size:15px;margin-left:8px;">✕</button>
-        <strong>📋 One-time setup — add these columns to your <code>users</code> table:</strong><br>
+        <strong>📋 One-time setup — add this column to your <code>users</code> table:</strong><br>
         <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS last_seen_at TIMESTAMPTZ;</code><br>
-        <code>ALTER TABLE users ADD COLUMN IF NOT EXISTS voice_id TEXT;</code><br>
-        This banner disappears automatically once the columns exist.
+        This banner disappears automatically once the column exists.
       </div>
 
       <div style="display:grid;grid-template-columns:1fr 1fr;gap:16px;">
@@ -957,8 +956,8 @@ async function loadDashboard() {
     const { count, error } = await sb
       .from('users')
       .select('id', { count: 'exact', head: true })
-      .not('voice_id', 'is', null)
-      .neq('voice_id', '');
+      .not('elevenlabs_voice_id', 'is', null)
+      .neq('elevenlabs_voice_id', '');
     if(error) throw error;
     document.getElementById('st-cloned').textContent = (count ?? 0).toLocaleString();
     clonedOk = true;
