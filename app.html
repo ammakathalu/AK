@@ -2167,15 +2167,11 @@ async function openPlayer(storyId, mode) {
     document.getElementById('playerMeta').innerHTML =
       '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">' + src + ' — Cache</span>';
     setupAudio(ttsCache[s.id]);
-  } else if(!hasMotherVoice && s.audio_url) {
-    // ✅ Rule 3: No mother voice → play admin pre-generated audio directly (no API call)
-    document.getElementById('playerMeta').innerHTML =
-      '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio</span>';
-    setupAudio(s.audio_url);
   } else {
-    // ✅ Rule 2 / Rule 4: generateTTS handles all remaining cases:
-    //   — If DB cache exists → serves from storage (no ElevenLabs call)
-    //   — If no DB cache → calls ElevenLabs API exactly once, then saves to cache
+    // ✅ Rule 2 / Rule 3: generateTTS handles ALL cases — mother voice or default narrator.
+    //   — Checks DB cache first (no ElevenLabs call if cached)
+    //   — Always uses correct voice: cloned voice or ZLpFijSSPWrOyLOGTCvE default
+    //   — audio_url (admin pre-generated) is NOT used directly — voice consistency required
     generateTTS(s);
   }
 }
@@ -2714,13 +2710,8 @@ function togglePlay() {
 
   if(!audioEl) {
     if(ttsGenerating) return; // already generating — wait
-    const hasMotherVoice = !!(USER?.elevenlabs_voice_id);
-    if(!hasMotherVoice && currentStory?.audio_url) {
-      // ✅ No mother voice: serve admin pre-generated audio directly — no ElevenLabs call
-      setupAudio(currentStory.audio_url);
-      setTimeout(togglePlay, 100);
-    } else if(currentStory) {
-      // ✅ Mother has voice (or no audio_url): generateTTS handles cache check + API call
+    if(currentStory) {
+      // ✅ Always go through generateTTS — ensures correct voice (cloned or ZLpFijSSPWrOyLOGTCvE default)
       //    ElevenLabs is only called if session cache + DB cache both miss
       generateTTS(currentStory);
     } else {
