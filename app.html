@@ -2167,11 +2167,17 @@ async function openPlayer(storyId, mode) {
     document.getElementById('playerMeta').innerHTML =
       '<span class="badge-voice" style="background:var(--green-l);color:var(--green-d);">' + src + ' — Cache</span>';
     setupAudio(ttsCache[s.id]);
+  } else if(hasMotherVoice) {
+    // ✅ Rule 2: Mother has cloned voice → generateTTS (checks DB cache, then ElevenLabs)
+    generateTTS(s);
+  } else if(s.audio_url) {
+    // ✅ Rule 3: No cloned voice + admin pre-generated audio → play directly, NO API call
+    document.getElementById('playerMeta').innerHTML =
+      '<span class="badge-voice" style="background:var(--purple-l);color:var(--purple);">📀 Admin audio</span>';
+    ttsCache[s.id] = s.audio_url; // session-cache it so repeat plays skip this block
+    setupAudio(s.audio_url);
   } else {
-    // ✅ Rule 2 / Rule 3: generateTTS handles ALL cases — mother voice or default narrator.
-    //   — Checks DB cache first (no ElevenLabs call if cached)
-    //   — Always uses correct voice: cloned voice or ZLpFijSSPWrOyLOGTCvE default
-    //   — audio_url (admin pre-generated) is NOT used directly — voice consistency required
+    // ✅ Rule 4: No cloned voice + no audio_url → generateTTS with ZLpFijSSPWrOyLOGTCvE default
     generateTTS(s);
   }
 }
@@ -2710,9 +2716,17 @@ function togglePlay() {
 
   if(!audioEl) {
     if(ttsGenerating) return; // already generating — wait
-    if(currentStory) {
-      // ✅ Always go through generateTTS — ensures correct voice (cloned or ZLpFijSSPWrOyLOGTCvE default)
-      //    ElevenLabs is only called if session cache + DB cache both miss
+    const hasMotherVoice = !!(USER?.elevenlabs_voice_id);
+    if(hasMotherVoice) {
+      // Mother has cloned voice → generateTTS (checks DB cache, then ElevenLabs)
+      generateTTS(currentStory);
+    } else if(currentStory?.audio_url) {
+      // No cloned voice + admin pre-generated audio → play directly, NO API call
+      ttsCache[currentStory.id] = currentStory.audio_url;
+      setupAudio(currentStory.audio_url);
+      setTimeout(togglePlay, 100);
+    } else if(currentStory) {
+      // No cloned voice + no audio_url → generateTTS with ZLpFijSSPWrOyLOGTCvE default
       generateTTS(currentStory);
     } else {
       toast('కథ ఎంచుకోండి');
