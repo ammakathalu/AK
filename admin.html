@@ -1920,10 +1920,7 @@ async function generateSingleAudio(storyId) {
 async function generateAndSaveAudio(story, elKey) {
   try {
     const voiceId = document.getElementById('ga-voice-id').value.trim()
-      || {te:'jsCqWAovK2LkecY7zXl4',ta:'jsCqWAovK2LkecY7zXl4',kn:'jsCqWAovK2LkecY7zXl4',
-          ml:'jsCqWAovK2LkecY7zXl4',hi:'cgSgspJ2msm6clMCkdW9',mr:'cgSgspJ2msm6clMCkdW9',
-          en:'EXAVITQu4vr4xnSDxMaL'}[story.lang_code]
-      || 'EXAVITQu4vr4xnSDxMaL'; // Priya/Sarah fallback narrator voice
+      || 'ZLpFijSSPWrOyLOGTCvE'; // default narrator voice — works for all languages
 
     const text = ((story.story_text || '') + ' ' + (story.moral_text || '')).trim().substring(0, 2500);
 
@@ -2036,13 +2033,13 @@ const CONFIG_KEYS = [
   // For Dravidian (te/kn/ml): use Priya (jsCqWAovK2LkecY7zXl4) — warm Indian female, best for retroflex sounds.
   // For Hindi/Marathi: use Aria (cgSgspJ2msm6clMCkdW9) — expressive Devanagari narration.
   // Browse more: elevenlabs.io/voice-library → Female, Narration, Indian
-  { key:'default_voice_te', label:'Default Voice — Telugu 🎙',   desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (warm Indian female, best for ట/డ/ణ retroflex)', secret:false },
-  { key:'default_voice_ta', label:'Default Voice — Tamil 🎙',    desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (Dravidian-optimised)', secret:false },
-  { key:'default_voice_kn', label:'Default Voice — Kannada 🎙',  desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (handles ಟ/ಡ/ಣ well)', secret:false },
-  { key:'default_voice_ml', label:'Default Voice — Malayalam 🎙',desc:'Priya recommended: jsCqWAovK2LkecY7zXl4  (handles ട/ഡ/ണ well)', secret:false },
-  { key:'default_voice_hi', label:'Default Voice — Hindi 🎙',    desc:'Aria recommended: cgSgspJ2msm6clMCkdW9  (expressive Hindi/Devanagari)', secret:false },
-  { key:'default_voice_mr', label:'Default Voice — Marathi 🎙',  desc:'Aria recommended: cgSgspJ2msm6clMCkdW9  (Marathi/Devanagari narration)', secret:false },
-  { key:'default_voice_en', label:'Default Voice — English 🎙',  desc:'Sarah recommended: EXAVITQu4vr4xnSDxMaL  (warm storytelling)', secret:false },
+  { key:'default_voice_te', label:'Default Voice — Telugu 🎙',   desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_ta', label:'Default Voice — Tamil 🎙',    desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_kn', label:'Default Voice — Kannada 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_ml', label:'Default Voice — Malayalam 🎙',desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_hi', label:'Default Voice — Hindi 🎙',    desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_mr', label:'Default Voice — Marathi 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  { key:'default_voice_en', label:'Default Voice — English 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
 ];
 
 async function loadConfig() {

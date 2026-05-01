@@ -1877,44 +1877,22 @@ function updateHome() {
 // ══ RECOMMENDED VOICE IDs BY LANGUAGE (from ElevenLabs Voice Library) ══
 //
 //  Telugu (te):
-//    Priya      → jsCqWAovK2LkecY7zXl4  (female, warm Indian accent, great for te)
-//    Shreya     → pFZP5JQG7iQjIQuC4Bku  (female, soft, narration)
-//    Sarah      → EXAVITQu4vr4xnSDxMaL  (female, warm — fallback)
+//  Default fallback voice (all languages): ZLpFijSSPWrOyLOGTCvE
+//    Used for ALL languages when the customer has no cloned voice.
+//    Works well across Telugu, Tamil, Kannada, Malayalam, Hindi, Marathi, English.
 //
-//  Kannada (kn):
-//    Priya      → jsCqWAovK2LkecY7zXl4  (same voice handles kn/te well)
-//    Devi       → oWAxZDx7w5VEj9dCyTzz  (female, warm South Indian)
+// To override per language: Admin → App Config → key: default_voice_te (or ta/kn/ml/hi/mr/en)
 //
-//  Malayalam (ml):
-//    Priya      → jsCqWAovK2LkecY7zXl4  (handles Dravidian scripts well)
-//    Ananya     → ThT5KcBeYPX3keUQqHPh  (female, South Indian narration)
-//
-//  Tamil (ta):
-//    Priya      → jsCqWAovK2LkecY7zXl4
-//    Ananya     → ThT5KcBeYPX3keUQqHPh
-//
-//  Hindi/Marathi (hi/mr):
-//    Aria       → cgSgspJ2msm6clMCkdW9  (female, warm Hindi narration)
-//    Meera      → XrExE9yKIg1WjnnlVkGX  (female, soft Devanagari)
-//
-//  English (en):
-//    Sarah      → EXAVITQu4vr4xnSDxMaL
-//
-// To override: Admin → App Config → key: default_voice_te (or ta/kn/ml/hi/mr/en)
-//
+// Single default voice used for ALL languages when customer has no cloned voice
+// Voice ID: ZLpFijSSPWrOyLOGTCvE — works well across all supported languages
 const DEFAULT_VOICES = {
-  // Priya — warm female Indian voice, best for Dravidian scripts (te/kn/ml/ta)
-  te: 'jsCqWAovK2LkecY7zXl4', // Priya (female, warm Indian, excellent for Telugu)
-  ta: 'jsCqWAovK2LkecY7zXl4', // Priya
-  kn: 'jsCqWAovK2LkecY7zXl4', // Priya (handles Kannada script well)
-  ml: 'jsCqWAovK2LkecY7zXl4', // Priya (handles Malayalam script well)
-
-  // Aria — expressive, great for Hindi/Marathi Devanagari narration
-  hi: 'cgSgspJ2msm6clMCkdW9', // Aria (female, expressive, warm)
-  mr: 'cgSgspJ2msm6clMCkdW9', // Aria
-
-  // Sarah for English
-  en: 'EXAVITQu4vr4xnSDxMaL', // Sarah (female, warm, storytelling)
+  te: 'ZLpFijSSPWrOyLOGTCvE',
+  ta: 'ZLpFijSSPWrOyLOGTCvE',
+  kn: 'ZLpFijSSPWrOyLOGTCvE',
+  ml: 'ZLpFijSSPWrOyLOGTCvE',
+  hi: 'ZLpFijSSPWrOyLOGTCvE',
+  mr: 'ZLpFijSSPWrOyLOGTCvE',
+  en: 'ZLpFijSSPWrOyLOGTCvE',
 };
 
 // Cache of admin-configured voice overrides
