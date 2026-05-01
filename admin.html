@@ -632,7 +632,7 @@ select.form-inp{cursor:pointer;}
           </div>
           <div class="form-group" style="margin:0;width:140px;">
             <label class="form-label">Language Filter</label>
-            <select class="form-inp" id="ga-lang-filter">
+            <select class="form-inp" id="ga-lang-filter" onchange="loadAudioStatus()">
               <option value="">All Languages</option>
               <option value="te">Telugu</option>
               <option value="ta">Tamil</option>
@@ -1820,26 +1820,67 @@ async function loadAudioStatus() {
     '<tr><td colspan="5" class="empty-state">Loading...</td></tr>';
   try {
     const lang = document.getElementById('ga-lang-filter')?.value || '';
-    const { data, error } = await sb.rpc('admin_get_stories', { p_lang: lang || null });
-    if(error) throw error;
-    gaStories = data || [];
-    const hasAudio  = gaStories.filter(s => s.audio_url).length;
-    const noAudio   = gaStories.filter(s => !s.audio_url).length;
+
+    // Step 1: Try the admin RPC first
+    let stories = [];
+    let rpcOk   = false;
+    try {
+      const { data, error } = await sb.rpc('admin_get_stories', { p_lang: lang || null });
+      if(!error) { stories = data || []; rpcOk = true; }
+    } catch(_) {}
+
+    // Step 2: If RPC returned nothing or failed, fall back to direct table query.
+    // This ensures English (and any other language) stories are never silently
+    // excluded by an RPC that has a hardcoded language whitelist.
+    if(!rpcOk || stories.length === 0) {
+      let q = sb
+        .from('stories')
+        .select('id, title, lang_code, emoji, audio_url, duration_secs, story_text, moral_text')
+        .order('lang_code', { ascending: true })
+        .order('title',     { ascending: true });
+      if(lang) q = q.eq('lang_code', lang);
+      const { data: fallback, error: fbErr } = await q;
+      if(fbErr) throw fbErr;
+      stories = fallback || [];
+    }
+
+    gaStories = stories;
+    const hasAudio = gaStories.filter(s => s.audio_url).length;
+    const noAudio  = gaStories.filter(s => !s.audio_url).length;
     document.getElementById('ga-total').textContent     = gaStories.length;
     document.getElementById('ga-has-audio').textContent = hasAudio;
     document.getElementById('ga-no-audio').textContent  = noAudio;
     renderAudioTable(gaStories);
   } catch(e) {
     toast('Error loading stories: ' + e.message, 'error');
+    document.getElementById('ga-stories-table').innerHTML =
+      `<tr><td colspan="5" class="empty-state" style="color:var(--red)">Error: ${e.message}</td></tr>`;
   }
 }
 
+const LANG_LABELS = {
+  te:'Telugu', ta:'Tamil', kn:'Kannada', hi:'Hindi',
+  ml:'Malayalam', mr:'Marathi', en:'English'
+};
+const LANG_BADGE_STYLE = {
+  te:'background:#fce8f0;color:#b85080;border:1px solid #e07ba055',
+  ta:'background:#e3eef8;color:#3a6fa8;border:1px solid #5b9bd555',
+  kn:'background:#fdf5d0;color:#a07020;border:1px solid #d4a84355',
+  hi:'background:#e8f5ee;color:#2e7d52;border:1px solid #4caf7d55',
+  ml:'background:#ede8f8;color:#5a4a8a;border:1px solid #7c6baa55',
+  mr:'background:#fdebd9;color:#c06830;border:1px solid #e8924a55',
+  en:'background:#e3f4ff;color:#1a6a9a;border:1px solid #5b9bd577',
+};
+
 function renderAudioTable(stories) {
   document.getElementById('ga-stories-table').innerHTML = stories.length
-    ? stories.map(s => `
+    ? stories.map(s => {
+        const langLabel = LANG_LABELS[s.lang_code] || s.lang_code.toUpperCase();
+        const langStyle = LANG_BADGE_STYLE[s.lang_code] || '';
+        return `
       <tr id="ga-row-${s.id}">
         <td>${s.emoji||'📖'} ${s.title}</td>
-        <td><span class="badge badge-gray">${s.lang_code}</span></td>
+        <td><span class="badge" style="${langStyle}">${langLabel}</span></td>
         <td id="ga-status-${s.id}">
           ${s.audio_url
             ? '<span class="badge badge-green">✓ Has Audio</span>'
@@ -1855,7 +1896,8 @@ function renderAudioTable(stories) {
             : `<button class="btn btn-primary btn-sm" onclick="generateSingleAudio('${s.id}')">🔊 Generate</button>`
           }
         </td>
-      </tr>`).join('')
+      </tr>`;
+      }).join('')
     : '<tr><td colspan="5" class="empty-state">No stories found</td></tr>';
 }
 
