@@ -626,8 +626,8 @@ select.form-inp{cursor:pointer;}
         <div style="display:flex;gap:12px;align-items:flex-end;flex-wrap:wrap;">
           <div class="form-group" style="margin:0;flex:1;min-width:180px;">
             <label class="form-label">ElevenLabs Voice ID</label>
-            <input class="form-inp" id="ga-voice-id" placeholder="Use a specific voice ID (optional)">
-            <div class="form-help">Leave blank to use the narrator default voice. Or paste any ElevenLabs voice ID.</div>
+            <input class="form-inp" id="ga-voice-id" value="ZLpFijSSPWrOyLOGTCvE" placeholder="ZLpFijSSPWrOyLOGTCvE">
+            <div class="form-help">Default: ZLpFijSSPWrOyLOGTCvE — works for all languages. Change only if needed.</div>
           </div>
           <div class="form-group" style="margin:0;width:140px;">
             <label class="form-label">Language Filter</label>
@@ -2029,17 +2029,15 @@ const CONFIG_KEYS = [
   { key:'app_name',              label:'App Name',                 desc:'Display name of the app',                                    secret:false },
   { key:'maintenance_mode',      label:'Maintenance Mode',         desc:'Set to true to show maintenance page',                       secret:false },
   // ── DEFAULT NARRATOR VOICE IDs ──
-  // eleven_v3 model natively reads all Indian scripts — no transliteration needed.
-  // For Dravidian (te/kn/ml): use Priya (jsCqWAovK2LkecY7zXl4) — warm Indian female, best for retroflex sounds.
-  // For Hindi/Marathi: use Aria (cgSgspJ2msm6clMCkdW9) — expressive Devanagari narration.
-  // Browse more: elevenlabs.io/voice-library → Female, Narration, Indian
-  { key:'default_voice_te', label:'Default Voice — Telugu 🎙',   desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_ta', label:'Default Voice — Tamil 🎙',    desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_kn', label:'Default Voice — Kannada 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_ml', label:'Default Voice — Malayalam 🎙',desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_hi', label:'Default Voice — Hindi 🎙',    desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_mr', label:'Default Voice — Marathi 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
-  { key:'default_voice_en', label:'Default Voice — English 🎙',  desc:'Default: ZLpFijSSPWrOyLOGTCvE  (works for all languages — leave blank to use this)', secret:false },
+  // ZLpFijSSPWrOyLOGTCvE is the single default voice used for ALL languages.
+  // These fields are pre-filled with it. Override per-language if needed.
+  { key:'default_voice_te', label:'Default Voice — Telugu 🎙',   desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_ta', label:'Default Voice — Tamil 🎙',    desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_kn', label:'Default Voice — Kannada 🎙',  desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_ml', label:'Default Voice — Malayalam 🎙',desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_hi', label:'Default Voice — Hindi 🎙',    desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_mr', label:'Default Voice — Marathi 🎙',  desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
+  { key:'default_voice_en', label:'Default Voice — English 🎙',  desc:'Override per-language voice. Default ZLpFijSSPWrOyLOGTCvE used if blank.', secret:false, default:'ZLpFijSSPWrOyLOGTCvE' },
 ];
 
 async function loadConfig() {
@@ -2075,7 +2073,7 @@ function renderConfigForm(valueMap) {
             id="cfg-${cfg.key}"
             data-key="${cfg.key}"
             type="${cfg.secret ? 'password' : 'text'}"
-            value="${valueMap[cfg.key] || ''}"
+            value="${valueMap[cfg.key] || cfg.default || ''}"
             placeholder="${cfg.desc}"
             autocomplete="off"
           >
