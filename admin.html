@@ -641,10 +641,15 @@ select.form-inp{cursor:pointer;}
               <option value="mr">Marathi</option>
             </select>
           </div>
-          <div style="display:flex;gap:8px;">
+          <div style="display:flex;gap:8px;flex-wrap:wrap;">
             <button class="btn btn-ghost" onclick="loadAudioStatus()">↺ Refresh</button>
             <button class="btn btn-primary" id="ga-start-btn" onclick="startBatchGeneration()">
               🔊 Generate All Missing Audio
+            </button>
+            <button class="btn btn-ghost" id="ga-regen-btn" onclick="startBatchRegeneration()"
+              style="border-color:#e8924a;color:#c06830;"
+              title="Regenerate ALL stories using current Voice ID — overwrites existing audio">
+              🔄 Regenerate All Audio
             </button>
           </div>
         </div>
@@ -1863,6 +1868,7 @@ async function startBatchGeneration() {
   gaRunning = true; gaStop = false;
   document.getElementById('ga-progress-wrap').style.display = 'block';
   document.getElementById('ga-start-btn').disabled = true;
+  document.getElementById('ga-regen-btn').disabled = true;
 
   let done = 0;
   for(const story of missing) {
@@ -1888,6 +1894,7 @@ async function startBatchGeneration() {
 
   gaRunning = false;
   document.getElementById('ga-start-btn').disabled = false;
+  document.getElementById('ga-regen-btn').disabled = false;
   document.getElementById('ga-progress-label').textContent =
     gaStop ? `Stopped at ${done}/${missing.length}` : `✓ Complete — ${done} stories generated`;
   toast(gaStop ? 'Stopped' : `✓ ${done} audio files generated`, 'success');
@@ -1897,6 +1904,55 @@ async function startBatchGeneration() {
 function stopBatchGeneration() {
   gaStop = true;
   toast('Stopping after current story...', 'success');
+}
+
+async function startBatchRegeneration() {
+  if(gaRunning) return;
+  if(gaStories.length === 0) { toast('No stories loaded — click Refresh first', 'error'); return; }
+
+  const voiceId = document.getElementById('ga-voice-id').value.trim() || 'ZLpFijSSPWrOyLOGTCvE';
+  const confirmed = confirm(
+    `Regenerate ALL ${gaStories.length} stories using voice ID:\n${voiceId}\n\nThis will overwrite existing audio. Continue?`
+  );
+  if(!confirmed) return;
+
+  const elKey = await getElevenLabsKey();
+  if(!elKey) { toast('Add ElevenLabs API key in App Config first', 'error'); return; }
+
+  gaRunning = true; gaStop = false;
+  document.getElementById('ga-progress-wrap').style.display = 'block';
+  document.getElementById('ga-start-btn').disabled = true;
+  document.getElementById('ga-regen-btn').disabled = true;
+
+  let done = 0;
+  const all = gaStories;
+  for(const story of all) {
+    if(gaStop) break;
+    document.getElementById('ga-progress-label').textContent = `Regenerating: ${story.title}`;
+    document.getElementById('ga-progress-count').textContent = `${done} / ${all.length}`;
+    document.getElementById('ga-status-'+story.id).innerHTML =
+      '<span class="badge badge-amber">⏳ Regenerating...</span>';
+
+    const ok = await generateAndSaveAudio(story, elKey);
+
+    document.getElementById('ga-status-'+story.id).innerHTML = ok
+      ? '<span class="badge badge-green">✓ Regenerated</span>'
+      : '<span class="badge badge-red">✗ Failed</span>';
+
+    done++;
+    document.getElementById('ga-progress-bar').style.width = (done / all.length * 100) + '%';
+
+    // Small delay to avoid ElevenLabs rate limits
+    await new Promise(r => setTimeout(r, 500));
+  }
+
+  gaRunning = false;
+  document.getElementById('ga-start-btn').disabled = false;
+  document.getElementById('ga-regen-btn').disabled = false;
+  document.getElementById('ga-progress-label').textContent =
+    gaStop ? `Stopped at ${done}/${all.length}` : `✓ Complete — ${done} stories regenerated`;
+  toast(gaStop ? 'Stopped' : `✓ ${done} stories regenerated with voice ${voiceId.substring(0,12)}...`, 'success');
+  loadAudioStatus();
 }
 
 async function generateSingleAudio(storyId) {
