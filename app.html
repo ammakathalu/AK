@@ -1927,13 +1927,41 @@ async function getVoiceId() {
 
 async function loadStories() {
   try {
-    // Use RPC to bypass RLS
+    // Layer 1: RPC with exact language match
     const { data, error } = await sb.rpc('get_published_stories', { p_lang: LANG });
     if(error) throw error;
-    if(data && data.length > 0) STORIES_DATA = data;
-    else throw new Error('no stories');
+    if(data && data.length > 0) { STORIES_DATA = data; return; }
+    throw new Error('no stories from RPC');
   } catch(e) {
-    console.warn('loadStories RPC failed:', e.message, '-- using demo stories');
+    console.warn('loadStories RPC failed:', e.message);
+    // Layer 2: Direct table query — catches cases where RPC returns 0 for a language
+    try {
+      const { data: rows, error: tErr } = await sb
+        .from('stories')
+        .select('id, title, emoji, story_text, moral_text, audio_url, duration_secs, category, tags, is_premium, lang_code')
+        .eq('lang_code', LANG)
+        .eq('is_published', true)
+        .order('created_at', { ascending: false });
+      if(!tErr && rows && rows.length > 0) {
+        STORIES_DATA = rows.map(s => ({
+          ...s,
+          audio_url: s.audio_url || null,
+          tags: s.tags || [],
+          is_premium: s.is_premium || false
+        }));
+        console.log('loadStories: direct table fallback returned', STORIES_DATA.length, 'stories for', LANG);
+        if(STORIES_DATA.length > 0) {
+          const ft = STORIES_DATA[0];
+          document.getElementById('ncTitle').textContent = ft.title;
+          document.getElementById('ncDur').textContent = ft.duration_secs ? formatTime(ft.duration_secs) : '—';
+          currentStory = ft;
+        }
+        renderStories();
+        return;
+      }
+    } catch(e2) { console.warn('loadStories direct table fallback failed:', e2.message); }
+    // Layer 3: Hardcoded demo stories (offline / no DB connection)
+    console.warn('loadStories: using hardcoded demo stories for', LANG);
     if(LANG === 'en') {
       STORIES_DATA = [
         {id:'en1',emoji:'🦊',title:'The Clever Fox and the Lion',category:'folk',duration_secs:360,tags:['wisdom','friendship'],is_premium:false,audio_url:null,story_text:'Long long ago, in a beautiful green forest full of tall trees and sparkling streams, a brave lion and a clever fox were the very best of friends. The lion used his great strength to protect everyone who lived in the forest. The fox used her sharp wisdom to guide them all through every difficulty. Together they made the forest a safe and happy home.\n\nOne day, as the morning mist was still rising from the river, the lion fell very ill with a high fever. His golden mane lost its shine, and his mighty roar became barely a whisper. Day by day he grew weaker. He could not hunt, he could not patrol the forest, and he could barely lift his great head. All the animals were deeply worried. Without the lion, who would stand between them and danger?\n\nThe fox sat alone under a great mango tree and thought deeply for a long time. My dear friend has protected this forest for so many years. He has stood beside me through every storm, she said quietly to herself. Now it is my turn to be strong for him. She rose to her feet, her eyes full of quiet determination.\n\nThe fox journeyed deep into the oldest part of the forest, where few animals dared to go. She climbed over rocky mountains and crossed ice-cold streams. She searched through valleys wrapped in shadow and hillsides lit by morning gold. For three full days she searched. Finally, on the far slope of the highest hill, she found a rare healing plant that only blooms once a year.\n\nEvery morning before sunrise, the fox carefully gathered the leaves and prepared a medicine. She sat beside the lion and gently coaxed him to drink it each day. Some days he refused, too tired and weak to try. But the fox never gave up. She spoke to him softly, telling him about the forest, about the sunshine, about how the little animals missed their guardian. Slowly, slowly, the lion began to recover.\n\nAfter one month, the lion stood on all four paws once more. He looked at the fox with tears shining in his great amber eyes. You walked through mountains and valleys for me, he said in a low, warm voice. You are my truest friend in all the world.\n\nThe fox smiled and touched his paw gently. That is what true friendship means, she said. We do not leave each other in the dark.\n\nMoral: True friendship shines brightest in the hardest of times. A real friend never gives up on you.'},
